@@ -2,6 +2,10 @@
   "version": 1.1,
   "atDirectives": [
     {
+      "name": "@apply",
+      "description": "Tailwind CSS directive for inlining utility classes into custom CSS rules."
+    },
+    {
       "name": "@source",
       "description": "Tailwind CSS v4 directive for explicitly registering content sources."
     },
@@ -28,6 +32,10 @@
     {
       "name": "@config",
       "description": "Tailwind CSS directive for referencing a config file."
+    },
+    {
+      "name": "@reference",
+      "description": "Tailwind CSS v4 directive for importing theme and utility definitions for reference."
     }
   ]
 }
