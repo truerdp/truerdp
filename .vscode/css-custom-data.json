@@ -1,0 +1,33 @@
+{
+  "version": 1.1,
+  "atDirectives": [
+    {
+      "name": "@source",
+      "description": "Tailwind CSS v4 directive for explicitly registering content sources."
+    },
+    {
+      "name": "@theme",
+      "description": "Tailwind CSS v4 directive for defining theme tokens in CSS."
+    },
+    {
+      "name": "@custom-variant",
+      "description": "Tailwind CSS v4 directive for defining custom variants."
+    },
+    {
+      "name": "@utility",
+      "description": "Tailwind CSS v4 directive for defining custom utilities."
+    },
+    {
+      "name": "@variant",
+      "description": "Tailwind CSS v4 directive for applying a variant inside custom CSS."
+    },
+    {
+      "name": "@plugin",
+      "description": "Tailwind CSS directive for loading a plugin from CSS."
+    },
+    {
+      "name": "@config",
+      "description": "Tailwind CSS directive for referencing a config file."
+    }
+  ]
+}
