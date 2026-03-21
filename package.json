@@ -17,8 +17,13 @@
     "turbo": "^2.8.8",
     "typescript": "5.9.3"
   },
-  "packageManager": "pnpm@9.0.6",
+  "packageManager": "pnpm@10.29.3",
   "engines": {
     "node": ">=20"
+  },
+  "pnpm": {
+    "overrides": {
+      "drizzle-orm": "^0.45.1"
+    }
   }
 }
