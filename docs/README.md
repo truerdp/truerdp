@@ -34,3 +34,7 @@ This folder contains project documentation.
 ## Support
 
 13. [Support](13_SUPPORT.md)
+
+## DevOps
+
+14. [DevOps](14_DEVOPS.md)

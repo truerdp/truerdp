@@ -30,6 +30,7 @@ Complete documentation set:
 11. [Backend Structure](docs/11_BACKEND_STRUCTURE.md)
 12. [AI Context](docs/12_AI_CONTEXT.md)
 13. [Support](docs/13_SUPPORT.md)
+14. [DevOps](docs/14_DEVOPS.md)
 
 ## Repository Layout
 
