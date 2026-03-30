@@ -42,7 +42,7 @@ Use docker-compose for:
 ### Backend
 
 - Fastify application
-- Runs on port 3000
+- Runs on port 3003
 
 ### Database
 
