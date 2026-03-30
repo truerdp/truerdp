@@ -1,4 +1,4 @@
-import eslintConfigBase from "@workspace/eslint-config/base";
+import { config as eslintConfigBase } from "@workspace/eslint-config/base";
 
 export default [
   ...eslintConfigBase,
