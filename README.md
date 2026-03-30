@@ -90,6 +90,12 @@ After rebooting your machine, use one of these startup flows:
 ### DB + backend in Docker, frontend locally
 
 ```bash
+pnpm run dev:docker
+```
+
+Equivalent expanded form:
+
+```bash
 docker compose up -d
 pnpm run dev:frontend
 ```
@@ -120,6 +126,7 @@ Root commands:
 ```bash
 pnpm dev
 pnpm run dev:frontend
+pnpm run dev:docker
 pnpm build
 pnpm lint
 pnpm format

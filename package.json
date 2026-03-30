@@ -6,6 +6,7 @@
     "build": "turbo build",
     "dev": "turbo dev",
     "dev:frontend": "turbo dev --filter=web --filter=dashboard --filter=admin",
+    "dev:docker": "docker compose up -d && pnpm run dev:frontend",
     "lint": "turbo lint",
     "format": "turbo format",
     "typecheck": "turbo typecheck"
