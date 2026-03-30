@@ -9,7 +9,7 @@ RUN corepack enable
 COPY . .
 
 # Install dependencies
-RUN pnpm install
+RUN pnpm install --frozen-lockfile
 
 EXPOSE 3003
 
