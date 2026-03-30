@@ -5,6 +5,7 @@
   "scripts": {
     "build": "turbo build",
     "dev": "turbo dev",
+    "dev:frontend": "turbo dev --filter=web --filter=dashboard --filter=admin",
     "lint": "turbo lint",
     "format": "turbo format",
     "typecheck": "turbo typecheck"

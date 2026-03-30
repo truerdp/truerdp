@@ -83,6 +83,19 @@ Copy-Item apps/backend/.env.example apps/backend/.env
 pnpm dev
 ```
 
+## Daily Startup
+
+After rebooting your machine, use one of these startup flows:
+
+### DB + backend in Docker, frontend locally
+
+```bash
+docker compose up -d
+pnpm run dev:frontend
+```
+
+`pnpm dev` starts backend too, so avoid running it together with `docker compose up -d` unless you intentionally stop one backend instance.
+
 Local URLs:
 
 - Web: `http://localhost:3000`
@@ -97,6 +110,7 @@ Backend env values (`apps/backend/.env.example`):
 ```env
 DATABASE_URL="postgres://postgres:postgres@localhost:5432/truerdp"
 PORT=3003
+JWT_SECRET=change-this-in-production
 ```
 
 ## Commands
@@ -105,6 +119,7 @@ Root commands:
 
 ```bash
 pnpm dev
+pnpm run dev:frontend
 pnpm build
 pnpm lint
 pnpm format
