@@ -1,0 +1,36 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "docker: up detached",
+      "type": "shell",
+      "command": "docker compose up -d",
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "group": "docker"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "dev: frontend",
+      "type": "shell",
+      "command": "pnpm run dev:frontend",
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "group": "frontend"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "dev: docker + frontend (split terminals)",
+      "dependsOrder": "sequence",
+      "dependsOn": [
+        "docker: up detached",
+        "dev: frontend"
+      ],
+      "problemMatcher": []
+    }
+  ]
+}

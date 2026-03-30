@@ -102,6 +102,17 @@ pnpm run dev:frontend
 
 `pnpm dev` starts backend too, so avoid running it together with `docker compose up -d` unless you intentionally stop one backend instance.
 
+### VS Code split-terminal startup
+
+If you want Docker and frontend dev in separate terminals with one action, run the VS Code task:
+
+- `dev: docker + frontend (split terminals)`
+
+This task is defined in `.vscode/tasks.json` and starts:
+
+- `docker compose up -d` in a dedicated Docker terminal
+- `pnpm run dev:frontend` in a dedicated frontend terminal
+
 Local URLs:
 
 - Web: `http://localhost:3000`
