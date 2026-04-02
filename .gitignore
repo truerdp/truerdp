@@ -6,6 +6,10 @@ node_modules
 .pnp
 .pnp.js
 
+#Postman
+postman
+.postman
+
 # Local env files
 .env
 .env.local

@@ -1,6 +1,12 @@
 import "dotenv/config"
 import Fastify from "fastify"
 import cors from "@fastify/cors"
+import { userRoutes } from "./routes/user.js"
+import { authRoutes } from "./routes/auth.js"
+import { verifyAuth } from "./middleware/auth.js"
+import { transactionRoutes } from "./routes/transaction.js"
+import { adminRoutes } from "./routes/admin.js"
+import { instanceRoutes } from "./routes/instance.js"
 
 const server = Fastify({
   logger: true,
@@ -10,8 +16,18 @@ server.register(cors, {
   origin: "*", // restrict later
 })
 
+server.register(userRoutes)
+server.register(authRoutes)
+server.register(transactionRoutes)
+server.register(adminRoutes)
+server.register(instanceRoutes)
+
 server.get("/", async () => {
   return { status: "ok", message: "Truerdp API is running" }
+})
+
+server.get("/me", { preHandler: verifyAuth }, async (request: any) => {
+  return { user: request.user }
 })
 
 const start = async () => {

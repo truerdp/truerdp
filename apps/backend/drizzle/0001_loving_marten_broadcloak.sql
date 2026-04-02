@@ -1,0 +1,1 @@
+ALTER TABLE "instances" ALTER COLUMN "server_id" DROP NOT NULL;
