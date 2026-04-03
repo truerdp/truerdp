@@ -6,7 +6,6 @@ import {
 } from "@workspace/ui/components/tooltip"
 import { Switch } from "@workspace/ui/components/switch"
 import { Slider } from "@workspace/ui/components/slider"
-import { ChartBarDefault } from "@/components/chart"
 
 export default function Page() {
   return (
@@ -22,9 +21,7 @@ export default function Page() {
           </Tooltip>
           <Switch />
         </div>
-        <div>
-          <ChartBarDefault />
-        </div>
+
         <div>
           {/* example of range slider component from shadcn: */}
 
