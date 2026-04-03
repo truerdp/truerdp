@@ -31,6 +31,7 @@ Complete documentation set:
 12. [AI Context](docs/12_AI_CONTEXT.md)
 13. [Support](docs/13_SUPPORT.md)
 14. [DevOps](docs/14_DEVOPS.md)
+15. [Frontend Development](docs/15_FRONTEND_DEVELOPMENT.md)
 
 ## Repository Layout
 

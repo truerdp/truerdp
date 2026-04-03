@@ -38,3 +38,7 @@ This folder contains project documentation.
 ## DevOps
 
 14. [DevOps](14_DEVOPS.md)
+
+## Frontend
+
+15. [Frontend Development](15_FRONTEND_DEVELOPMENT.md)
