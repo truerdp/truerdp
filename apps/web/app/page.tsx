@@ -5,6 +5,8 @@ import {
   TooltipTrigger,
 } from "@workspace/ui/components/tooltip"
 import { Switch } from "@workspace/ui/components/switch"
+import { Slider } from "@workspace/ui/components/slider"
+import { ChartBarDefault } from "@/components/chart"
 
 export default function Page() {
   return (
@@ -19,6 +21,19 @@ export default function Page() {
             <TooltipContent>Click to get started</TooltipContent>
           </Tooltip>
           <Switch />
+        </div>
+        <div>
+          <ChartBarDefault />
+        </div>
+        <div>
+          {/* example of range slider component from shadcn: */}
+
+          <Slider
+            defaultValue={[75]}
+            max={100}
+            step={1}
+            className="mx-auto w-full max-w-xs"
+          />
         </div>
         <div className="font-mono text-xs text-muted-foreground">
           (Press <kbd>d</kbd> to toggle dark mode)
