@@ -12,19 +12,17 @@ import {
 } from "@workspace/ui/components/table"
 import { buttonVariants } from "@workspace/ui/components/button"
 import { Badge } from "@workspace/ui/components/badge"
-import {
-  Empty,
-  EmptyHeader,
-  EmptyTitle,
-  EmptyDescription,
-  EmptyMedia,
-} from "@workspace/ui/components/empty"
-import { HugeiconsIcon } from "@hugeicons/react"
-import { ServerStack01Icon } from "@hugeicons/core-free-icons"
+import InstancesEmptyState from "@/components/instances-empty-state"
 
 export interface Instance {
-  id: string
-  status: "running" | "stopped" | "pending" | "error"
+  id: number
+  status:
+    | "pending"
+    | "provisioning"
+    | "active"
+    | "expired"
+    | "termination_pending"
+    | "terminated"
   ipAddress: string | null
   expiryDate: string | null
 }
@@ -37,17 +35,23 @@ function getStatusVariant(
   status: Instance["status"]
 ): "default" | "secondary" | "destructive" | "outline" {
   switch (status) {
-    case "running":
+    case "active":
       return "default"
-    case "stopped":
-      return "secondary"
     case "pending":
+    case "provisioning":
       return "outline"
-    case "error":
+    case "expired":
+      return "secondary"
+    case "termination_pending":
+    case "terminated":
       return "destructive"
     default:
       return "secondary"
   }
+}
+
+function formatStatus(status: Instance["status"]): string {
+  return status.replaceAll("_", " ")
 }
 
 function formatExpiryDate(dateString: string | null): string {
@@ -55,23 +59,19 @@ function formatExpiryDate(dateString: string | null): string {
   return format(new Date(dateString), "MMM d, yyyy")
 }
 
+function isExpired(dateString: string | null): boolean {
+  if (!dateString) return false
+
+  const date = new Date(dateString)
+  return !Number.isNaN(date.getTime()) && date < new Date()
+}
+
 export default function InstanceTable({ instances }: InstanceTableProps) {
   if (instances.length === 0) {
     return (
-      <Empty className="border">
-        <EmptyHeader>
-          <EmptyMedia variant="icon">
-            <HugeiconsIcon
-              icon={ServerStack01Icon}
-              color="text-muted-foreground"
-            />
-          </EmptyMedia>
-          <EmptyTitle>No instances</EmptyTitle>
-          <EmptyDescription>
-            You don&apos;t have any instances yet. Create one to get started.
-          </EmptyDescription>
-        </EmptyHeader>
-      </Empty>
+      <div className="rounded-md border">
+        <InstancesEmptyState />
+      </div>
     )
   }
 
@@ -93,17 +93,24 @@ export default function InstanceTable({ instances }: InstanceTableProps) {
             <TableCell className="font-mono text-sm">{instance.id}</TableCell>
             <TableCell>
               <Badge variant={getStatusVariant(instance.status)}>
-                {instance.status}
+                {formatStatus(instance.status)}
               </Badge>
             </TableCell>
             <TableCell className="font-mono">
               {instance.ipAddress ?? "-"}
             </TableCell>
-            <TableCell>{formatExpiryDate(instance.expiryDate)}</TableCell>
+            <TableCell
+              className={
+                isExpired(instance.expiryDate) ? "text-destructive" : undefined
+              }
+            >
+              {formatExpiryDate(instance.expiryDate)}
+            </TableCell>
             <TableCell>
               <Link
                 href={`/dashboard/instances/${instance.id}`}
                 className={buttonVariants({ variant: "outline", size: "sm" })}
+                aria-label={`View instance ${instance.id}`}
               >
                 View
               </Link>
