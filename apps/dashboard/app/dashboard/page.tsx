@@ -1,8 +1,7 @@
 "use client"
 
-import { useQuery } from "@tanstack/react-query"
-import { api } from "@/lib/api"
-import InstanceTable, { type Instance } from "@/components/instance-table"
+import InstanceTable from "@/components/instance-table"
+import { useInstances } from "@/hooks/use-instances"
 import { Skeleton } from "@workspace/ui/components/skeleton"
 import {
   Table,
@@ -51,10 +50,7 @@ function InstanceTableSkeleton() {
 }
 
 export default function DashboardPage() {
-  const { data, isLoading } = useQuery<Instance[]>({
-    queryKey: ["instances"],
-    queryFn: () => api("/instances"),
-  })
+  const { data, isLoading } = useInstances()
 
   return (
     <div>

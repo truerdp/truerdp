@@ -1,3 +1,4 @@
+import Link from "next/link"
 import { ReactNode } from "react"
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
@@ -7,9 +8,12 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
       <aside className="w-64 border-r p-4">
         <h2 className="mb-4 text-xl font-semibold">TrueRDP</h2>
         <nav className="space-y-2">
-          <a href="/dashboard" className="block">
+          <Link href="/dashboard" className="block">
             Instances
-          </a>
+          </Link>
+          <Link href="/dashboard/transactions" className="block">
+            Transactions
+          </Link>
         </nav>
       </aside>
 

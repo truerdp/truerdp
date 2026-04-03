@@ -2,8 +2,8 @@
 
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { api } from "@/lib/api"
+import { queryKeys } from "@/lib/query-keys"
 import { Button } from "@workspace/ui/components/button"
-import { useState } from "react"
 
 interface RenewButtonProps {
   instanceId: number
@@ -15,7 +15,6 @@ export default function RenewButton({
   disabled = false,
 }: RenewButtonProps) {
   const queryClient = useQueryClient()
-  const [message, setMessage] = useState<string | null>(null)
 
   const mutation = useMutation({
     mutationFn: async () => {
@@ -25,35 +24,30 @@ export default function RenewButton({
       })
     },
     onSuccess: () => {
-      setMessage("Renewal initiated. Awaiting confirmation.")
-
-      // ✅ refresh instance data
       queryClient.invalidateQueries({
-        queryKey: ["instance", instanceId],
+        queryKey: queryKeys.instance(instanceId),
       })
 
-      // optional: refresh list
       queryClient.invalidateQueries({
-        queryKey: ["instances"],
+        queryKey: queryKeys.instanceTransactions(instanceId),
       })
-    },
-    onError: () => {
-      setMessage("Failed to initiate renewal")
+
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.transactions(),
+      })
+
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.instances(),
+      })
     },
   })
 
   return (
-    <div className="flex flex-col items-end gap-2">
-      <Button
-        disabled={mutation.isPending || disabled}
-        onClick={() => mutation.mutate()}
-      >
-        {mutation.isPending ? "Processing..." : "Renew"}
-      </Button>
-
-      {message && (
-        <span className="text-xs text-muted-foreground">{message}</span>
-      )}
-    </div>
+    <Button
+      disabled={mutation.isPending || disabled}
+      onClick={() => mutation.mutate()}
+    >
+      {mutation.isPending ? "Processing..." : "Renew"}
+    </Button>
   )
 }

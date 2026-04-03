@@ -1,17 +1,19 @@
 import { FastifyInstance } from "fastify"
 import { db } from "../db.js"
-import { transactions, plans, users } from "../schema.js"
+import { transactions, plans, instances } from "../schema.js"
 import { z } from "zod"
-import { eq } from "drizzle-orm"
+import { and, desc, eq } from "drizzle-orm"
 import { verifyAuth } from "../middleware/auth.js"
 import { calculatePrice } from "../services/pricing.js"
 
 const createTransactionSchema = z.object({
   planId: z.number(),
   method: z.enum(["upi", "usdt_trc20"]),
+  instanceId: z.number().optional(),
 })
 
 export async function transactionRoutes(server: FastifyInstance) {
+  // ✅ Create transaction
   server.post(
     "/transactions",
     { preHandler: verifyAuth },
@@ -34,33 +36,44 @@ export async function transactionRoutes(server: FastifyInstance) {
           return reply.status(400).send({ error: "Invalid planId" })
         }
 
-        // ✅ 2. Get user for discount
-        const userResult = await db
-          .select()
-          .from(users)
-          .where(eq(users.id, userId))
-          .limit(1)
+        // ✅ 2. If instanceId is provided, validate it belongs to the user and doesn't have pending transactions
+        if (body.instanceId) {
+          const instanceResult = await db
+            .select()
+            .from(instances)
+            .where(eq(instances.id, body.instanceId))
+            .limit(1)
 
-        const user = userResult[0]
+          const instance = instanceResult[0]
 
-        if (!user) {
-          return reply.status(401).send({ error: "User not found" })
+          if (!instance) {
+            return reply.status(400).send({ error: "Invalid instanceId" })
+          }
+
+          if (instance.userId !== userId) {
+            return reply.status(403).send({ error: "Forbidden" })
+          }
+
+          const pendingTxResult = await db
+            .select()
+            .from(transactions)
+            .where(
+              and(
+                eq(transactions.instanceId, body.instanceId),
+                eq(transactions.status, "pending")
+              )
+            )
+            .limit(1)
+
+          if (pendingTxResult.length > 0) {
+            return reply.status(400).send({
+              error: "Pending transaction already exists",
+            })
+          }
         }
 
         // ✅ 3. Calculate price
         const amount = await calculatePrice(userId, body.planId)
-
-        // let amount = plan.price
-
-        // if (user.discountPercent) {
-        //   amount = amount - (amount * user.discountPercent) / 100
-        // }
-
-        // if (user.discountFlat) {
-        //   amount = amount - user.discountFlat
-        // }
-
-        // if (amount < 0) amount = 0
 
         // ✅ 4. Create transaction
         const tx = await db
@@ -69,7 +82,9 @@ export async function transactionRoutes(server: FastifyInstance) {
             userId,
             planId: plan.id,
             amount,
+            instanceId: body.instanceId || null,
             method: body.method,
+            status: "pending",
           })
           .returning()
 
@@ -78,6 +93,38 @@ export async function transactionRoutes(server: FastifyInstance) {
         server.log.error(err)
         return reply.status(400).send({
           error: err.message || "Invalid request",
+        })
+      }
+    }
+  )
+
+  // ✅ Get user transactions
+  server.get(
+    "/transactions",
+    { preHandler: verifyAuth },
+    async (request: any, reply) => {
+      try {
+        const userId = request.user.userId
+
+        const txs = await db
+          .select()
+          .from(transactions)
+          .where(eq(transactions.userId, userId))
+          .orderBy(desc(transactions.createdAt))
+
+        return txs.map((tx) => ({
+          id: tx.id,
+          planId: tx.planId,
+          amount: tx.amount,
+          method: tx.method,
+          status: tx.status,
+          createdAt: tx.createdAt,
+          confirmedAt: tx.confirmedAt,
+        }))
+      } catch (err: any) {
+        request.log.error(err)
+        return reply.status(500).send({
+          error: "Internal server error",
         })
       }
     }

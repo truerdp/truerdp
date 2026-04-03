@@ -1,0 +1,22 @@
+"use client"
+
+import { useQuery } from "@tanstack/react-query"
+import { api } from "@/lib/api"
+import { queryKeys } from "@/lib/query-keys"
+
+export interface Transaction {
+  id: number
+  planId: number
+  amount: number
+  method: "upi" | "usdt_trc20"
+  status: "pending" | "confirmed" | "failed"
+  createdAt: string
+  confirmedAt: string | null
+}
+
+export function useTransactions() {
+  return useQuery<Transaction[]>({
+    queryKey: queryKeys.transactions(),
+    queryFn: () => api("/transactions"),
+  })
+}

@@ -1,12 +1,12 @@
 "use client"
 
 import { useParams } from "next/navigation"
-import { useQuery } from "@tanstack/react-query"
 import { format } from "date-fns"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { Alert02Icon } from "@hugeicons/core-free-icons"
-import { api } from "@/lib/api"
 import CredentialsDialog from "@/components/credentials-dialog"
+import { useInstance, type InstanceDetailsData } from "@/hooks/use-instance"
+import { useInstanceTransactions } from "@/hooks/use-instance-transactions"
 import {
   Alert,
   AlertDescription,
@@ -24,28 +24,6 @@ import {
 import { Separator } from "@workspace/ui/components/separator"
 import { Skeleton } from "@workspace/ui/components/skeleton"
 import RenewButton from "@/components/renew-button"
-
-interface InstanceDetailsData {
-  id: number
-  status:
-    | "pending"
-    | "provisioning"
-    | "active"
-    | "expired"
-    | "termination_pending"
-    | "terminated"
-  ipAddress: string | null
-  username: string | null
-  startDate: string | null
-  expiryDate: string | null
-}
-
-interface InstanceTransaction {
-  id: number
-  status: "pending" | "confirmed" | "failed"
-  amount: number
-  createdAt: string
-}
 
 interface DetailItemProps {
   label: string
@@ -116,16 +94,10 @@ function InstanceDetailsSkeleton() {
 
 export default function InstanceDetails() {
   const { id } = useParams()
+  const instanceId = String(id)
 
-  const { data, isLoading, error } = useQuery<InstanceDetailsData>({
-    queryKey: ["instance", id],
-    queryFn: () => api(`/instances/${id}`),
-  })
-
-  const { data: transactions = [] } = useQuery<InstanceTransaction[]>({
-    queryKey: ["instance-transactions", id],
-    queryFn: () => api(`/instances/${id}/transactions`),
-  })
+  const { data, isLoading, error } = useInstance(instanceId)
+  const { data: transactions = [] } = useInstanceTransactions(instanceId)
 
   const hasPendingRenewal = transactions?.some((tx) => tx.status === "pending")
 
