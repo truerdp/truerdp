@@ -17,6 +17,12 @@ IMPORTANT RULES:
 - Use Tailwind classes only (no CSS files)
 - Use shadcn skills and mcp wherever required
 - Use shadcn blocks to save effort
+- Use the local `hugeicons` skill when choosing or searching for icons
+- Use Hugeicons instead of raw SVGs. The packages are already installed in this monorepo.
+- Follow the existing icon pattern:
+  - import `HugeiconsIcon` from `@hugeicons/react`
+  - import icons from `@hugeicons/core-free-icons`
+
 - Keep components clean, reusable, and minimal
 
 General UI rules:
