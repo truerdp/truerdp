@@ -184,6 +184,9 @@ importers:
       '@hugeicons/react':
         specifier: ^1.1.6
         version: 1.1.6(react@19.2.4)
+      '@tanstack/react-query':
+        specifier: ^5.96.1
+        version: 5.96.1(react@19.2.4)
       '@workspace/ui':
         specifier: workspace:*
         version: link:../../packages/ui
@@ -423,8 +426,8 @@ importers:
         specifier: 2.15.4
         version: 2.15.4(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       shadcn:
-        specifier: ^4.0.6
-        version: 4.0.6(@types/node@25.2.3)(typescript@5.9.3)
+        specifier: ^4.1.2
+        version: 4.1.2(@types/node@25.2.3)(typescript@5.9.3)
       sonner:
         specifier: ^2.0.7
         version: 2.0.7(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
@@ -477,10 +480,6 @@ packages:
   '@alloc/quick-lru@5.2.0':
     resolution: {integrity: sha512-UrcABB+4bUrFABwbluTIBErXwvbsU/V7TZWfmbgJfbkwiBuziS9gxdODUyuiecfdGQ85jglMW6juS3+z5TsKLw==}
     engines: {node: '>=10'}
-
-  '@antfu/ni@25.0.0':
-    resolution: {integrity: sha512-9q/yCljni37pkMr4sPrI3G4jqdIk074+iukc5aFJl7kmDCCsiJrbZ6zKxnES1Gwg+i9RcDZwvktl23puGslmvA==}
-    hasBin: true
 
   '@babel/code-frame@7.29.0':
     resolution: {integrity: sha512-9NhCeYjq9+3uxgdtp20LSiJXJvN0FeCtNGpJxuMFZ1Kv3cWUNb6DOhJwUvcVCzKGR66cw4njwM6hrJLqgOwbcw==}
@@ -1958,6 +1957,14 @@ packages:
   '@tailwindcss/postcss@4.1.18':
     resolution: {integrity: sha512-Ce0GFnzAOuPyfV5SxjXGn0CubwGcuDB0zcdaPuCSzAa/2vII24JTkH+I6jcbXLb1ctjZMZZI6OjDaLPJQL1S0g==}
 
+  '@tanstack/query-core@5.96.1':
+    resolution: {integrity: sha512-u1yBgtavSy+N8wgtW3PiER6UpxcplMje65yXnnVgiHTqiMwLlxiw4WvQDrXyn+UD6lnn8kHaxmerJUzQcV/MMg==}
+
+  '@tanstack/react-query@5.96.1':
+    resolution: {integrity: sha512-2X7KYK5KKWUKGeWCVcqxXAkYefJtrKB7tSKWgeG++b0H6BRHxQaLSSi8AxcgjmUnnosHuh9WsFZqvE16P1WCzA==}
+    peerDependencies:
+      react: ^18 || ^19
+
   '@tootallnate/quickjs-emscripten@0.23.0':
     resolution: {integrity: sha512-C5Mc6rdnsaJDjO3UpGW/CQTHtCKaYlScZTly4JIu97Jxo/odCiH0ITnDXSJPTOrEKk/ycSZ0AOgTmkDtkOsvIA==}
 
@@ -2178,10 +2185,6 @@ packages:
   ansi-styles@4.3.0:
     resolution: {integrity: sha512-zbB9rCJAT1rbjiVDb2hqKFHNYLxgtk8NURxZ3IZwD3F6NtxbXZQCnnSi1Lkx+IDohdPlFp222wVALIheZJQSEg==}
     engines: {node: '>=8'}
-
-  ansis@4.2.0:
-    resolution: {integrity: sha512-HqZ5rWlFjGiV0tDm3UxxgNRqsOTniqoKZu0pIAfh7TZQMGuZK+hH0drySty0si0QXj1ieop4+SkSfPZBPPkHig==}
-    engines: {node: '>=14'}
 
   argparse@2.0.1:
     resolution: {integrity: sha512-8+9WqebbFzpX9OR+Wa6O29asIogeRMzcGtAINdpMHHyAg10f05aSFVBbcEqGf/PXw1EjAZ+q2/bEBg3DvurK3Q==}
@@ -3180,9 +3183,6 @@ packages:
   fuzzysort@3.1.0:
     resolution: {integrity: sha512-sR9BNCjBg6LNgwvxlBd0sBABvQitkLzoVY9MYYROQVX/FvfJ4Mai9LsGhDgd8qYdds0bY77VzYd5iuB+v5rwQQ==}
 
-  fzf@0.5.2:
-    resolution: {integrity: sha512-Tt4kuxLXFKHy8KT40zwsUPUkg1CrsgY25FxA2U/j/0WgEDCk3ddc/zLTCCcbSHX9FcKtLuVaDGtGE/STWC+j3Q==}
-
   gel@2.2.0:
     resolution: {integrity: sha512-q0ma7z2swmoamHQusey8ayo8+ilVdzDt4WTxSPzq/yRqvucWRfymRVMvNgmSC0XK7eNjjEZEcplxpgaNojKdmQ==}
     engines: {node: '>= 18.0.0'}
@@ -4113,9 +4113,6 @@ packages:
     resolution: {integrity: sha512-5NPgf87AT2STgwa2ntRMr45jTKrYBGkVU36yT0ig/n/GMAa3oPqhZfIQ2kMEimReg0+t9kZViDVZ83qfVUlckg==}
     engines: {node: '>= 14'}
 
-  package-manager-detector@1.6.0:
-    resolution: {integrity: sha512-61A5ThoTiDG/C8s8UMZwSorAGwMJ0ERVGj2OjoW5pAalsNOg15+iQiPzrLJ4jhZ1HJzmC2PIHT2oEiH3R5fzNA==}
-
   param-case@2.1.1:
     resolution: {integrity: sha512-eQE845L6ot89sk2N8liD8HAuH4ca6Vvr7VWAWwt7+kvvG5aBcPmmphQ68JsEG2qa9n1TykS2DLeMt363AAH8/w==}
 
@@ -4648,8 +4645,8 @@ packages:
   setprototypeof@1.2.0:
     resolution: {integrity: sha512-E5LDX7Wrp85Kil5bhZv46j8jOeboKq5JMmYM3gVGdGH8xFpPWXUMsNrlODCrkoxMEeNi/XZIwuRvY4XNwYMJpw==}
 
-  shadcn@4.0.6:
-    resolution: {integrity: sha512-20M3ZsQPas+0QLVzrfrya2V3nryQiIPQsnJaOJg+Ylk24GtJa1vXGOLB7xwKuvWoMzM0YSLuCaoibW/NuHdDyA==}
+  shadcn@4.1.2:
+    resolution: {integrity: sha512-qNQcCavkbYsgBj+X09tF2bTcwRd8abR880bsFkDU2kMqceMCLAm5c+cLg7kWDhfh1H9g08knpQ5ZEf6y/co16g==}
     hasBin: true
 
   sharp@0.34.5:
@@ -4874,10 +4871,6 @@ packages:
 
   tinycolor2@1.6.0:
     resolution: {integrity: sha512-XPaBkWQJdsf3pLKJV9p4qN/S+fm2Oj8AIPo1BTUhg5oxkvm9+SVEGFdhyOz7tTdUTfvxMiAs4sp6/eZO2Ew+pw==}
-
-  tinyexec@1.0.4:
-    resolution: {integrity: sha512-u9r3uZC0bdpGOXtlxUIdwf9pkmvhqJdrVCH9fapQtgy/OeTTMZ1nqH7agtvEfmGui6e1XxjcdrlxvxJvc3sMqw==}
-    engines: {node: '>=18'}
 
   tinyglobby@0.2.15:
     resolution: {integrity: sha512-j2Zq4NyQYG5XMST4cbs02Ak8iJUdxRM0XI5QyxXuZOzKOINmWurp3smXu3y5wDcJrptwpSjgXHzIQxR0omXljQ==}
@@ -5224,13 +5217,6 @@ packages:
 snapshots:
 
   '@alloc/quick-lru@5.2.0': {}
-
-  '@antfu/ni@25.0.0':
-    dependencies:
-      ansis: 4.2.0
-      fzf: 0.5.2
-      package-manager-detector: 1.6.0
-      tinyexec: 1.0.4
 
   '@babel/code-frame@7.29.0':
     dependencies:
@@ -6431,6 +6417,13 @@ snapshots:
       postcss: 8.5.6
       tailwindcss: 4.1.18
 
+  '@tanstack/query-core@5.96.1': {}
+
+  '@tanstack/react-query@5.96.1(react@19.2.4)':
+    dependencies:
+      '@tanstack/query-core': 5.96.1
+      react: 19.2.4
+
   '@tootallnate/quickjs-emscripten@0.23.0': {}
 
   '@ts-morph/common@0.27.0':
@@ -6710,8 +6703,6 @@ snapshots:
   ansi-styles@4.3.0:
     dependencies:
       color-convert: 2.0.1
-
-  ansis@4.2.0: {}
 
   argparse@2.0.1: {}
 
@@ -7926,8 +7917,6 @@ snapshots:
 
   fuzzysort@3.1.0: {}
 
-  fzf@0.5.2: {}
-
   gel@2.2.0:
     dependencies:
       '@petamoriken/float16': 3.9.3
@@ -8854,8 +8843,6 @@ snapshots:
       degenerator: 5.0.1
       netmask: 2.0.2
 
-  package-manager-detector@1.6.0: {}
-
   param-case@2.1.1:
     dependencies:
       no-case: 2.3.2
@@ -9360,9 +9347,8 @@ snapshots:
 
   setprototypeof@1.2.0: {}
 
-  shadcn@4.0.6(@types/node@25.2.3)(typescript@5.9.3):
+  shadcn@4.1.2(@types/node@25.2.3)(typescript@5.9.3):
     dependencies:
-      '@antfu/ni': 25.0.0
       '@babel/core': 7.29.0
       '@babel/parser': 7.29.0
       '@babel/plugin-transform-typescript': 7.28.6(@babel/core@7.29.0)
@@ -9660,8 +9646,6 @@ snapshots:
   tiny-invariant@1.3.3: {}
 
   tinycolor2@1.6.0: {}
-
-  tinyexec@1.0.4: {}
 
   tinyglobby@0.2.15:
     dependencies:

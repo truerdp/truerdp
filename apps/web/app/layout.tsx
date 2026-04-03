@@ -1,4 +1,4 @@
-import { Roboto_Slab, Geist_Mono, Roboto } from "next/font/google"
+import { Roboto_Slab, Geist_Mono, Roboto, Geist } from "next/font/google"
 
 import "@workspace/ui/globals.css"
 import "./globals.css"
@@ -6,7 +6,7 @@ import { TooltipProvider } from "@workspace/ui/components/tooltip"
 import { ThemeProvider } from "@/components/theme-provider"
 import { cn } from "@workspace/ui/lib/utils"
 
-const roboto = Roboto({ subsets: ["latin"], variable: "--font-sans" })
+const geist = Geist({subsets:['latin'],variable:'--font-sans'})
 
 const robotoSlab = Roboto_Slab({
   subsets: ["latin"],
@@ -33,7 +33,7 @@ export default function RootLayout({
         "font-slab",
         robotoSlab.variable,
         "font-sans",
-        roboto.variable
+        geist.variable
       )}
     >
       <body>

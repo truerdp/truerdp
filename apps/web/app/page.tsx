@@ -4,6 +4,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@workspace/ui/components/tooltip"
+import { Switch } from "@workspace/ui/components/switch"
 
 export default function Page() {
   return (
@@ -17,8 +18,9 @@ export default function Page() {
             <TooltipTrigger render={<Button className="mt-2">Button</Button>} />
             <TooltipContent>Click to get started</TooltipContent>
           </Tooltip>
+          <Switch />
         </div>
-        <div className="text-muted-foreground font-mono text-xs">
+        <div className="font-mono text-xs text-muted-foreground">
           (Press <kbd>d</kbd> to toggle dark mode)
         </div>
       </div>
