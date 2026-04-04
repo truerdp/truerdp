@@ -107,19 +107,49 @@ export async function transactionRoutes(server: FastifyInstance) {
         const userId = request.user.userId
 
         const txs = await db
-          .select()
+          .select({
+            id: transactions.id,
+            amount: transactions.amount,
+            method: transactions.method,
+            status: transactions.status,
+            createdAt: transactions.createdAt,
+            confirmedAt: transactions.confirmedAt,
+
+            plan: {
+              id: plans.id,
+              name: plans.name,
+              cpu: plans.cpu,
+              ram: plans.ram,
+              storage: plans.storage,
+            },
+
+            instance: {
+              id: instances.id,
+              ipAddress: instances.ipAddress,
+            },
+          })
           .from(transactions)
+          .leftJoin(plans, eq(transactions.planId, plans.id))
+          .leftJoin(instances, eq(transactions.instanceId, instances.id))
           .where(eq(transactions.userId, userId))
           .orderBy(desc(transactions.createdAt))
 
         return txs.map((tx) => ({
           id: tx.id,
-          planId: tx.planId,
           amount: tx.amount,
           method: tx.method,
           status: tx.status,
           createdAt: tx.createdAt,
           confirmedAt: tx.confirmedAt,
+
+          plan: tx.plan,
+
+          instance: tx.instance?.id
+            ? {
+                id: tx.instance.id,
+                ipAddress: tx.instance.ipAddress,
+              }
+            : null,
         }))
       } catch (err: any) {
         request.log.error(err)

@@ -6,12 +6,24 @@ import { queryKeys } from "@/lib/query-keys"
 
 export interface Transaction {
   id: number
-  planId: number
   amount: number
   method: "upi" | "usdt_trc20"
   status: "pending" | "confirmed" | "failed"
   createdAt: string
   confirmedAt: string | null
+
+  plan: {
+    id: number
+    name: string
+    cpu: number
+    ram: number
+    storage: number
+  }
+
+  instance: {
+    id: number
+    ipAddress: string | null
+  } | null
 }
 
 export function useTransactions() {

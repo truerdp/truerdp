@@ -4,6 +4,11 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { api } from "@/lib/api"
 import { queryKeys } from "@/lib/query-keys"
 import { Button } from "@workspace/ui/components/button"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@workspace/ui/components/tooltip"
 
 interface RenewButtonProps {
   instanceId: number
@@ -42,7 +47,7 @@ export default function RenewButton({
     },
   })
 
-  return (
+  const button = (
     <Button
       disabled={mutation.isPending || disabled}
       onClick={() => mutation.mutate()}
@@ -50,4 +55,17 @@ export default function RenewButton({
       {mutation.isPending ? "Processing..." : "Renew"}
     </Button>
   )
+
+  if (disabled && !mutation.isPending) {
+    return (
+      <Tooltip>
+        <TooltipTrigger
+          render={<span className="inline-flex">{button}</span>}
+        />
+        <TooltipContent>Renewal already in progress</TooltipContent>
+      </Tooltip>
+    )
+  }
+
+  return button
 }

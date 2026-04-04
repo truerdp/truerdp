@@ -24,6 +24,8 @@ import {
 import { Separator } from "@workspace/ui/components/separator"
 import { Skeleton } from "@workspace/ui/components/skeleton"
 import RenewButton from "@/components/renew-button"
+import { cn } from "@workspace/ui/lib/utils"
+import { formatAmount } from "../../transactions/page"
 
 interface DetailItemProps {
   label: string
@@ -71,6 +73,26 @@ function getStatusVariant(
   }
 }
 
+type BillingStatus = "active" | "renewal_pending" | "expired"
+
+function getBillingStatusVariant(
+  status: BillingStatus
+): "default" | "secondary" | "destructive" | "outline" {
+  switch (status) {
+    case "active":
+      return "default"
+
+    case "renewal_pending":
+      return "outline"
+
+    case "expired":
+      return "destructive"
+
+    default:
+      return "secondary"
+  }
+}
+
 function InstanceDetailsSkeleton() {
   return (
     <Card className="max-w-2xl">
@@ -109,7 +131,15 @@ export default function InstanceDetails() {
 
   const canShowRenew = data?.status === "active" || data?.status === "expired"
   const canRenew = canShowRenew && !hasPendingRenewal
-  const isExpired = data?.expiryDate && new Date(data.expiryDate) < new Date()
+  const isExpired =
+    data?.status === "expired" ||
+    Boolean(data?.expiryDate && new Date(data.expiryDate) < new Date())
+
+  const billingStatus: BillingStatus = hasPendingRenewal
+    ? "renewal_pending"
+    : isExpired
+      ? "expired"
+      : "active"
 
   if (isLoading) {
     return <InstanceDetailsSkeleton />
@@ -129,7 +159,9 @@ export default function InstanceDetails() {
             className="h-4 w-4 text-yellow-700"
           />
           <AlertTitle className="text-sm font-medium">
-            Renewal requested. Awaiting admin confirmation.
+            Renewal requested (#{latestPendingTransaction?.id} •{" "}
+            {formatAmount(latestPendingTransaction?.amount ?? 0)}). Awaiting
+            admin confirmation.
           </AlertTitle>
           {latestPendingTransaction && (
             <AlertDescription className="text-xs text-yellow-800">
@@ -151,15 +183,27 @@ export default function InstanceDetails() {
         </CardHeader>
 
         <CardContent className="flex flex-col gap-4">
-          {/* <DetailItem label="Status" value={data ? data.status : "-"} /> */}
           {data && (
             <div className="flex items-center justify-between">
               <span className="text-sm text-muted-foreground">Status</span>
-              <Badge variant={getStatusVariant(data.status)}>
-                {formatStatus(data.status)}
-              </Badge>
+              <span>
+                <Badge variant={getStatusVariant(data.status)}>
+                  {formatStatus(data.status)}
+                </Badge>
+              </span>
             </div>
           )}
+          <Separator />
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-muted-foreground">
+              Billing Status
+            </span>
+            <span>
+              <Badge variant={getBillingStatusVariant(billingStatus)}>
+                {formatStatus(billingStatus)}
+              </Badge>
+            </span>
+          </div>
           <Separator />
           <DetailItem label="IP Address" value={data?.ipAddress ?? "-"} />
           <Separator />
@@ -172,7 +216,9 @@ export default function InstanceDetails() {
           <Separator />
           <div className="flex items-center justify-between">
             <span className="text-sm text-muted-foreground">Expiry Date</span>
-            <span className={isExpired ? "font-medium text-red-500" : ""}>
+            <span
+              className={cn("font-medium", isExpired ? "text-red-500" : "")}
+            >
               {formatDate(data.expiryDate)}
               {isExpired && " (expired)"}
             </span>

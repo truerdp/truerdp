@@ -39,20 +39,29 @@ This repo already uses Hugeicons across apps and `@workspace/ui`.
 - Import the renderer from `@hugeicons/react`
 - Import icon definitions from `@hugeicons/core-free-icons`
 - Match the existing component pattern instead of hand-rolling SVG markup
+- Prefer supported Hugeicons props over styling everything with `className`
+
+## Hugeicons Rules
+
+- Prefer `size` over Tailwind size classes like `size-4`, `h-5 w-5`, or similar.
+- Prefer `color` over Tailwind text-color classes when you only need icon color.
+- Prefer `strokeWidth` over custom CSS when adjusting icon stroke weight.
+- Use `altIcon` and `showAlt` for toggled or animated icon states before swapping markup manually.
+- Use `className` only when you need animation or non-icon concerns like `animate-spin`, spacing, visibility, or responsive utilities.
 
 ```tsx
 import { HugeiconsIcon } from "@hugeicons/react"
 import { Loading03Icon, ServerStack01Icon } from "@hugeicons/core-free-icons"
 
-<HugeiconsIcon icon={ServerStack01Icon} className="size-5" />
-<HugeiconsIcon icon={Loading03Icon} className="size-4 animate-spin" />
+<HugeiconsIcon icon={ServerStack01Icon} size={20} />
+<HugeiconsIcon icon={Loading03Icon} size={16} strokeWidth={2} className="animate-spin" />
 ```
 
 ## Repo-Specific Guidance
 
 - `packages/ui` already depends on Hugeicons and uses it in shared components.
 - The apps also declare Hugeicons, so app-level components can follow the same imports.
-- Prefer copying an existing pattern from shared UI components when you need sizing, spin states, or muted icon treatment.
+- Prefer copying an existing pattern from shared UI components when you need spin states or muted icon treatment, but favor supported props for size, color, and stroke width.
 - If you need a better icon match, search with the Hugeicons MCP server first instead of guessing names.
 
 ## Useful Local References

@@ -22,6 +22,12 @@ IMPORTANT RULES:
 - Follow the existing icon pattern:
   - import `HugeiconsIcon` from `@hugeicons/react`
   - import icons from `@hugeicons/core-free-icons`
+- Prefer supported Hugeicons props over `className` when possible:
+  - use `size` for icon size
+  - use `color` for icon color
+  - use `strokeWidth` for stroke thickness
+  - use `altIcon` and `showAlt` for stateful icon swaps
+  - keep `className` for animation or layout-only cases
 
 - Keep components clean, reusable, and minimal
 

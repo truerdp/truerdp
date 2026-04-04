@@ -36,7 +36,7 @@ function getStatusVariant(
 ): "default" | "secondary" | "destructive" | "outline" {
   switch (status) {
     case "active":
-      return "default"
+      return "secondary"
     case "pending":
     case "provisioning":
       return "outline"
@@ -109,7 +109,10 @@ export default function InstanceTable({ instances }: InstanceTableProps) {
             <TableCell>
               <Link
                 href={`/dashboard/instances/${instance.id}`}
-                className={buttonVariants({ variant: "outline", size: "sm" })}
+                className={buttonVariants({
+                  variant: "default",
+                  size: "sm",
+                })}
                 aria-label={`View instance ${instance.id}`}
               >
                 View

@@ -18,7 +18,7 @@ export default function Page() {
             <TooltipContent>Click to get started</TooltipContent>
           </Tooltip>
         </div>
-        <div className="text-muted-foreground font-mono text-xs">
+        <div className="font-mono text-xs text-muted-foreground">
           (Press <kbd>d</kbd> to toggle dark mode)
         </div>
       </div>
