@@ -1,7 +1,11 @@
 "use client"
 
 import Link from "next/link"
+import { useSelectedLayoutSegments } from "next/navigation"
+import type { ReactNode } from "react"
+
 import { AppSidebar } from "@/components/app-sidebar"
+import { dashboardPaths } from "@/lib/paths"
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -16,45 +20,50 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@workspace/ui/components/sidebar"
-import { usePathname } from "next/navigation"
-import type { ReactNode } from "react"
 
-function getBreadcrumbLabel(pathname: string) {
-  if (pathname === "/dashboard") {
-    return "Overview"
+function getBreadcrumbState(segments: string[]) {
+  if (segments.length === 0) {
+    return {
+      currentLabel: "Overview",
+      parentLabel: null,
+      parentHref: dashboardPaths.overview,
+    }
   }
 
-  if (pathname === "/dashboard/instances") {
-    return "Instances"
+  if (segments[0] === "instances") {
+    if (segments.length > 1) {
+      return {
+        currentLabel: `Instance #${segments[1]}`,
+        parentLabel: "Instances",
+        parentHref: dashboardPaths.instances,
+      }
+    }
+
+    return {
+      currentLabel: "Instances",
+      parentLabel: null,
+      parentHref: dashboardPaths.overview,
+    }
   }
 
-  if (pathname === "/dashboard/transactions") {
-    return "Transactions"
+  if (segments[0] === "transactions") {
+    return {
+      currentLabel: "Transactions",
+      parentLabel: null,
+      parentHref: dashboardPaths.overview,
+    }
   }
 
-  if (pathname.startsWith("/dashboard/instances/")) {
-    const instanceId = pathname.split("/").pop()
-    return instanceId ? `Instance #${instanceId}` : "Instance Details"
+  return {
+    currentLabel: "Dashboard",
+    parentLabel: null,
+    parentHref: dashboardPaths.overview,
   }
-
-  return "Dashboard"
 }
 
-function getParentLabel(pathname: string) {
-  if (pathname.startsWith("/dashboard/instances/")) {
-    return "Instances"
-  }
-
-  return null
-}
-
-export default function DashboardLayout({ children }: { children: ReactNode }) {
-  const pathname = usePathname()
-  const currentLabel = getBreadcrumbLabel(pathname)
-  const parentLabel = getParentLabel(pathname)
-  const parentHref = pathname.startsWith("/dashboard/instances/")
-    ? "/dashboard/instances"
-    : "/dashboard"
+export default function DashboardShell({ children }: { children: ReactNode }) {
+  const segments = useSelectedLayoutSegments()
+  const { currentLabel, parentLabel, parentHref } = getBreadcrumbState(segments)
 
   return (
     <SidebarProvider>
@@ -69,7 +78,9 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
           <Breadcrumb>
             <BreadcrumbList>
               <BreadcrumbItem className="hidden md:block">
-                <BreadcrumbLink render={<Link href="/dashboard" />}>
+                <BreadcrumbLink
+                  render={<Link href={dashboardPaths.overview} />}
+                >
                   Dashboard
                 </BreadcrumbLink>
               </BreadcrumbItem>

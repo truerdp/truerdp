@@ -12,7 +12,7 @@ import {
   SidebarHeader,
   SidebarRail,
 } from "@workspace/ui/components/sidebar"
-import { usePathname } from "next/navigation"
+import { useSelectedLayoutSegments } from "next/navigation"
 import { HugeiconsIcon } from "@hugeicons/react"
 import {
   LayoutBottomIcon,
@@ -20,6 +20,7 @@ import {
   ComputerTerminalIcon,
   CreditCardIcon,
 } from "@hugeicons/core-free-icons"
+import { dashboardPaths } from "@/lib/paths"
 
 const team = {
   name: "TrueRDP",
@@ -30,17 +31,17 @@ const team = {
 const navMain = [
   {
     title: "Overview",
-    url: "/dashboard",
+    url: dashboardPaths.overview,
     icon: <HugeiconsIcon icon={DashboardSquare01Icon} strokeWidth={2} />,
   },
   {
     title: "Instances",
-    url: "/dashboard/instances",
+    url: dashboardPaths.instances,
     icon: <HugeiconsIcon icon={ComputerTerminalIcon} strokeWidth={2} />,
   },
   {
     title: "Transactions",
-    url: "/dashboard/transactions",
+    url: dashboardPaths.transactions,
     icon: <HugeiconsIcon icon={CreditCardIcon} strokeWidth={2} />,
   },
 ]
@@ -56,7 +57,8 @@ const data = {
 }
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
-  const pathname = usePathname()
+  const segments = useSelectedLayoutSegments()
+  const primarySegment = segments[0]
 
   return (
     <Sidebar collapsible="icon" {...props}>
@@ -68,9 +70,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           items={data.navMain.map((item) => ({
             ...item,
             isActive:
-              pathname === item.url ||
-              (item.url === "/dashboard/instances" &&
-                pathname.startsWith("/dashboard/instances/")),
+              (item.url === dashboardPaths.overview && segments.length === 0) ||
+              (item.url === dashboardPaths.instances &&
+                primarySegment === "instances") ||
+              (item.url === dashboardPaths.transactions &&
+                primarySegment === "transactions"),
           }))}
         />
       </SidebarContent>

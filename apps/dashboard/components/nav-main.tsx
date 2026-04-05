@@ -1,6 +1,7 @@
 "use client"
 
 import type { ReactNode } from "react"
+import type { Route } from "next"
 
 import Link from "next/link"
 import {
@@ -16,7 +17,7 @@ export function NavMain({
 }: {
   items: {
     title: string
-    url: string
+    url: Route
     icon?: ReactNode
     isActive?: boolean
   }[]

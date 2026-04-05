@@ -13,6 +13,7 @@ import {
 import { buttonVariants } from "@workspace/ui/components/button"
 import { Badge } from "@workspace/ui/components/badge"
 import InstancesEmptyState from "@/components/instances-empty-state"
+import { dashboardPaths } from "@/lib/paths"
 
 export interface Instance {
   id: number
@@ -108,7 +109,7 @@ export default function InstanceTable({ instances }: InstanceTableProps) {
             </TableCell>
             <TableCell>
               <Link
-                href={`/dashboard/instances/${instance.id}`}
+                href={dashboardPaths.instanceDetail(instance.id)}
                 className={buttonVariants({
                   variant: "default",
                   size: "sm",

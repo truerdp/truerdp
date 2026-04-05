@@ -21,6 +21,7 @@ import {
   ServerStack01Icon,
 } from "@hugeicons/core-free-icons"
 import Link from "next/link"
+import { dashboardPaths } from "@/lib/paths"
 
 function TransactionsTableSkeleton() {
   return (
@@ -207,7 +208,7 @@ export default function TransactionsPage() {
 
                     {tx.instance ? (
                       <Link
-                        href={`/dashboard/instances/${tx.instance.id}`}
+                        href={dashboardPaths.instanceDetail(tx.instance.id)}
                         className="inline-flex w-fit items-center gap-1.5 text-xs font-medium text-primary hover:underline"
                       >
                         <HugeiconsIcon

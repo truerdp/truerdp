@@ -4,6 +4,7 @@ import "@workspace/ui/globals.css"
 import "./globals.css"
 import { TooltipProvider } from "@workspace/ui/components/tooltip"
 import { ThemeProvider } from "@/components/theme-provider"
+import DashboardShell from "@/components/dashboard-shell"
 import { cn } from "@workspace/ui/lib/utils"
 import { AppProviders } from "./providers"
 
@@ -33,7 +34,9 @@ export default function RootLayout({
       <body>
         <ThemeProvider>
           <TooltipProvider>
-            <AppProviders>{children}</AppProviders>
+            <AppProviders>
+              <DashboardShell>{children}</DashboardShell>
+            </AppProviders>
           </TooltipProvider>
         </ThemeProvider>
       </body>
