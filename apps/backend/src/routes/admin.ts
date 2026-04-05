@@ -1,7 +1,7 @@
 import { FastifyInstance } from "fastify"
 import { db } from "../db.js"
-import { transactions, instances, plans, users } from "../schema.js"
-import { eq } from "drizzle-orm"
+import { transactions, instances, plans, users, servers } from "../schema.js"
+import { asc, eq } from "drizzle-orm"
 import { verifyAuth } from "../middleware/auth.js"
 import { sql } from "drizzle-orm"
 import z from "zod"
@@ -13,7 +13,7 @@ const provisionSchema = z.object({
 })
 
 export async function adminRoutes(server: FastifyInstance) {
-  // Admin route to provision an instance for a transaction
+  // Admin route to confirm a transaction
   server.post(
     "/admin/transactions/:id/confirm",
     { preHandler: verifyAuth },
@@ -221,6 +221,74 @@ export async function adminRoutes(server: FastifyInstance) {
     }
   )
 
+  // Admin route to terminate an instance
+  server.post(
+    "/admin/instances/:id/terminate",
+    { preHandler: verifyAuth },
+    async (request: any, reply) => {
+      try {
+        const instanceId = Number(request.params.id)
+        const user = request.user
+
+        if (user.role !== "admin") {
+          return reply.status(403).send({ error: "Forbidden" })
+        }
+
+        if (Number.isNaN(instanceId)) {
+          return reply.status(400).send({ error: "Invalid instance id" })
+        }
+
+        const result = await db
+          .select()
+          .from(instances)
+          .where(eq(instances.id, instanceId))
+          .limit(1)
+
+        const instance = result[0]
+
+        if (!instance) {
+          return reply.status(404).send({ error: "Instance not found" })
+        }
+
+        if (instance.status === "terminated") {
+          return reply
+            .status(400)
+            .send({ error: "Instance already terminated" })
+        }
+
+        const terminatedAt = new Date()
+
+        await db.transaction(async (tx) => {
+          await tx
+            .update(instances)
+            .set({
+              status: "terminated",
+              terminatedAt,
+            })
+            .where(eq(instances.id, instance.id))
+
+          if (instance.serverId) {
+            await tx
+              .update(servers)
+              .set({
+                status: "available",
+              })
+              .where(eq(servers.id, instance.serverId))
+          }
+        })
+
+        return {
+          message: "Instance terminated successfully",
+        }
+      } catch (err: any) {
+        server.log.error(err)
+        return reply.status(500).send({
+          error: "Internal server error",
+        })
+      }
+    }
+  )
+
   // Admin route to view pending transactions
   server.get(
     "/admin/transactions/pending",
@@ -237,6 +305,59 @@ export async function adminRoutes(server: FastifyInstance) {
           .where(eq(transactions.status, "pending"))
 
         return result
+      } catch (err: any) {
+        server.log.error(err)
+        return reply.status(500).send({
+          error: "Internal server error",
+        })
+      }
+    }
+  )
+
+  // Admin route to view all expired instances
+  server.get(
+    "/admin/instances/expired",
+    { preHandler: verifyAuth },
+    async (request: any, reply) => {
+      try {
+        if (request.user.role !== "admin") {
+          return reply.status(403).send({ error: "Forbidden" })
+        }
+
+        const result = await db
+          .select({
+            id: instances.id,
+            userId: instances.userId,
+            planId: instances.planId,
+            expiryDate: instances.expiryDate,
+            status: instances.status,
+            createdAt: instances.createdAt,
+          })
+          .from(instances)
+          .where(eq(instances.status, "expired"))
+          .orderBy(asc(instances.expiryDate))
+
+        const today = new Date()
+        today.setHours(0, 0, 0, 0)
+
+        return result.map((instance) => {
+          const expiryDate = instance.expiryDate
+            ? new Date(instance.expiryDate)
+            : today
+          expiryDate.setHours(0, 0, 0, 0)
+
+          const daysSinceExpiry = Math.max(
+            0,
+            Math.floor(
+              (today.getTime() - expiryDate.getTime()) / (1000 * 60 * 60 * 24)
+            )
+          )
+
+          return {
+            ...instance,
+            daysSinceExpiry,
+          }
+        })
       } catch (err: any) {
         server.log.error(err)
         return reply.status(500).send({
