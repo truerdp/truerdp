@@ -6,8 +6,16 @@ Truerdp is a `pnpm` + Turborepo monorepo with:
 - one Fastify backend: `backend`
 - shared packages for UI, ESLint config, and TypeScript config
 
-This root README is intentionally concise.
+This root README focuses on the current working development setup.
 Detailed product, domain, lifecycle, backend, and operations rules are maintained in `docs/`.
+
+## Current Status
+
+Current implementation highlights:
+
+- `apps/backend` exposes authentication, transaction, instance, and admin APIs
+- `apps/dashboard` includes an authenticated dashboard with instance listing, instance details, renewal flow, and transaction history
+- `apps/web` and `apps/admin` are still scaffold-level shells and have not yet been brought up to product parity with the dashboard/backend flow
 
 ## Documentation
 
@@ -66,7 +74,14 @@ Workspace members are defined in `pnpm-workspace.yaml`:
 pnpm install
 ```
 
-2. Create backend env file:
+2. Use Node.js `20+` and the workspace `pnpm` version from `packageManager`:
+
+```bash
+node -v
+pnpm -v
+```
+
+3. Create backend env file:
 
 ```bash
 cp apps/backend/.env.example apps/backend/.env
@@ -78,7 +93,7 @@ PowerShell:
 Copy-Item apps/backend/.env.example apps/backend/.env
 ```
 
-3. Start all workspaces:
+4. Start all workspaces:
 
 ```bash
 pnpm dev
@@ -139,6 +154,7 @@ Root commands:
 pnpm dev
 pnpm run dev:frontend
 pnpm run dev:docker
+pnpm run dev:stop
 pnpm build
 pnpm lint
 pnpm format

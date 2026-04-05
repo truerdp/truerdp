@@ -8,7 +8,7 @@ Goals:
 
 - Keep implementation simple
 - Protect critical operations
-- Allow safe delegation (operator role)
+- Leave room for delegated operational roles later
 - Avoid unnecessary complexity
 
 ---
@@ -35,7 +35,7 @@ Authorization: Bearer <token>
 ## Token Strategy
 
 - Use a single JWT (no refresh tokens)
-- Token expiry: 1–3 days
+- Token expiry: 7 days
 
 ### Behavior
 
@@ -82,15 +82,16 @@ admin > operator > user
 
 Capabilities:
 
-- View own instances
-- Initiate purchase
-- View invoices
-- Create and reply to tickets
+- View owned instances
+- Create transactions
+- Renew owned instances
+- View owned transaction history
+- Fetch credentials for active owned instances
 
 Restrictions:
 
 - Cannot access admin routes
-- Cannot modify system state
+- Cannot access other users' data
 
 ---
 
@@ -98,23 +99,16 @@ Restrictions:
 
 Purpose:
 
-- Execute operational tasks without full control
+- Reserved for delegated operational work in the schema and authorization model
 
 Capabilities:
 
-- All user permissions
-- View transactions
-- View instances
-- Start provisioning
-- Reply to tickets
+- Role exists in the database enum and JWT payload shape
 
 Restrictions:
 
-- Cannot confirm payments
-- Cannot assign servers
-- Cannot activate instances
-- Cannot terminate instances
-- Cannot manage users or roles
+- No operator-specific backend routes are currently implemented
+- Current guarded routes effectively distinguish between authenticated users and `admin`
 
 ---
 
@@ -132,22 +126,31 @@ Capabilities:
 
 ---
 
-## Permission Model
+## Current Permission Model
 
 Principle:
 
-- Separate decision from execution
+- Backend enforcement is authoritative
+- Current implementation is simple: authenticated user routes plus explicit `admin` checks on admin routes
 
 The table below defines the **minimum role required**:
 
-| Action             | Minimum Role |
-| ------------------ | ------------ |
-| Confirm payment    | admin        |
-| Assign server      | admin        |
-| Start provisioning | operator     |
-| Activate instance  | admin        |
-| Terminate instance | admin        |
-| Reply to tickets   | operator     |
+| Action                               | Minimum Role |
+| ------------------------------------ | ------------ |
+| Register user                        | public       |
+| Login                                | public       |
+| Create transaction                   | user         |
+| List own transactions                | user         |
+| List own instances                   | user         |
+| View one owned instance              | user         |
+| Fetch owned instance credentials     | user         |
+| Create renewal transaction           | user         |
+| List transactions for owned instance | user         |
+| Confirm pending transaction          | admin        |
+| Provision pending instance           | admin        |
+| View pending transactions            | admin        |
+| View all instances                   | admin        |
+| View stats                           | admin        |
 
 ---
 
@@ -160,11 +163,13 @@ Rules:
 
 Example (hierarchical check):
 
+```ts
 const roles = { user: 1, operator: 2, admin: 3 }
 
 if (roles[user.role] < roles.operator) {
-throw new Error('Forbidden')
+  throw new Error("Forbidden")
 }
+```
 
 ---
 
@@ -178,6 +183,7 @@ throw new Error('Forbidden')
 ### JWT
 
 - Signed using secret key
+- Includes `userId` and `role`
 - Secret must be stored in environment variables
 - Token must have expiration
 

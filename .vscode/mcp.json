@@ -1,0 +1,16 @@
+{
+  "mcpServers": {
+    "hugeicons": {
+      "command": "npx",
+      "args": ["-y", "@hugeicons/mcp-server"]
+    },
+    "mermaid-mcp": {
+      "url": "https://mcp.mermaid.ai/mcp",
+      "type": "http"
+    },
+    "next-devtools": {
+      "command": "npx",
+      "args": ["-y", "next-devtools-mcp@latest"]
+    }
+  }
+}

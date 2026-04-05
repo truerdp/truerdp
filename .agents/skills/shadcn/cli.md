@@ -139,14 +139,14 @@ Outputs resolved URLs for component documentation, examples, and API references.
 Example output for `npx shadcn@latest docs input button`:
 
 ```
-base  radix
+base  base
 
 input
-  docs      https://ui.shadcn.com/docs/components/radix/input
+  docs      https://ui.shadcn.com/docs/components/base/input
   examples  https://raw.githubusercontent.com/.../examples/input-example.tsx
 
 button
-  docs      https://ui.shadcn.com/docs/components/radix/button
+  docs      https://ui.shadcn.com/docs/components/base/button
   examples  https://raw.githubusercontent.com/.../examples/button-example.tsx
 ```
 
@@ -242,7 +242,7 @@ Three ways to specify a preset via `--preset`:
 
 1. **Named:** `--preset base-nova` or `--preset radix-nova`
 2. **Code:** `--preset a2r6bw` (base62 string, starts with lowercase `a`)
-3. **URL:** `--preset "https://ui.shadcn.com/init?base=radix&style=nova&..."`
+3. **URL:** `--preset "https://ui.shadcn.com/init?base=base&style=nova&..."`
 
 > **IMPORTANT:** Never try to decode, fetch, or resolve preset codes manually. Preset codes are opaque — pass them directly to `npx shadcn@latest init --preset <code>` and let the CLI handle resolution.
 
