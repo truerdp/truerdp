@@ -1,9 +1,13 @@
-export const api = async (url: string, options?: RequestInit) => {
-  const token = localStorage.getItem("token")
+export const api = async <T = unknown>(url: string, options?: RequestInit) => {
+  const token =
+    typeof window !== "undefined" ? localStorage.getItem("token") : null
   const method = options?.method?.toUpperCase()
   const body = method === "POST" && options?.body == null ? "{}" : options?.body
+  const apiBaseUrl =
+    (globalThis as { process?: { env?: Record<string, string | undefined> } })
+      .process?.env?.NEXT_PUBLIC_API_URL ?? ""
 
-  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}${url}`, {
+  const res = await fetch(`${apiBaseUrl}${url}`, {
     ...options,
     headers: {
       "Content-Type": "application/json",
@@ -37,5 +41,5 @@ export const api = async (url: string, options?: RequestInit) => {
     throw new Error(errorMessage)
   }
 
-  return res.json()
+  return (await res.json()) as T
 }

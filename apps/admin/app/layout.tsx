@@ -4,7 +4,9 @@ import "@workspace/ui/globals.css"
 import "./globals.css"
 import { TooltipProvider } from "@workspace/ui/components/tooltip"
 import { ThemeProvider } from "@/components/theme-provider"
+import AdminShell from "@/components/admin-shell"
 import { cn } from "@workspace/ui/lib/utils"
+import { AppProviders } from "./providers"
 
 const geist = Geist({ subsets: ["latin"], variable: "--font-sans" })
 
@@ -31,7 +33,11 @@ export default function RootLayout({
     >
       <body>
         <ThemeProvider>
-          <TooltipProvider>{children}</TooltipProvider>
+          <TooltipProvider>
+            <AppProviders>
+              <AdminShell>{children}</AdminShell>
+            </AppProviders>
+          </TooltipProvider>
         </ThemeProvider>
       </body>
     </html>

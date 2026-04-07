@@ -1,7 +1,7 @@
 "use client"
 
 import { useMutation, useQueryClient } from "@tanstack/react-query"
-import { api } from "@/lib/api"
+import { api } from "@workspace/api"
 import { queryKeys } from "@/lib/query-keys"
 import { Button } from "@workspace/ui/components/button"
 import {
