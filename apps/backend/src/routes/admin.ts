@@ -1,10 +1,23 @@
 import { FastifyInstance } from "fastify"
 import { db } from "../db.js"
-import { transactions, instances, plans, users, servers } from "../schema.js"
-import { asc, eq } from "drizzle-orm"
+import {
+  transactions,
+  instances,
+  plans,
+  users,
+  servers,
+  invoices,
+  orders,
+} from "../schema.js"
+import { and, asc, desc, eq, gte, lt, ne, or } from "drizzle-orm"
 import { verifyAuth } from "../middleware/auth.js"
 import { sql } from "drizzle-orm"
 import z from "zod"
+import {
+  BillingError,
+  confirmPendingTransaction,
+  listPendingTransactions,
+} from "../services/billing.js"
 
 const provisionSchema = z.object({
   ipAddress: z.string(),
@@ -12,8 +25,11 @@ const provisionSchema = z.object({
   password: z.string(),
 })
 
+const extendInstanceSchema = z.object({
+  days: z.number().int().positive(),
+})
+
 export async function adminRoutes(server: FastifyInstance) {
-  // Admin route to confirm a transaction
   server.post(
     "/admin/transactions/:id/confirm",
     { preHandler: verifyAuth },
@@ -22,121 +38,24 @@ export async function adminRoutes(server: FastifyInstance) {
         const transactionId = Number(request.params.id)
         const user = request.user
 
-        // ✅ Admin check
         if (user.role !== "admin") {
           return reply.status(403).send({ error: "Forbidden" })
         }
 
-        // ✅ Get transaction
-        const txResult = await db
-          .select()
-          .from(transactions)
-          .where(eq(transactions.id, transactionId))
-          .limit(1)
-
-        const tx = txResult[0]
-
-        if (!tx) {
-          return reply.status(404).send({ error: "Transaction not found" })
+        if (Number.isNaN(transactionId)) {
+          return reply.status(400).send({ error: "Invalid transaction id" })
         }
 
-        if (tx.status !== "pending") {
-          return reply.status(400).send({
-            error: "Already processed",
-          })
-        }
-
-        // ✅ Get plan
-        const planResult = await db
-          .select()
-          .from(plans)
-          .where(eq(plans.id, tx.planId))
-          .limit(1)
-
-        const plan = planResult[0]
-
-        if (!plan) {
-          return reply.status(400).send({ error: "Invalid plan" })
-        }
-
-        const now = new Date()
-
-        let instance = null
-
-        // ===============================
-        // 🔵 RENEWAL FLOW
-        // ===============================
-        if (tx.instanceId) {
-          const instanceResult = await db
-            .select()
-            .from(instances)
-            .where(eq(instances.id, tx.instanceId))
-            .limit(1)
-
-          const existingInstance = instanceResult[0]
-
-          if (!existingInstance) {
-            return reply.status(404).send({ error: "Instance not found" })
-          }
-
-          // 🧠 Expiry logic
-          const baseDate =
-            existingInstance.expiryDate && existingInstance.expiryDate > now
-              ? existingInstance.expiryDate
-              : now
-
-          const newExpiry = new Date(baseDate)
-          newExpiry.setDate(baseDate.getDate() + plan.durationDays)
-
-          // ✅ Update instance
-          await db
-            .update(instances)
-            .set({
-              expiryDate: newExpiry,
-              status: "active",
-            })
-            .where(eq(instances.id, existingInstance.id))
-
-          instance = {
-            ...existingInstance,
-            expiryDate: newExpiry,
-            status: "active",
-          }
-        }
-
-        // ===============================
-        // 🟢 NEW PURCHASE FLOW
-        // ===============================
-        else {
-          const instanceResult = await db
-            .insert(instances)
-            .values({
-              userId: tx.userId,
-              planId: plan.id,
-              status: "pending",
-            })
-            .returning()
-
-          instance = instanceResult[0]
-        }
-
-        // ✅ Update transaction
-        await db
-          .update(transactions)
-          .set({
-            status: "confirmed",
-            confirmedAt: new Date(),
-          })
-          .where(eq(transactions.id, tx.id))
-
-        return {
-          message: tx.instanceId
-            ? "Renewal successful. Instance extended."
-            : "Payment confirmed. Instance pending provisioning.",
-          instance,
-        }
+        return await confirmPendingTransaction(transactionId)
       } catch (err: any) {
         server.log.error(err)
+
+        if (err instanceof BillingError) {
+          return reply.status(err.statusCode).send({
+            error: err.message,
+          })
+        }
+
         return reply.status(500).send({
           error: "Internal server error",
         })
@@ -196,18 +115,41 @@ export async function adminRoutes(server: FastifyInstance) {
         const expiry = new Date()
         expiry.setDate(now.getDate() + plan.durationDays)
 
-        // ✅ Update instance
-        await db
-          .update(instances)
-          .set({
-            status: "active",
-            ipAddress: body.ipAddress,
-            username: body.username,
-            password: body.password,
-            startDate: now,
-            expiryDate: expiry,
-          })
-          .where(eq(instances.id, instance.id))
+        await db.transaction(async (tx) => {
+          await tx
+            .update(instances)
+            .set({
+              status: "active",
+              ipAddress: body.ipAddress,
+              username: body.username,
+              password: body.password,
+              startDate: now,
+              expiryDate: expiry,
+            })
+            .where(eq(instances.id, instance.id))
+
+          const linkedOrder = await tx
+            .select({
+              orderId: orders.id,
+            })
+            .from(transactions)
+            .innerJoin(invoices, eq(transactions.invoiceId, invoices.id))
+            .innerJoin(orders, eq(invoices.orderId, orders.id))
+            .where(
+              sql`${transactions.metadata} ->> 'instanceId' = ${String(instance.id)}`
+            )
+            .orderBy(desc(transactions.createdAt))
+            .limit(1)
+
+          if (linkedOrder[0]) {
+            await tx
+              .update(orders)
+              .set({
+                status: "completed",
+              })
+              .where(eq(orders.id, linkedOrder[0].orderId))
+          }
+        })
 
         return {
           message: "Instance provisioned successfully",
@@ -289,6 +231,71 @@ export async function adminRoutes(server: FastifyInstance) {
     }
   )
 
+  // Admin route to extend an instance expiry date
+  server.post(
+    "/admin/instances/:id/extend",
+    { preHandler: verifyAuth },
+    async (request: any, reply) => {
+      try {
+        const instanceId = Number(request.params.id)
+        const user = request.user
+        const body = extendInstanceSchema.parse(request.body)
+
+        if (user.role !== "admin") {
+          return reply.status(403).send({ error: "Forbidden" })
+        }
+
+        if (Number.isNaN(instanceId)) {
+          return reply.status(400).send({ error: "Invalid instance id" })
+        }
+
+        const result = await db
+          .select()
+          .from(instances)
+          .where(eq(instances.id, instanceId))
+          .limit(1)
+
+        const instance = result[0]
+
+        if (!instance) {
+          return reply.status(404).send({ error: "Instance not found" })
+        }
+
+        if (instance.status === "terminated") {
+          return reply
+            .status(400)
+            .send({ error: "Cannot extend a terminated instance" })
+        }
+
+        if (!instance.expiryDate) {
+          return reply
+            .status(400)
+            .send({ error: "Instance expiry date not set" })
+        }
+
+        const newExpiryDate = new Date(instance.expiryDate)
+        newExpiryDate.setDate(newExpiryDate.getDate() + body.days)
+
+        await db
+          .update(instances)
+          .set({
+            expiryDate: newExpiryDate,
+          })
+          .where(eq(instances.id, instance.id))
+
+        return {
+          message: "Instance extended successfully",
+          newExpiryDate,
+        }
+      } catch (err: any) {
+        server.log.error(err)
+        return reply.status(400).send({
+          error: err.message || "Invalid request",
+        })
+      }
+    }
+  )
+
   // Admin route to view pending transactions
   server.get(
     "/admin/transactions/pending",
@@ -299,12 +306,7 @@ export async function adminRoutes(server: FastifyInstance) {
           return reply.status(403).send({ error: "Forbidden" })
         }
 
-        const result = await db
-          .select()
-          .from(transactions)
-          .where(eq(transactions.status, "pending"))
-
-        return result
+        return await listPendingTransactions()
       } catch (err: any) {
         server.log.error(err)
         return reply.status(500).send({
@@ -324,6 +326,9 @@ export async function adminRoutes(server: FastifyInstance) {
           return reply.status(403).send({ error: "Forbidden" })
         }
 
+        const today = new Date()
+        today.setHours(0, 0, 0, 0)
+
         const result = await db
           .select({
             id: instances.id,
@@ -334,11 +339,16 @@ export async function adminRoutes(server: FastifyInstance) {
             createdAt: instances.createdAt,
           })
           .from(instances)
-          .where(eq(instances.status, "expired"))
+          .where(
+            and(
+              ne(instances.status, "terminated"),
+              or(
+                eq(instances.status, "expired"),
+                lt(instances.expiryDate, today)
+              )
+            )
+          )
           .orderBy(asc(instances.expiryDate))
-
-        const today = new Date()
-        today.setHours(0, 0, 0, 0)
 
         return result.map((instance) => {
           const expiryDate = instance.expiryDate
@@ -355,7 +365,70 @@ export async function adminRoutes(server: FastifyInstance) {
 
           return {
             ...instance,
+            status: "expired" as const,
             daysSinceExpiry,
+          }
+        })
+      } catch (err: any) {
+        server.log.error(err)
+        return reply.status(500).send({
+          error: "Internal server error",
+        })
+      }
+    }
+  )
+
+  // Admin route to view active instances expiring soon
+  server.get(
+    "/admin/instances/expiring-soon",
+    { preHandler: verifyAuth },
+    async (request: any, reply) => {
+      try {
+        if (request.user.role !== "admin") {
+          return reply.status(403).send({ error: "Forbidden" })
+        }
+
+        const today = new Date()
+        today.setHours(0, 0, 0, 0)
+
+        const threeDaysFromToday = new Date(today)
+        threeDaysFromToday.setDate(today.getDate() + 3)
+
+        const result = await db
+          .select({
+            id: instances.id,
+            userId: instances.userId,
+            planId: instances.planId,
+            expiryDate: instances.expiryDate,
+            status: instances.status,
+            createdAt: instances.createdAt,
+          })
+          .from(instances)
+          .where(
+            and(
+              eq(instances.status, "active"),
+              gte(instances.expiryDate, today),
+              lt(instances.expiryDate, threeDaysFromToday)
+            )
+          )
+          .orderBy(asc(instances.expiryDate))
+
+        return result.map((instance) => {
+          const expiryDate = instance.expiryDate
+            ? new Date(instance.expiryDate)
+            : today
+          expiryDate.setHours(0, 0, 0, 0)
+
+          const daysUntilExpiry = Math.max(
+            0,
+            Math.floor(
+              (expiryDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
+            )
+          )
+
+          return {
+            ...instance,
+            daysUntilExpiry,
           }
         })
       } catch (err: any) {
@@ -415,9 +488,9 @@ export async function adminRoutes(server: FastifyInstance) {
           .from(transactions)
 
         const totalRevenue = await db
-          .select({ sum: sql<number>`coalesce(sum(amount), 0)` })
-          .from(transactions)
-          .where(eq(transactions.status, "confirmed"))
+          .select({ sum: sql<number>`coalesce(sum(${invoices.totalAmount}), 0)` })
+          .from(invoices)
+          .where(eq(invoices.status, "paid"))
 
         return {
           users: totalUsers[0]?.count ?? 0,

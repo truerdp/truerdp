@@ -2,6 +2,10 @@
 
 This folder contains project documentation.
 
+The current source of truth assumes invoice-first billing:
+
+`user -> order -> invoice -> transaction -> instance`
+
 ## Index
 
 ## Core

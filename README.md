@@ -13,8 +13,9 @@ Detailed product, domain, lifecycle, backend, and operations rules are maintaine
 
 Current implementation highlights:
 
-- `apps/backend` exposes authentication, transaction, instance, and admin APIs
-- `apps/dashboard` includes an authenticated dashboard with instance listing, instance details, renewal flow, and transaction history
+- `apps/backend` exposes authentication, billing, instance, and admin APIs
+- billing follows `user -> order -> invoice -> transaction -> instance`
+- `apps/dashboard` includes an authenticated dashboard with instance listing, instance details, renewal flow, and invoice-backed transaction history
 - `apps/web` and `apps/admin` are still scaffold-level shells and have not yet been brought up to product parity with the dashboard/backend flow
 
 ## Documentation
@@ -176,5 +177,21 @@ Backend database workflows:
 pnpm --filter backend db:generate
 pnpm --filter backend db:migrate
 pnpm --filter backend db:push
+pnpm --filter backend db:seed
 pnpm --filter backend db:studio
 ```
+
+## Local DB Reset
+
+When the schema baseline changes and you intentionally want a clean local database:
+
+```bash
+psql postgresql://postgres:postgres@localhost:5432/truerdp -c "DROP SCHEMA IF EXISTS public CASCADE; CREATE SCHEMA public; DROP SCHEMA IF EXISTS drizzle CASCADE; CREATE SCHEMA drizzle;"
+pnpm --filter backend db:migrate
+pnpm --filter backend db:seed
+```
+
+Seeded local credentials:
+
+- Admin: `admin@truerdp.local` / `password123`
+- User: `user@truerdp.local` / `password123`

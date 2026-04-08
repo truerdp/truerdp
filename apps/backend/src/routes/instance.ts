@@ -1,9 +1,20 @@
 import { FastifyInstance } from "fastify"
+import { z } from "zod"
 import { db } from "../db.js"
-import { eq, desc } from "drizzle-orm"
+import { eq } from "drizzle-orm"
 import { verifyAuth } from "../middleware/auth.js"
-import { transactions, instances } from "../schema.js"
-import { calculatePrice } from "../services/pricing.js"
+import { instances } from "../schema.js"
+import {
+  BillingError,
+  createBillingTransaction,
+  findPendingTransactionForInstance,
+  listInstanceTransactions,
+  supportedPaymentMethodSchema,
+} from "../services/billing.js"
+
+const renewInstanceSchema = z.object({
+  method: supportedPaymentMethodSchema.optional(),
+})
 
 export async function instanceRoutes(server: FastifyInstance) {
   // Route for users to view their provisioned instances
@@ -147,8 +158,8 @@ export async function instanceRoutes(server: FastifyInstance) {
       try {
         const instanceId = Number(request.params.id)
         const userId = request.user.userId
+        const body = renewInstanceSchema.parse(request.body ?? {})
 
-        // ✅ Get instance
         const result = await db
           .select()
           .from(instances)
@@ -165,26 +176,47 @@ export async function instanceRoutes(server: FastifyInstance) {
           return reply.status(403).send({ error: "Forbidden" })
         }
 
-        const amount = await calculatePrice(userId, instance.planId)
+        const isExpired =
+          instance.status === "expired" ||
+          (instance.expiryDate != null && instance.expiryDate < new Date())
 
-        // ✅ Create renewal transaction
-        const tx = await db
-          .insert(transactions)
-          .values({
-            userId,
-            planId: instance.planId,
-            instanceId: instance.id, // 👈 ADD THIS LINE
-            amount, // ✅ correct now
-            method: "upi", // temporary
+        if (!["active", "expired"].includes(instance.status) && !isExpired) {
+          return reply.status(400).send({
+            error: "Instance is not eligible for renewal",
           })
-          .returning()
+        }
+
+        const pendingTransaction = await findPendingTransactionForInstance(
+          userId,
+          instanceId
+        )
+
+        if (pendingTransaction) {
+          return reply.status(400).send({
+            error: "Pending transaction already exists",
+          })
+        }
+
+        const transaction = await createBillingTransaction({
+          userId,
+          planId: instance.planId,
+          method: body.method ?? "upi",
+          instanceId: instance.id,
+        })
 
         return {
           message: "Renewal initiated",
-          transaction: tx[0],
+          transaction,
         }
       } catch (err: any) {
         server.log.error(err)
+
+        if (err instanceof BillingError) {
+          return reply.status(err.statusCode).send({
+            error: err.message,
+          })
+        }
+
         return reply.status(500).send({
           error: "Internal server error",
         })
@@ -219,18 +251,16 @@ export async function instanceRoutes(server: FastifyInstance) {
           return reply.status(403).send({ error: "Forbidden" })
         }
 
-        // ✅ Get transactions linked to this instance
-        const txs = await db
-          .select()
-          .from(transactions)
-          .where(eq(transactions.instanceId, instanceId))
-          .orderBy(desc(transactions.createdAt))
+        const txs = await listInstanceTransactions(userId, instanceId)
 
         return txs.map((tx) => ({
           id: tx.id,
           status: tx.status,
           amount: tx.amount,
           createdAt: tx.createdAt,
+          confirmedAt: tx.confirmedAt,
+          kind: tx.kind,
+          invoice: tx.invoice,
         }))
       } catch (err: any) {
         request.log.error(err)

@@ -5,22 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1774890380131,
-      "tag": "0000_kind_gauntlet",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1775110442613,
-      "tag": "0001_loving_marten_broadcloak",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1775131616933,
-      "tag": "0002_talented_jack_murdock",
+      "when": 1775627918473,
+      "tag": "0000_old_gwen_stacy",
       "breakpoints": true
     }
   ]

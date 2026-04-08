@@ -76,6 +76,22 @@ Never hardcode secrets.
 - Use migrations
 - Do not manually modify production DB
 
+### Local Rebaseline Workflow
+
+When local development intentionally discards existing rows and rebaselines to the current Drizzle schema:
+
+1. Reset the local schemas:
+   `psql postgresql://postgres:postgres@localhost:5432/truerdp -c "DROP SCHEMA IF EXISTS public CASCADE; CREATE SCHEMA public; DROP SCHEMA IF EXISTS drizzle CASCADE; CREATE SCHEMA drizzle;"`
+2. Run migrations:
+   `pnpm --filter backend db:migrate`
+3. Seed minimal dev data:
+   `pnpm --filter backend db:seed`
+
+Default local seed users:
+
+- `admin@truerdp.local` / `password123`
+- `user@truerdp.local` / `password123`
+
 ---
 
 ## Backups (Critical)

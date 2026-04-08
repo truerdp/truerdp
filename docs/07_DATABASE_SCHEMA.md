@@ -1,75 +1,110 @@
-# Database Schema (PostgreSQL Only)
+# Database Schema
 
-## Rules
+PostgreSQL is the only supported database.
 
-- PostgreSQL only
-- Use constraints
-- Use foreign keys
+## Users
 
-## users
+- `id`
+- `email`
+- `password_hash`
+- `first_name`
+- `last_name`
+- `role`
+- `discount_percent`
+- `discount_flat`
 
-id
-email
-password_hash
-discount_percent
-discount_flat
+## Servers
 
-## servers
+- `id`
+- `ip_address`
+- `username`
+- `password`
+- `cpu`
+- `ram`
+- `storage`
+- `status`
 
-id
-ip_address
-username
-password
-cpu
-ram
-storage
-status
+## Plans
 
-## plans
+- `id`
+- `name`
+- `cpu`
+- `ram`
+- `storage`
+- `price`
+- `duration_days`
 
-id
-name
-cpu
-ram
-storage
-price
-duration_days
+## Orders
 
-## instances
+- `id`
+- `user_id`
+- `plan_id`
+- `plan_name`
+- `plan_price`
+- `duration_days`
+- `status`
 
-id
-user_id
-server_id
-plan_id
-status
-ip_address
-username
-password
-start_date
-expiry_date
-terminated_at
+## Invoices
 
-## transactions
+- `id`
+- `order_id`
+- `invoice_number`
+- `subtotal`
+- `discount`
+- `total_amount`
+- `currency`
+- `coupon_id`
+- `status`
+- `expires_at`
+- `paid_at`
 
-id
-user_id
-plan_id
-amount
-method
-status
-reference
-confirmed_at
+## Coupon Usages
 
-## tickets
+- `id`
+- `coupon_id`
+- `user_id`
+- `invoice_id`
 
-id
-user_id
-subject
-status
+## Transactions
 
-## messages
+- `id`
+- `user_id`
+- `invoice_id`
+- `amount`
+- `method`
+- `gateway`
+- `status`
+- `reference`
+- `failure_reason`
+- `metadata`
+- `confirmed_at`
 
-id
-ticket_id
-sender_type
-message
+## Instances
+
+- `id`
+- `user_id`
+- `server_id`
+- `plan_id`
+- `status`
+- `ip_address`
+- `username`
+- `password`
+- `start_date`
+- `expiry_date`
+- `terminated_at`
+
+## Support
+
+### Tickets
+
+- `id`
+- `user_id`
+- `subject`
+- `status`
+
+### Messages
+
+- `id`
+- `ticket_id`
+- `sender_type`
+- `message`

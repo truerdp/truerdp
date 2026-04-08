@@ -1,42 +1,32 @@
 import { FastifyInstance } from "fastify"
-import { db } from "../db.js"
-import { transactions, plans, instances } from "../schema.js"
 import { z } from "zod"
-import { and, desc, eq } from "drizzle-orm"
+import { eq } from "drizzle-orm"
+import { db } from "../db.js"
+import { instances } from "../schema.js"
 import { verifyAuth } from "../middleware/auth.js"
-import { calculatePrice } from "../services/pricing.js"
+import {
+  BillingError,
+  createBillingTransaction,
+  findPendingTransactionForInstance,
+  listUserTransactions,
+  supportedPaymentMethodSchema,
+} from "../services/billing.js"
 
 const createTransactionSchema = z.object({
-  planId: z.number(),
-  method: z.enum(["upi", "usdt_trc20"]),
-  instanceId: z.number().optional(),
+  planId: z.number().int().positive(),
+  method: supportedPaymentMethodSchema,
+  instanceId: z.number().int().positive().optional(),
 })
 
 export async function transactionRoutes(server: FastifyInstance) {
-  // ✅ Create transaction
   server.post(
     "/transactions",
     { preHandler: verifyAuth },
     async (request: any, reply) => {
       try {
         const body = createTransactionSchema.parse(request.body)
-
         const userId = request.user.userId
 
-        // ✅ 1. Validate plan exists
-        const planResult = await db
-          .select()
-          .from(plans)
-          .where(eq(plans.id, body.planId))
-          .limit(1)
-
-        const plan = planResult[0]
-
-        if (!plan) {
-          return reply.status(400).send({ error: "Invalid planId" })
-        }
-
-        // ✅ 2. If instanceId is provided, validate it belongs to the user and doesn't have pending transactions
         if (body.instanceId) {
           const instanceResult = await db
             .select()
@@ -54,43 +44,53 @@ export async function transactionRoutes(server: FastifyInstance) {
             return reply.status(403).send({ error: "Forbidden" })
           }
 
-          const pendingTxResult = await db
-            .select()
-            .from(transactions)
-            .where(
-              and(
-                eq(transactions.instanceId, body.instanceId),
-                eq(transactions.status, "pending")
-              )
-            )
-            .limit(1)
+          if (instance.planId !== body.planId) {
+            return reply.status(400).send({
+              error: "Renewal must use the instance plan",
+            })
+          }
 
-          if (pendingTxResult.length > 0) {
+          const isExpired =
+            instance.expiryDate != null && instance.expiryDate < new Date()
+
+          if (
+            !["active", "expired"].includes(instance.status) &&
+            !isExpired
+          ) {
+            return reply.status(400).send({
+              error: "Instance is not eligible for renewal",
+            })
+          }
+
+          const pendingTransaction = await findPendingTransactionForInstance(
+            userId,
+            body.instanceId
+          )
+
+          if (pendingTransaction) {
             return reply.status(400).send({
               error: "Pending transaction already exists",
             })
           }
         }
 
-        // ✅ 3. Calculate price
-        const amount = await calculatePrice(userId, body.planId)
+        const transaction = await createBillingTransaction({
+          userId,
+          planId: body.planId,
+          method: body.method,
+          instanceId: body.instanceId,
+        })
 
-        // ✅ 4. Create transaction
-        const tx = await db
-          .insert(transactions)
-          .values({
-            userId,
-            planId: plan.id,
-            amount,
-            instanceId: body.instanceId || null,
-            method: body.method,
-            status: "pending",
-          })
-          .returning()
-
-        return reply.status(201).send(tx[0])
+        return reply.status(201).send(transaction)
       } catch (err: any) {
         server.log.error(err)
+
+        if (err instanceof BillingError) {
+          return reply.status(err.statusCode).send({
+            error: err.message,
+          })
+        }
+
         return reply.status(400).send({
           error: err.message || "Invalid request",
         })
@@ -98,59 +98,12 @@ export async function transactionRoutes(server: FastifyInstance) {
     }
   )
 
-  // ✅ Get user transactions
   server.get(
     "/transactions",
     { preHandler: verifyAuth },
     async (request: any, reply) => {
       try {
-        const userId = request.user.userId
-
-        const txs = await db
-          .select({
-            id: transactions.id,
-            amount: transactions.amount,
-            method: transactions.method,
-            status: transactions.status,
-            createdAt: transactions.createdAt,
-            confirmedAt: transactions.confirmedAt,
-
-            plan: {
-              id: plans.id,
-              name: plans.name,
-              cpu: plans.cpu,
-              ram: plans.ram,
-              storage: plans.storage,
-            },
-
-            instance: {
-              id: instances.id,
-              ipAddress: instances.ipAddress,
-            },
-          })
-          .from(transactions)
-          .leftJoin(plans, eq(transactions.planId, plans.id))
-          .leftJoin(instances, eq(transactions.instanceId, instances.id))
-          .where(eq(transactions.userId, userId))
-          .orderBy(desc(transactions.createdAt))
-
-        return txs.map((tx) => ({
-          id: tx.id,
-          amount: tx.amount,
-          method: tx.method,
-          status: tx.status,
-          createdAt: tx.createdAt,
-          confirmedAt: tx.confirmedAt,
-
-          plan: tx.plan,
-
-          instance: tx.instance?.id
-            ? {
-                id: tx.instance.id,
-                ipAddress: tx.instance.ipAddress,
-              }
-            : null,
-        }))
+        return await listUserTransactions(request.user.userId)
       } catch (err: any) {
         request.log.error(err)
         return reply.status(500).send({

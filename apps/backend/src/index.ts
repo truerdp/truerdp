@@ -26,10 +26,6 @@ server.get("/", async () => {
   return { status: "ok", message: "Truerdp API is running" }
 })
 
-server.get("/me", { preHandler: verifyAuth }, async (request: any) => {
-  return { user: request.user }
-})
-
 const start = async () => {
   try {
     const port = Number(process.env.PORT) || 3003

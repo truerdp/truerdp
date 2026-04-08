@@ -2,28 +2,30 @@
 
 ## Provisioning
 
-Manual only
+- Manual provisioning remains the default fulfillment path
+- No instance without successful payment
+
+## Billing
+
+- Billing is invoice-first
+- Every checkout creates an order, invoice, and initial transaction
+- Transactions represent payment attempts, not entitlement
+- Renewals extend the existing instance instead of creating a duplicate one
+
+## Infrastructure
+
+- One server can only back one active instance at a time
+- Termination must free server capacity for reuse
 
 ## Expiry
 
-Hard expiry (no grace)
-
-## Termination
-
-Manual, must free server
-
-## Assignment
-
-1 server = 1 instance
-
-## Payments
-
-No instance without payment confirmation
+- Hard expiry, no grace period is currently modeled
 
 ## Discounts
 
-Per-user only
+- Pricing currently uses per-user discount fields
+- Coupon tables exist in the schema for future use
 
 ## Support
 
-Simple ticket system
+- Support stays separate from billing and provisioning logic

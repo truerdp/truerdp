@@ -2,66 +2,49 @@
 
 ## User
 
-id
-email
-password_hash
-discount_percent
-discount_flat
-
-## Server
-
-id
-ip_address
-username
-password
-cpu
-ram
-storage
-status
+- Owns orders, invoices, transactions, instances, and tickets
+- Carries discount settings used by pricing
 
 ## Plan
 
-id
-name
-cpu
-ram
-storage
-price
-duration_days
+- Defines product configuration and base price
+- Referenced by orders and instances
 
-## Instance
+## Order
 
-id
-user_id
-server_id
-plan_id
-status
-ip_address
-username
-password
-start_date
-expiry_date
+- Represents purchase intent
+- Stores `planId`, `planName`, `planPrice`, and `durationDays`
+- Status: `pending_payment`, `processing`, `completed`, `cancelled`
+
+## Invoice
+
+- Represents financial liability for one order
+- Stores subtotal, discount, total amount, currency, and expiry
+- Status: `unpaid`, `paid`, `expired`
 
 ## Transaction
 
-id
-user_id
-plan_id
-amount
-method
-status
-reference
+- Represents a payment attempt for one invoice
+- Stores payment method, amount, status, optional reference, and metadata
+- Status: `pending`, `confirmed`, `failed`
 
-## Ticket
+## Instance
 
-id
-user_id
-subject
-status
+- Represents fulfilled RDP access for a user
+- Created only after payment confirmation
+- Can be newly created or renewed through the billing flow
 
-## Message
+## Server
 
-id
-ticket_id
-sender_type
-message
+- Represents provisionable infrastructure capacity
+- Can be assigned to an instance during manual provisioning
+
+## Coupon and Coupon Usage
+
+- Coupon defines a reusable discount rule
+- Coupon usage links one user and one invoice to one coupon redemption
+
+## Ticket and Message
+
+- Supports the lean support workflow
+- Kept separate from billing and provisioning logic

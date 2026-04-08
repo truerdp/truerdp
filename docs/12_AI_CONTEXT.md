@@ -2,21 +2,24 @@
 
 ## System
 
-Manual-first RDP system
+Manual-first RDP system with invoice-first billing.
 
-## Rules
+## Non-Negotiable Rules
 
-- No automation unless asked
-- No skipping lifecycle
-- No double server assignment
-- No instance before payment
+- No instance before successful payment
+- Financial flow is:
+  `user -> order -> invoice -> transaction -> instance`
+- Renewal extends an existing instance instead of creating a duplicate one
+- Do not skip lifecycle transitions
+- Do not auto-assign infrastructure unless explicitly asked
 
 ## Database
 
 - PostgreSQL only
-- Use constraints
+- Prefer relational integrity over convenience
 
-## Style
+## Coding Style
 
 - Deterministic logic
 - Strict validation
+- Thin routes, shared services

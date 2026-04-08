@@ -1,47 +1,33 @@
 # State Rules
 
-This document reflects the currently implemented backend behavior, not the full target lifecycle.
+## Financial State Rules
 
-## Transaction State Transitions
+- An order must exist before an invoice can exist
+- An invoice must exist before a transaction can exist
+- A transaction confirms payment for exactly one invoice
+- A paid invoice cannot remain attached to a pending transaction
 
-Implemented transitions:
+## Fulfillment State Rules
 
-- `pending` -> `confirmed` when an admin confirms a transaction
+- Instances must only be created after a successful payment
+- New purchase confirmation creates a `pending` instance
+- Renewal confirmation extends the existing instance instead of creating a new one
+- Provisioning completes the order for a new purchase
 
-Implemented guards:
+## Guards
 
-- A transaction must exist before it can be confirmed
 - A transaction cannot be confirmed twice
-- Renewal creation is blocked when a pending transaction already exists for that instance
+- Renewal creation is blocked when a pending renewal transaction already exists for the instance
+- Renewal must use the instance's current plan
+- Users cannot renew or inspect instances they do not own
+- Credentials are returned only for active instances
 
-## Instance State Transitions
+## Derived Behavior
 
-Implemented transitions:
-
-- New purchase confirmation creates an instance in `pending`
-- `pending` -> `active` when an admin provisions credentials
-- Renewal confirmation keeps or restores the instance to `active` and extends `expiryDate`
-
-Derived behavior:
-
-- Expiry is treated as date-driven in user-facing APIs and UI
-- `GET /instances` maps an `active` instance with a past `expiryDate` to `expired` in the response
-
-Defined but not currently driven by routes:
-
-- `provisioning`
-- `termination_pending`
-- `terminated`
-
-## Invalid Cases
-
-- Cannot provision a missing instance
-- Cannot provision an instance unless it is currently `pending`
-- Cannot renew an instance you do not own
-- Cannot fetch credentials for an instance you do not own
-- Cannot fetch credentials unless the instance is `active`
+- User-facing APIs may surface an `active` instance as effectively `expired` when `expiryDate` is in the past
+- Billing history joins transaction, invoice, and order data into one response model for the UI
 
 ## Enforcement
 
-- Backend must enforce ownership and role checks
-- Frontend status displays may derive `expired` from `expiryDate`
+- Backend validation is authoritative
+- Financial state changes happen inside the backend, not in the client

@@ -1,11 +1,17 @@
 export const api = async <T = unknown>(url: string, options?: RequestInit) => {
+  const apiBaseUrl =
+    (
+      globalThis as typeof globalThis & {
+        process?: {
+          env?: Record<string, string | undefined>
+        }
+      }
+    ).process?.env?.NEXT_PUBLIC_API_URL ?? ""
+
   const token =
     typeof window !== "undefined" ? localStorage.getItem("token") : null
   const method = options?.method?.toUpperCase()
   const body = method === "POST" && options?.body == null ? "{}" : options?.body
-  const apiBaseUrl =
-    (globalThis as { process?: { env?: Record<string, string | undefined> } })
-      .process?.env?.NEXT_PUBLIC_API_URL ?? ""
 
   const res = await fetch(`${apiBaseUrl}${url}`, {
     ...options,

@@ -2,6 +2,7 @@ import { Geist, Geist_Mono } from "next/font/google"
 
 import "@workspace/ui/globals.css"
 import "./globals.css"
+import { Toaster } from "@workspace/ui/components/sonner"
 import { TooltipProvider } from "@workspace/ui/components/tooltip"
 import { ThemeProvider } from "@/components/theme-provider"
 import AdminShell from "@/components/admin-shell"
@@ -36,6 +37,7 @@ export default function RootLayout({
           <TooltipProvider>
             <AppProviders>
               <AdminShell>{children}</AdminShell>
+              <Toaster richColors position="top-center" duration={5000} />
             </AppProviders>
           </TooltipProvider>
         </ThemeProvider>
