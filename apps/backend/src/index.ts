@@ -3,10 +3,10 @@ import Fastify from "fastify"
 import cors from "@fastify/cors"
 import { userRoutes } from "./routes/user.js"
 import { authRoutes } from "./routes/auth.js"
-import { verifyAuth } from "./middleware/auth.js"
 import { transactionRoutes } from "./routes/transaction.js"
 import { adminRoutes } from "./routes/admin.js"
 import { instanceRoutes } from "./routes/instance.js"
+import { planRoutes } from "./routes/plan.js"
 
 const server = Fastify({
   logger: true,
@@ -18,6 +18,7 @@ server.register(cors, {
 
 server.register(userRoutes)
 server.register(authRoutes)
+server.register(planRoutes)
 server.register(transactionRoutes)
 server.register(adminRoutes)
 server.register(instanceRoutes)

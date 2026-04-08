@@ -115,9 +115,6 @@ export const plans = pgTable("plans", {
   ram: integer("ram").notNull(),
   storage: integer("storage").notNull(),
 
-  price: integer("price").notNull(),
-  durationDays: integer("duration_days").notNull(),
-
   isActive: boolean("is_active").default(true).notNull(),
 
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -161,6 +158,37 @@ export const instances = pgTable("instances", {
 
 // RULE: Instances must ONLY be created AFTER invoice.status = "paid"
 
+/* ================= PLAN PRICING ================= */
+
+export const planPricing = pgTable(
+  "plan_pricing",
+  {
+    id: serial("id").primaryKey(),
+
+    planId: integer("plan_id")
+      .notNull()
+      .references(() => plans.id),
+
+    durationDays: integer("duration_days").notNull(),
+    price: integer("price").notNull(),
+
+    isActive: boolean("is_active").default(true).notNull(),
+
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdateFn(() => new Date())
+      .notNull(),
+  },
+  (table) => ({
+    planIdIdx: index("plan_pricing_plan_id_idx").on(table.planId),
+    planDurationUnique: uniqueIndex("plan_pricing_plan_duration_unique").on(
+      table.planId,
+      table.durationDays
+    ),
+  })
+)
+
 /* ================= ORDERS ================= */
 
 export const orders = pgTable(
@@ -175,6 +203,10 @@ export const orders = pgTable(
     planId: integer("plan_id")
       .notNull()
       .references(() => plans.id),
+
+    planPricingId: integer("plan_pricing_id")
+      .notNull()
+      .references(() => planPricing.id),
 
     // Snapshot (critical)
     planName: text("plan_name").notNull(),
@@ -192,6 +224,7 @@ export const orders = pgTable(
   (table) => ({
     userIdIdx: index("orders_user_id_idx").on(table.userId),
     planIdIdx: index("orders_plan_id_idx").on(table.planId),
+    planPricingIdIdx: index("orders_plan_pricing_id_idx").on(table.planPricingId),
   })
 )
 

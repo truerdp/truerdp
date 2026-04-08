@@ -8,12 +8,15 @@ import {
   BillingError,
   createBillingTransaction,
   findPendingTransactionForInstance,
+  getDefaultPlanPricingForPlan,
+  getPlanPricingById,
   listInstanceTransactions,
   supportedPaymentMethodSchema,
 } from "../services/billing.js"
 
 const renewInstanceSchema = z.object({
   method: supportedPaymentMethodSchema.optional(),
+  planPricingId: z.number().int().positive().optional(),
 })
 
 export async function instanceRoutes(server: FastifyInstance) {
@@ -197,9 +200,29 @@ export async function instanceRoutes(server: FastifyInstance) {
           })
         }
 
+        const selectedPricing =
+          body.planPricingId != null
+            ? await getPlanPricingById(body.planPricingId)
+            : await getDefaultPlanPricingForPlan(instance.planId)
+
+        if (!selectedPricing) {
+          return reply.status(400).send({
+            error:
+              body.planPricingId != null
+                ? "Invalid planPricingId"
+                : "No active pricing found for the instance plan",
+          })
+        }
+
+        if (selectedPricing.planId !== instance.planId) {
+          return reply.status(400).send({
+            error: "Renewal must use pricing from the instance plan",
+          })
+        }
+
         const transaction = await createBillingTransaction({
           userId,
-          planId: instance.planId,
+          planPricingId: selectedPricing.id,
           method: body.method ?? "upi",
           instanceId: instance.id,
         })

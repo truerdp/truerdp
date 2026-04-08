@@ -1,22 +1,20 @@
 import { db } from "../db.js"
-import { plans, users } from "../schema.js"
+import { planPricing, users } from "../schema.js"
 import { eq } from "drizzle-orm"
 
-export async function calculatePrice(userId: number, planId: number) {
-  // ✅ Get plan
-  const planResult = await db
+export async function calculatePrice(userId: number, planPricingId: number) {
+  const pricingResult = await db
     .select()
-    .from(plans)
-    .where(eq(plans.id, planId))
+    .from(planPricing)
+    .where(eq(planPricing.id, planPricingId))
     .limit(1)
 
-  const plan = planResult[0]
+  const pricing = pricingResult[0]
 
-  if (!plan) {
-    throw new Error("Invalid plan")
+  if (!pricing) {
+    throw new Error("Invalid plan pricing")
   }
 
-  // ✅ Get user
   const userResult = await db
     .select()
     .from(users)
@@ -29,8 +27,7 @@ export async function calculatePrice(userId: number, planId: number) {
     throw new Error("User not found")
   }
 
-  // ✅ Calculate price
-  let amount = plan.price
+  let amount = pricing.price
 
   if (user.discountPercent) {
     amount = amount - (amount * user.discountPercent) / 100

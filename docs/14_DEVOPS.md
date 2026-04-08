@@ -92,6 +92,12 @@ Default local seed users:
 - `admin@truerdp.local` / `password123`
 - `user@truerdp.local` / `password123`
 
+Default local seed catalog:
+
+- `Starter RDP`
+- `30 days` for `500`
+- `90 days` for `1299`
+
 ---
 
 ## Backups (Critical)

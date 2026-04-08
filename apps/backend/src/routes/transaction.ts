@@ -8,15 +8,23 @@ import {
   BillingError,
   createBillingTransaction,
   findPendingTransactionForInstance,
+  getDefaultPlanPricingForPlan,
+  getPlanPricingById,
   listUserTransactions,
   supportedPaymentMethodSchema,
 } from "../services/billing.js"
 
-const createTransactionSchema = z.object({
-  planId: z.number().int().positive(),
-  method: supportedPaymentMethodSchema,
-  instanceId: z.number().int().positive().optional(),
-})
+const createTransactionSchema = z
+  .object({
+    planId: z.number().int().positive().optional(),
+    planPricingId: z.number().int().positive().optional(),
+    method: supportedPaymentMethodSchema,
+    instanceId: z.number().int().positive().optional(),
+  })
+  .refine((value) => value.planId != null || value.planPricingId != null, {
+    message: "planPricingId is required",
+    path: ["planPricingId"],
+  })
 
 export async function transactionRoutes(server: FastifyInstance) {
   server.post(
@@ -26,6 +34,28 @@ export async function transactionRoutes(server: FastifyInstance) {
       try {
         const body = createTransactionSchema.parse(request.body)
         const userId = request.user.userId
+        const selectedPricing =
+          body.planPricingId != null
+            ? await getPlanPricingById(body.planPricingId)
+            : await getDefaultPlanPricingForPlan(body.planId!)
+
+        if (!selectedPricing) {
+          return reply.status(400).send({
+            error:
+              body.planPricingId != null
+                ? "Invalid planPricingId"
+                : "No active pricing found for plan",
+          })
+        }
+
+        if (
+          body.planId != null &&
+          selectedPricing.planId !== body.planId
+        ) {
+          return reply.status(400).send({
+            error: "Selected pricing does not belong to the requested plan",
+          })
+        }
 
         if (body.instanceId) {
           const instanceResult = await db
@@ -44,7 +74,7 @@ export async function transactionRoutes(server: FastifyInstance) {
             return reply.status(403).send({ error: "Forbidden" })
           }
 
-          if (instance.planId !== body.planId) {
+          if (instance.planId !== selectedPricing.planId) {
             return reply.status(400).send({
               error: "Renewal must use the instance plan",
             })
@@ -76,7 +106,7 @@ export async function transactionRoutes(server: FastifyInstance) {
 
         const transaction = await createBillingTransaction({
           userId,
-          planId: body.planId,
+          planPricingId: selectedPricing.id,
           method: body.method,
           instanceId: body.instanceId,
         })

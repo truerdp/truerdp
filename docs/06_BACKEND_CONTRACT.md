@@ -4,6 +4,12 @@ This file documents the currently implemented HTTP contract in `apps/backend/src
 
 ## Public Routes
 
+### GET /plans
+
+- List active plans with active `pricingOptions`
+- Each plan includes product specs plus a `defaultPricingId`
+- Each pricing option includes `id`, `durationDays`, and `price`
+
 ### POST /users
 
 - Create a user account
@@ -19,8 +25,9 @@ This file documents the currently implemented HTTP contract in `apps/backend/src
 
 ### POST /transactions
 
-- Create a new checkout flow for a plan
-- Accepts `planId`, `method`, and optional `instanceId`
+- Create a new checkout flow for a pricing option
+- Accepts `planPricingId`, `method`, and optional `instanceId`
+- Temporarily also accepts `planId` and resolves the default active pricing for that plan
 - Internally creates:
   `order -> invoice -> transaction`
 - If `instanceId` is supplied, the request is treated as a renewal
@@ -51,7 +58,8 @@ This file documents the currently implemented HTTP contract in `apps/backend/src
 - Create a renewal checkout flow for an owned instance
 - Internally creates:
   `order -> invoice -> transaction`
-- Reuses the instance's existing `planId`
+- Accepts optional `planPricingId`
+- When omitted, reuses the default active pricing for the instance's current plan
 - Defaults the payment method to `upi` when none is supplied
 
 ### GET /instances/:id/transactions

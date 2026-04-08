@@ -1,12 +1,9 @@
+declare const process: {
+  env: Record<string, string | undefined>
+}
+
 export const api = async <T = unknown>(url: string, options?: RequestInit) => {
-  const apiBaseUrl =
-    (
-      globalThis as typeof globalThis & {
-        process?: {
-          env?: Record<string, string | undefined>
-        }
-      }
-    ).process?.env?.NEXT_PUBLIC_API_URL ?? ""
+  const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL ?? ""
 
   const token =
     typeof window !== "undefined" ? localStorage.getItem("token") : null

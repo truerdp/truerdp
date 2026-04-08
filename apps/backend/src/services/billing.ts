@@ -1,11 +1,12 @@
 import { randomUUID } from "node:crypto"
-import { and, desc, eq, inArray, sql } from "drizzle-orm"
+import { and, asc, desc, eq, inArray, sql } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "../db.js"
 import {
   instances,
   invoices,
   orders,
+  planPricing,
   plans,
   transactions,
 } from "../schema.js"
@@ -23,12 +24,14 @@ const billingTransactionMetadataSchema = z.object({
   purchaseType: z.enum(["new_purchase", "renewal"]).optional(),
   instanceId: z.number().int().positive().nullable().optional(),
   orderId: z.number().int().positive().optional(),
+  planPricingId: z.number().int().positive().optional(),
 })
 
 type BillingTransactionMetadata = {
   purchaseType: "new_purchase" | "renewal"
   instanceId: number | null
   orderId?: number
+  planPricingId?: number
 }
 
 type TransactionSummaryRow = Awaited<
@@ -72,6 +75,7 @@ function parseBillingTransactionMetadata(
       parsed.data.purchaseType ?? (instanceId ? "renewal" : "new_purchase"),
     instanceId,
     orderId: parsed.data.orderId,
+    planPricingId: parsed.data.planPricingId,
   }
 }
 
@@ -112,6 +116,7 @@ function buildTransactionSummaryQuery() {
       order: {
         id: orders.id,
         planId: orders.planId,
+        planPricingId: orders.planPricingId,
         planName: orders.planName,
         planPrice: orders.planPrice,
         durationDays: orders.durationDays,
@@ -123,11 +128,17 @@ function buildTransactionSummaryQuery() {
         ram: plans.ram,
         storage: plans.storage,
       },
+      pricing: {
+        id: planPricing.id,
+        durationDays: planPricing.durationDays,
+        price: planPricing.price,
+      },
     })
     .from(transactions)
     .innerJoin(invoices, eq(transactions.invoiceId, invoices.id))
     .innerJoin(orders, eq(invoices.orderId, orders.id))
     .leftJoin(plans, eq(orders.planId, plans.id))
+    .leftJoin(planPricing, eq(orders.planPricingId, planPricing.id))
 }
 
 async function loadInstanceMap(rows: TransactionSummaryRow[]) {
@@ -182,6 +193,11 @@ async function mapTransactionSummaries(rows: TransactionSummaryRow[]) {
         id: row.order.id,
         status: row.order.status,
       },
+      pricing: {
+        id: row.order.planPricingId,
+        durationDays: row.order.durationDays,
+        price: row.order.planPrice,
+      },
       invoice: {
         id: row.invoice.id,
         invoiceNumber: row.invoice.invoiceNumber,
@@ -197,12 +213,52 @@ async function mapTransactionSummaries(rows: TransactionSummaryRow[]) {
         cpu: row.plan?.cpu ?? 0,
         ram: row.plan?.ram ?? 0,
         storage: row.plan?.storage ?? 0,
-        durationDays: row.order.durationDays,
-        price: row.order.planPrice,
       },
       instance,
     }
   })
+}
+
+export async function getDefaultPlanPricingForPlan(planId: number) {
+  const pricingOptions = await db
+    .select({
+      id: planPricing.id,
+      planId: planPricing.planId,
+      durationDays: planPricing.durationDays,
+      price: planPricing.price,
+      isActive: planPricing.isActive,
+    })
+    .from(planPricing)
+    .where(and(eq(planPricing.planId, planId), eq(planPricing.isActive, true)))
+    .orderBy(asc(planPricing.durationDays), asc(planPricing.id))
+    .limit(1)
+
+  return pricingOptions[0] ?? null
+}
+
+export async function getPlanPricingById(planPricingId: number) {
+  const pricingOptions = await db
+    .select({
+      id: planPricing.id,
+      planId: planPricing.planId,
+      durationDays: planPricing.durationDays,
+      price: planPricing.price,
+      isActive: planPricing.isActive,
+      plan: {
+        id: plans.id,
+        name: plans.name,
+        cpu: plans.cpu,
+        ram: plans.ram,
+        storage: plans.storage,
+        isActive: plans.isActive,
+      },
+    })
+    .from(planPricing)
+    .innerJoin(plans, eq(planPricing.planId, plans.id))
+    .where(eq(planPricing.id, planPricingId))
+    .limit(1)
+
+  return pricingOptions[0] ?? null
 }
 
 export async function findPendingTransactionForInstance(
@@ -228,24 +284,22 @@ export async function findPendingTransactionForInstance(
 
 export async function createBillingTransaction(input: {
   userId: number
-  planId: number
+  planPricingId: number
   method: SupportedPaymentMethod
   instanceId?: number
 }) {
-  const planResult = await db
-    .select()
-    .from(plans)
-    .where(eq(plans.id, input.planId))
-    .limit(1)
+  const pricingSelection = await getPlanPricingById(input.planPricingId)
 
-  const plan = planResult[0]
-
-  if (!plan) {
-    throw new BillingError(400, "Invalid planId")
+  if (!pricingSelection || !pricingSelection.isActive) {
+    throw new BillingError(400, "Invalid planPricingId")
   }
 
-  const totalAmount = await calculatePrice(input.userId, input.planId)
-  const discount = Math.max(0, plan.price - totalAmount)
+  if (!pricingSelection.plan.isActive) {
+    throw new BillingError(400, "Selected plan is inactive")
+  }
+
+  const totalAmount = await calculatePrice(input.userId, input.planPricingId)
+  const discount = Math.max(0, pricingSelection.price - totalAmount)
   const purchaseType = input.instanceId ? "renewal" : "new_purchase"
   const now = new Date()
 
@@ -254,10 +308,11 @@ export async function createBillingTransaction(input: {
       .insert(orders)
       .values({
         userId: input.userId,
-        planId: plan.id,
-        planName: plan.name,
-        planPrice: plan.price,
-        durationDays: plan.durationDays,
+        planId: pricingSelection.plan.id,
+        planPricingId: pricingSelection.id,
+        planName: pricingSelection.plan.name,
+        planPrice: pricingSelection.price,
+        durationDays: pricingSelection.durationDays,
         status: "pending_payment",
       })
       .returning()
@@ -269,7 +324,7 @@ export async function createBillingTransaction(input: {
       .values({
         orderId: order.id,
         invoiceNumber: createInvoiceNumber(),
-        subtotal: plan.price,
+        subtotal: pricingSelection.price,
         discount,
         totalAmount,
         status: "unpaid",
@@ -291,6 +346,7 @@ export async function createBillingTransaction(input: {
           purchaseType,
           instanceId: input.instanceId ?? null,
           orderId: order.id,
+          planPricingId: pricingSelection.id,
         },
       })
       .returning()
@@ -330,11 +386,14 @@ export async function createBillingTransaction(input: {
       paidAt: created.invoice.paidAt,
     },
     plan: {
-      id: plan.id,
+      id: pricingSelection.plan.id,
       name: created.order.planName,
-      cpu: plan.cpu,
-      ram: plan.ram,
-      storage: plan.storage,
+      cpu: pricingSelection.plan.cpu,
+      ram: pricingSelection.plan.ram,
+      storage: pricingSelection.plan.storage,
+    },
+    pricing: {
+      id: pricingSelection.id,
       durationDays: created.order.durationDays,
       price: created.order.planPrice,
     },
@@ -396,6 +455,7 @@ export async function confirmPendingTransaction(transactionId: number) {
         order: {
           id: orders.id,
           planId: orders.planId,
+          planPricingId: orders.planPricingId,
           durationDays: orders.durationDays,
           status: orders.status,
         },
@@ -418,18 +478,6 @@ export async function confirmPendingTransaction(transactionId: number) {
 
     if (current.invoice.status === "paid") {
       throw new BillingError(400, "Invoice already paid")
-    }
-
-    const planResult = await tx
-      .select()
-      .from(plans)
-      .where(eq(plans.id, current.order.planId))
-      .limit(1)
-
-    const plan = planResult[0]
-
-    if (!plan) {
-      throw new BillingError(400, "Invalid plan")
     }
 
     const metadata = parseBillingTransactionMetadata(current.transaction.metadata)
@@ -487,7 +535,7 @@ export async function confirmPendingTransaction(transactionId: number) {
         .insert(instances)
         .values({
           userId: current.transaction.userId,
-          planId: plan.id,
+          planId: current.order.planId,
           status: "pending",
         })
         .returning()
@@ -499,6 +547,7 @@ export async function confirmPendingTransaction(transactionId: number) {
       purchaseType: metadata.purchaseType,
       instanceId: instance?.id ?? metadata.instanceId ?? null,
       orderId: current.order.id,
+      planPricingId: current.order.planPricingId,
     }
 
     await tx

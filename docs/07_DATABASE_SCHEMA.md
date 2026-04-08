@@ -31,14 +31,21 @@ PostgreSQL is the only supported database.
 - `cpu`
 - `ram`
 - `storage`
-- `price`
+
+## Plan Pricing
+
+- `id`
+- `plan_id`
 - `duration_days`
+- `price`
+- `is_active`
 
 ## Orders
 
 - `id`
 - `user_id`
 - `plan_id`
+- `plan_pricing_id`
 - `plan_name`
 - `plan_price`
 - `duration_days`

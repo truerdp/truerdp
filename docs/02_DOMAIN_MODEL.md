@@ -7,13 +7,18 @@
 
 ## Plan
 
-- Defines product configuration and base price
-- Referenced by orders and instances
+- Defines the product configuration only
+- Referenced by instances and grouped pricing options
+
+## Plan Pricing
+
+- Stores selectable billing options for a plan
+- Defines `durationDays` and `price`
 
 ## Order
 
 - Represents purchase intent
-- Stores `planId`, `planName`, `planPrice`, and `durationDays`
+- Stores `planId`, `planPricingId`, `planName`, `planPrice`, and `durationDays`
 - Status: `pending_payment`, `processing`, `completed`, `cancelled`
 
 ## Invoice

@@ -1,11 +1,29 @@
 import "dotenv/config"
 import bcrypt from "bcrypt"
-import { eq } from "drizzle-orm"
+import { and, eq, notInArray } from "drizzle-orm"
 import { closeDbConnection, db } from "../db.js"
-import { plans, users } from "../schema.js"
+import { planPricing, plans, users } from "../schema.js"
 
 const DEFAULT_PASSWORD = "password123"
 const DEFAULT_PLAN_NAME = "Starter RDP"
+const DEFAULT_PLAN_PRICING = [
+  {
+    durationDays: 30,
+    price: 500,
+  },
+  {
+    durationDays: 90,
+    price: 1299,
+  },
+] as const
+
+function requireSeedRecord<T>(value: T | undefined, label: string): T {
+  if (!value) {
+    throw new Error(`Failed to upsert ${label}`)
+  }
+
+  return value
+}
 
 async function upsertUser(input: {
   email: string
@@ -58,8 +76,6 @@ async function upsertPlan() {
         cpu: 2,
         ram: 4,
         storage: 80,
-        price: 500,
-        durationDays: 7,
         isActive: true,
       })
       .where(eq(plans.id, existingPlan[0].id))
@@ -68,7 +84,7 @@ async function upsertPlan() {
         name: plans.name,
       })
 
-    return plan
+    return requireSeedRecord(plan, "plan")
   }
 
   const [plan] = await db
@@ -78,8 +94,6 @@ async function upsertPlan() {
       cpu: 2,
       ram: 4,
       storage: 80,
-      price: 500,
-      durationDays: 7,
       isActive: true,
     })
     .returning({
@@ -87,7 +101,77 @@ async function upsertPlan() {
       name: plans.name,
     })
 
-  return plan
+  return requireSeedRecord(plan, "plan")
+}
+
+async function upsertPlanPricing(planId: number) {
+  const pricingOptions = []
+
+  for (const option of DEFAULT_PLAN_PRICING) {
+    const existingPricing = await db
+      .select({
+        id: planPricing.id,
+      })
+      .from(planPricing)
+      .where(
+        and(
+          eq(planPricing.planId, planId),
+          eq(planPricing.durationDays, option.durationDays)
+        )
+      )
+      .limit(1)
+
+    if (existingPricing[0]) {
+      const [pricing] = await db
+        .update(planPricing)
+        .set({
+          price: option.price,
+          isActive: true,
+        })
+        .where(eq(planPricing.id, existingPricing[0].id))
+        .returning({
+          id: planPricing.id,
+          durationDays: planPricing.durationDays,
+          price: planPricing.price,
+        })
+
+      pricingOptions.push(requireSeedRecord(pricing, "plan pricing"))
+      continue
+    }
+
+    const [pricing] = await db
+      .insert(planPricing)
+      .values({
+        planId,
+        durationDays: option.durationDays,
+        price: option.price,
+        isActive: true,
+      })
+      .returning({
+        id: planPricing.id,
+        durationDays: planPricing.durationDays,
+        price: planPricing.price,
+      })
+
+    pricingOptions.push(requireSeedRecord(pricing, "plan pricing"))
+  }
+
+  await db
+    .update(planPricing)
+    .set({
+      isActive: false,
+    })
+    .where(
+      and(
+        eq(planPricing.planId, planId),
+        notInArray(
+          planPricing.durationDays,
+          DEFAULT_PLAN_PRICING.map((option) => option.durationDays)
+        )
+      )
+    )
+
+  return pricingOptions
 }
 
 async function seed() {
@@ -106,12 +190,14 @@ async function seed() {
   })
 
   const plan = await upsertPlan()
+  const pricingOptions = await upsertPlanPricing(plan.id)
 
   console.log("Seed complete")
   console.log({
     adminUser,
     normalUser,
     plan,
+    pricingOptions,
     password: DEFAULT_PASSWORD,
   })
 }

@@ -3,7 +3,6 @@ import { db } from "../db.js"
 import {
   transactions,
   instances,
-  plans,
   users,
   servers,
   invoices,
@@ -98,22 +97,34 @@ export async function adminRoutes(server: FastifyInstance) {
         }
 
         const now = new Date()
-
-        // ⚠️ FIX: use plan duration instead of hardcoded 30
-        const planResult = await db
-          .select()
-          .from(plans)
-          .where(eq(plans.id, instance.planId))
+        const linkedOrderResult = await db
+          .select({
+            orderId: orders.id,
+            durationDays: orders.durationDays,
+          })
+          .from(transactions)
+          .innerJoin(invoices, eq(transactions.invoiceId, invoices.id))
+          .innerJoin(orders, eq(invoices.orderId, orders.id))
+          .where(
+            and(
+              eq(transactions.status, "confirmed"),
+              sql`${transactions.metadata} ->> 'instanceId' = ${String(instance.id)}`,
+              sql`${transactions.metadata} ->> 'purchaseType' = 'new_purchase'`
+            )
+          )
+          .orderBy(desc(transactions.createdAt))
           .limit(1)
 
-        const plan = planResult[0]
+        const linkedOrder = linkedOrderResult[0]
 
-        if (!plan) {
-          return reply.status(400).send({ error: "Invalid plan" })
+        if (!linkedOrder) {
+          return reply.status(400).send({
+            error: "No paid purchase found for this instance",
+          })
         }
 
-        const expiry = new Date()
-        expiry.setDate(now.getDate() + plan.durationDays)
+        const expiry = new Date(now)
+        expiry.setDate(expiry.getDate() + linkedOrder.durationDays)
 
         await db.transaction(async (tx) => {
           await tx
@@ -128,27 +139,12 @@ export async function adminRoutes(server: FastifyInstance) {
             })
             .where(eq(instances.id, instance.id))
 
-          const linkedOrder = await tx
-            .select({
-              orderId: orders.id,
+          await tx
+            .update(orders)
+            .set({
+              status: "completed",
             })
-            .from(transactions)
-            .innerJoin(invoices, eq(transactions.invoiceId, invoices.id))
-            .innerJoin(orders, eq(invoices.orderId, orders.id))
-            .where(
-              sql`${transactions.metadata} ->> 'instanceId' = ${String(instance.id)}`
-            )
-            .orderBy(desc(transactions.createdAt))
-            .limit(1)
-
-          if (linkedOrder[0]) {
-            await tx
-              .update(orders)
-              .set({
-                status: "completed",
-              })
-              .where(eq(orders.id, linkedOrder[0].orderId))
-          }
+            .where(eq(orders.id, linkedOrder.orderId))
         })
 
         return {

@@ -19,11 +19,13 @@
 
 ## Practical Mapping
 
+- `routes/plan.ts`: public catalog endpoint for plans and pricing options
 - `routes/transaction.ts`: user checkout entry point
 - `routes/instance.ts`: owned instance read models plus renewals
 - `routes/admin.ts`: payment confirmation, provisioning, and admin reads
 - `services/billing.ts`: shared `order -> invoice -> transaction` logic
-- `services/pricing.ts`: price calculation only
+- `services/plan.ts`: active plan catalog with grouped pricing options
+- `services/pricing.ts`: price calculation using `plan_pricing`
 
 ## Rules
 

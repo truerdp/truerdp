@@ -195,3 +195,5 @@ Seeded local credentials:
 
 - Admin: `admin@truerdp.local` / `password123`
 - User: `user@truerdp.local` / `password123`
+- Plan: `Starter RDP`
+- Pricing options: `30 days / 500`, `90 days / 1299`
