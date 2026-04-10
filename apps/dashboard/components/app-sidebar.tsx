@@ -21,6 +21,7 @@ import {
   CreditCardIcon,
 } from "@hugeicons/core-free-icons"
 import { dashboardPaths } from "@/lib/paths"
+import { useProfile } from "@/hooks/use-profile"
 
 const team = {
   name: "TrueRDP",
@@ -46,19 +47,26 @@ const navMain = [
   },
 ]
 
+const fallbackAvatar = "/avatars/shadcn.jpg"
+
 const data = {
-  user: {
-    name: "shadcn",
-    email: "m@example.com",
-    avatar: "/avatars/shadcn.jpg",
-  },
   teams: [team],
   navMain,
 }
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  const { data: profile, isLoading: isProfileLoading } = useProfile()
   const segments = useSelectedLayoutSegments()
   const primarySegment = segments[0]
+  const profileName = `${profile?.firstName ?? ""} ${profile?.lastName ?? ""}`
+    .trim()
+    .replace(/\s+/g, " ")
+
+  const user = {
+    name: profileName,
+    email: profile?.email ?? "",
+    avatar: fallbackAvatar,
+  }
 
   return (
     <Sidebar collapsible="icon" {...props}>
@@ -79,7 +87,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         />
       </SidebarContent>
       <SidebarFooter>
-        <NavUser user={data.user} />
+        <NavUser user={user} isLoading={isProfileLoading} />
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>

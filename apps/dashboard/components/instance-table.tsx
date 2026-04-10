@@ -69,11 +69,7 @@ function isExpired(dateString: string | null): boolean {
 
 export default function InstanceTable({ instances }: InstanceTableProps) {
   if (instances.length === 0) {
-    return (
-      <div className="rounded-md border">
-        <InstancesEmptyState />
-      </div>
-    )
+    return <InstancesEmptyState />
   }
 
   return (

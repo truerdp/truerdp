@@ -10,12 +10,6 @@ import TerminateInstanceDialog from "@/components/terminate-instance-dialog"
 import { useExpiredInstances } from "@/hooks/use-expired-instances"
 import { useExpiringSoonInstances } from "@/hooks/use-expiring-soon-instances"
 import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@workspace/ui/components/card"
-import {
   Empty,
   EmptyDescription,
   EmptyHeader,
@@ -106,7 +100,7 @@ function TableSkeleton({
 
 function DashboardEmptyState({ title }: { title: string }) {
   return (
-    <Empty className="rounded-3xl border border-dashed py-10">
+    <Empty>
       <EmptyHeader>
         <EmptyMedia variant="icon">
           <HugeiconsIcon icon={ComputerTerminalIcon} strokeWidth={2} />
@@ -153,148 +147,143 @@ export default function Page() {
         </p>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Expiring Soon</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {isExpiringSoonLoading ? (
-            <div className="rounded-lg border">
-              <TableSkeleton
-                columns={["Instance ID", "Expiry Date", "Days Until Expiry"]}
-              />
-            </div>
-          ) : isExpiringSoonError ? (
-            <ErrorMessage
-              message={
-                expiringSoonError.message ||
-                "Failed to load expiring instances."
-              }
+      <section className="space-y-3">
+        <h2 className="text-lg font-semibold">Expiring Soon</h2>
+        {isExpiringSoonLoading ? (
+          <div className="rounded-lg border">
+            <TableSkeleton
+              columns={["Instance ID", "Expiry Date", "Days Until Expiry"]}
             />
-          ) : expiringSoonInstances.length === 0 ? (
+          </div>
+        ) : isExpiringSoonError ? (
+          <ErrorMessage
+            message={
+              expiringSoonError.message || "Failed to load expiring instances."
+            }
+          />
+        ) : expiringSoonInstances.length === 0 ? (
+          <div className="rounded-lg border">
             <DashboardEmptyState title="No instances expiring soon" />
-          ) : (
-            <div className="rounded-lg border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Instance ID</TableHead>
-                    <TableHead>Expiry Date</TableHead>
-                    <TableHead>Days Until Expiry</TableHead>
-                    <TableHead>Action</TableHead>
+          </div>
+        ) : (
+          <div className="rounded-lg border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Instance ID</TableHead>
+                  <TableHead>Expiry Date</TableHead>
+                  <TableHead>Days Until Expiry</TableHead>
+                  <TableHead>Action</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {expiringSoonInstances.map((instance) => (
+                  <TableRow
+                    key={instance.id}
+                    className={cn(
+                      getExpiringSoonRowClassName(instance.daysUntilExpiry)
+                    )}
+                  >
+                    <TableCell className="font-mono text-sm">
+                      #{instance.id}
+                    </TableCell>
+                    <TableCell>{formatDate(instance.expiryDate)}</TableCell>
+                    <TableCell>
+                      <div className="flex gap-3">
+                        <span className="font-medium">
+                          {instance.daysUntilExpiry}
+                        </span>
+                        <ExpiringSoonStatusBadge
+                          daysUntilExpiry={instance.daysUntilExpiry}
+                        />
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <ExtendInstanceDialog
+                        instanceId={instance.id}
+                        expiryDate={instance.expiryDate}
+                      />
+                    </TableCell>
                   </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {expiringSoonInstances.map((instance) => (
-                    <TableRow
-                      key={instance.id}
-                      className={cn(
-                        getExpiringSoonRowClassName(instance.daysUntilExpiry)
-                      )}
-                    >
-                      <TableCell className="font-mono text-sm">
-                        #{instance.id}
-                      </TableCell>
-                      <TableCell>{formatDate(instance.expiryDate)}</TableCell>
-                      <TableCell>
-                        <div className="flex gap-3">
-                          <span className="font-medium">
-                            {instance.daysUntilExpiry}
-                          </span>
-                          <ExpiringSoonStatusBadge
-                            daysUntilExpiry={instance.daysUntilExpiry}
-                          />
-                        </div>
-                      </TableCell>
-                      <TableCell>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )}
+      </section>
+
+      <section className="space-y-3">
+        <h2 className="text-lg font-semibold">Expired Instances</h2>
+        {isExpiredLoading ? (
+          <div className="rounded-lg border">
+            <TableSkeleton
+              columns={[
+                "Instance ID",
+                "Expiry Date",
+                "Days Since Expiry",
+                "Action",
+              ]}
+            />
+          </div>
+        ) : isExpiredError ? (
+          <ErrorMessage
+            message={
+              expiredError.message || "Failed to load expired instances."
+            }
+          />
+        ) : expiredInstances.length === 0 ? (
+          <div className="rounded-lg border">
+            <DashboardEmptyState title="No expired instances" />
+          </div>
+        ) : (
+          <div className="rounded-lg border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Instance ID</TableHead>
+                  <TableHead>Expiry Date</TableHead>
+                  <TableHead>Days Since Expiry</TableHead>
+                  <TableHead>Action</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {expiredInstances.map((instance) => (
+                  <TableRow
+                    key={instance.id}
+                    className={cn(
+                      getExpiredRowClassName(instance.daysSinceExpiry)
+                    )}
+                  >
+                    <TableCell className="font-mono text-sm">
+                      #{instance.id}
+                    </TableCell>
+                    <TableCell>{formatDate(instance.expiryDate)}</TableCell>
+                    <TableCell>
+                      <div className="flex gap-3">
+                        <span className="font-medium">
+                          {instance.daysSinceExpiry}
+                        </span>
+                        <ExpiredStatusBadge
+                          daysSinceExpiry={instance.daysSinceExpiry}
+                        />
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
                         <ExtendInstanceDialog
                           instanceId={instance.id}
                           expiryDate={instance.expiryDate}
                         />
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Expired Instances</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {isExpiredLoading ? (
-            <div className="rounded-lg border">
-              <TableSkeleton
-                columns={[
-                  "Instance ID",
-                  "Expiry Date",
-                  "Days Since Expiry",
-                  "Action",
-                ]}
-              />
-            </div>
-          ) : isExpiredError ? (
-            <ErrorMessage
-              message={
-                expiredError.message || "Failed to load expired instances."
-              }
-            />
-          ) : expiredInstances.length === 0 ? (
-            <DashboardEmptyState title="No expired instances" />
-          ) : (
-            <div className="rounded-lg border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Instance ID</TableHead>
-                    <TableHead>Expiry Date</TableHead>
-                    <TableHead>Days Since Expiry</TableHead>
-                    <TableHead>Action</TableHead>
+                        <TerminateInstanceDialog instanceId={instance.id} />
+                      </div>
+                    </TableCell>
                   </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {expiredInstances.map((instance) => (
-                    <TableRow
-                      key={instance.id}
-                      className={cn(
-                        getExpiredRowClassName(instance.daysSinceExpiry)
-                      )}
-                    >
-                      <TableCell className="font-mono text-sm">
-                        #{instance.id}
-                      </TableCell>
-                      <TableCell>{formatDate(instance.expiryDate)}</TableCell>
-                      <TableCell>
-                        <div className="flex gap-3">
-                          <span className="font-medium">
-                            {instance.daysSinceExpiry}
-                          </span>
-                          <ExpiredStatusBadge
-                            daysSinceExpiry={instance.daysSinceExpiry}
-                          />
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <ExtendInstanceDialog
-                            instanceId={instance.id}
-                            expiryDate={instance.expiryDate}
-                          />
-                          <TerminateInstanceDialog instanceId={instance.id} />
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )}
+      </section>
     </section>
   )
 }

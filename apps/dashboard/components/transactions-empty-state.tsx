@@ -8,22 +8,22 @@ import {
   EmptyTitle,
 } from "@workspace/ui/components/empty"
 import { HugeiconsIcon } from "@hugeicons/react"
-import { ServerStack01Icon } from "@hugeicons/core-free-icons"
+import { CreditCardIcon } from "@hugeicons/core-free-icons"
 
-interface InstancesEmptyStateProps {
+interface TransactionsEmptyStateProps {
   description?: string
 }
 
-export default function InstancesEmptyState({
-  description = "Buy a plan to get started",
-}: InstancesEmptyStateProps) {
+export default function TransactionsEmptyState({
+  description = "Your completed and pending payments will appear here",
+}: TransactionsEmptyStateProps) {
   return (
     <Empty>
       <EmptyHeader>
         <EmptyMedia variant="icon">
-          <HugeiconsIcon icon={ServerStack01Icon} />
+          <HugeiconsIcon icon={CreditCardIcon} />
         </EmptyMedia>
-        <EmptyTitle>No instances found</EmptyTitle>
+        <EmptyTitle>No transactions found</EmptyTitle>
         <EmptyDescription>{description}</EmptyDescription>
       </EmptyHeader>
     </Empty>

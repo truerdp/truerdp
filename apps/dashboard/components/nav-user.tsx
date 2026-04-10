@@ -20,6 +20,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@workspace/ui/components/sidebar"
+import { Skeleton } from "@workspace/ui/components/skeleton"
 import { HugeiconsIcon } from "@hugeicons/react"
 import {
   UnfoldMoreIcon,
@@ -32,14 +33,41 @@ import {
 
 export function NavUser({
   user,
+  isLoading = false,
 }: {
   user: {
     name: string
     email: string
     avatar: string
   }
+  isLoading?: boolean
 }) {
   const { isMobile } = useSidebar()
+
+  const userText = isLoading ? (
+    <div className="grid flex-1 gap-1 text-left">
+      <Skeleton className="h-4 w-20" />
+      <Skeleton className="h-3 w-28" />
+    </div>
+  ) : (
+    <div className="grid flex-1 text-left text-sm leading-tight">
+      <span className="truncate font-medium">{user.name}</span>
+      <span className="truncate text-xs">{user.email}</span>
+    </div>
+  )
+
+  const menuUserText = isLoading ? (
+    <div className="grid flex-1 gap-1 text-left">
+      <Skeleton className="h-4 w-20" />
+      <Skeleton className="h-3 w-28" />
+    </div>
+  ) : (
+    <div className="grid flex-1 text-left text-sm leading-tight">
+      <span className="truncate font-medium">{user.name}</span>
+      <span className="truncate text-xs">{user.email}</span>
+    </div>
+  )
+
   return (
     <SidebarMenu>
       <SidebarMenuItem>
@@ -53,10 +81,7 @@ export function NavUser({
               <AvatarImage src={user.avatar} alt={user.name} />
               <AvatarFallback>CN</AvatarFallback>
             </Avatar>
-            <div className="grid flex-1 text-left text-sm leading-tight">
-              <span className="truncate font-medium">{user.name}</span>
-              <span className="truncate text-xs">{user.email}</span>
-            </div>
+            {userText}
             <HugeiconsIcon
               icon={UnfoldMoreIcon}
               strokeWidth={2}
@@ -76,10 +101,7 @@ export function NavUser({
                     <AvatarImage src={user.avatar} alt={user.name} />
                     <AvatarFallback>CN</AvatarFallback>
                   </Avatar>
-                  <div className="grid flex-1 text-left text-sm leading-tight">
-                    <span className="truncate font-medium">{user.name}</span>
-                    <span className="truncate text-xs">{user.email}</span>
-                  </div>
+                  {menuUserText}
                 </div>
               </DropdownMenuLabel>
             </DropdownMenuGroup>

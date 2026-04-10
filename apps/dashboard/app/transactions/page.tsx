@@ -2,6 +2,7 @@
 
 import { format } from "date-fns"
 import { useTransactions, type Transaction } from "@/hooks/use-transactions"
+import TransactionsEmptyState from "@/components/transactions-empty-state"
 import { Badge } from "@workspace/ui/components/badge"
 import { Skeleton } from "@workspace/ui/components/skeleton"
 import {
@@ -116,7 +117,9 @@ export default function TransactionsPage() {
     return (
       <div className="space-y-6">
         <h1 className="text-2xl font-bold">Transactions</h1>
-        <TransactionsTableSkeleton />
+        <div className="rounded-lg border">
+          <TransactionsTableSkeleton />
+        </div>
       </div>
     )
   }
@@ -132,9 +135,14 @@ export default function TransactionsPage() {
   if (!transactions || transactions.length === 0) {
     return (
       <div className="space-y-6">
-        <h1 className="text-2xl font-bold">Transactions</h1>
-        <div className="rounded-md border p-6 text-sm text-muted-foreground">
-          No transactions found
+        <div>
+          <h1 className="text-2xl font-bold">Transactions</h1>
+          <p className="text-sm text-muted-foreground">
+            Your completed and pending payments are listed below.
+          </p>
+        </div>
+        <div className="rounded-lg border">
+          <TransactionsEmptyState />
         </div>
       </div>
     )
@@ -143,7 +151,9 @@ export default function TransactionsPage() {
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">Transactions</h1>
-
+      <p className="text-sm text-muted-foreground">
+        Your completed and pending payments are listed below.
+      </p>
       <div className="rounded-lg border">
         <Table>
           <TableHeader>

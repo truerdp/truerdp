@@ -1,6 +1,7 @@
 "use client"
 
 import InstanceTable from "@/components/instance-table"
+import TransactionsEmptyState from "@/components/transactions-empty-state"
 import { useInstances } from "@/hooks/use-instances"
 import { useTransactions } from "@/hooks/use-transactions"
 import { HugeiconsIcon } from "@hugeicons/react"
@@ -227,12 +228,12 @@ export default function DashboardPage() {
             View All
           </Link>
         </div>
-        <div className="rounded-lg border">
-          {recentTransactions.length === 0 ? (
-            <div className="text-sm text-muted-foreground">
-              No recent transactions
-            </div>
-          ) : (
+        {recentTransactions.length === 0 ? (
+          <div className="rounded-lg border">
+            <TransactionsEmptyState />
+          </div>
+        ) : (
+          <div className="rounded-lg border">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -261,8 +262,8 @@ export default function DashboardPage() {
                 ))}
               </TableBody>
             </Table>
-          )}
-        </div>
+          </div>
+        )}
       </section>
     </div>
   )

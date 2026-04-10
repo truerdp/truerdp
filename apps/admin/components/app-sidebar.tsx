@@ -21,6 +21,7 @@ import {
   Alert02Icon,
 } from "@hugeicons/core-free-icons"
 import { adminPaths } from "@/lib/paths"
+import { useProfile } from "@/hooks/use-profile"
 
 const team = {
   name: "TrueRDP",
@@ -46,18 +47,25 @@ const navMain = [
   },
 ]
 
+const fallbackAvatar = "/avatars/admin.jpg"
+
 const data = {
-  user: {
-    name: "Admin",
-    email: "admin@truerdp.com",
-    avatar: "/avatars/admin.jpg",
-  },
   teams: [team],
   navMain,
 }
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  const { data: profile, isLoading: isProfileLoading } = useProfile()
   const segments = useSelectedLayoutSegments()
+  const profileName = `${profile?.firstName ?? ""} ${profile?.lastName ?? ""}`
+    .trim()
+    .replace(/\s+/g, " ")
+
+  const user = {
+    name: profileName,
+    email: profile?.email ?? "",
+    avatar: fallbackAvatar,
+  }
 
   return (
     <Sidebar collapsible="icon" {...props}>
@@ -80,7 +88,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         />
       </SidebarContent>
       <SidebarFooter>
-        <NavUser user={data.user} />
+        <NavUser user={user} isLoading={isProfileLoading} />
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>
