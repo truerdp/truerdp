@@ -1,25 +1,19 @@
 import {
+  boolean,
+  index,
+  integer,
+  jsonb,
+  pgEnum,
   pgTable,
   serial,
   text,
-  integer,
-  boolean,
   timestamp,
-  pgEnum,
-  index,
   uniqueIndex,
-  jsonb,
 } from "drizzle-orm/pg-core"
 
 /* ================= ENUMS ================= */
 
 export const roleEnum = pgEnum("role", ["user", "operator", "admin"])
-
-export const serverStatusEnum = pgEnum("server_status", [
-  "available",
-  "reserved",
-  "assigned",
-])
 
 export const instanceStatusEnum = pgEnum("instance_status", [
   "pending",
@@ -28,6 +22,15 @@ export const instanceStatusEnum = pgEnum("instance_status", [
   "expired",
   "termination_pending",
   "terminated",
+  "failed",
+])
+
+export const resourceStatusEnum = pgEnum("resource_status", [
+  "creating",
+  "running",
+  "stopped",
+  "failed",
+  "deleted",
 ])
 
 export const transactionStatusEnum = pgEnum("transaction_status", [
@@ -52,10 +55,14 @@ export const invoiceStatusEnum = pgEnum("invoice_status", [
 export const paymentMethodEnum = pgEnum("payment_method", [
   "upi",
   "usdt_trc20",
-  "paypal",
 ])
 
 export const couponTypeEnum = pgEnum("coupon_type", ["percent", "flat"])
+
+export const purchaseKindEnum = pgEnum("purchase_kind", [
+  "new_purchase",
+  "renewal",
+])
 
 export const ticketStatusEnum = pgEnum("ticket_status", ["open", "closed"])
 export const senderTypeEnum = pgEnum("sender_type", ["user", "admin"])
@@ -71,32 +78,6 @@ export const users = pgTable("users", {
   lastName: text("last_name").notNull(),
   role: roleEnum("role").default("user").notNull(),
 
-  // TODO: phase out later (replaced by coupons)
-  discountPercent: integer("discount_percent").default(0),
-  discountFlat: integer("discount_flat").default(0),
-
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at")
-    .defaultNow()
-    .$onUpdateFn(() => new Date())
-    .notNull(),
-})
-
-/* ================= SERVERS ================= */
-
-export const servers = pgTable("servers", {
-  id: serial("id").primaryKey(),
-
-  ipAddress: text("ip_address").notNull().unique(),
-  username: text("username").notNull(),
-  password: text("password").notNull(), // TODO: encrypt at rest
-
-  cpu: integer("cpu").notNull(),
-  ram: integer("ram").notNull(),
-  storage: integer("storage").notNull(),
-
-  status: serverStatusEnum("status").default("available").notNull(),
-
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at")
     .defaultNow()
@@ -110,7 +91,6 @@ export const plans = pgTable("plans", {
   id: serial("id").primaryKey(),
 
   name: text("name").notNull(),
-
   cpu: integer("cpu").notNull(),
   ram: integer("ram").notNull(),
   storage: integer("storage").notNull(),
@@ -123,40 +103,6 @@ export const plans = pgTable("plans", {
     .$onUpdateFn(() => new Date())
     .notNull(),
 })
-
-/* ================= INSTANCES ================= */
-
-export const instances = pgTable("instances", {
-  id: serial("id").primaryKey(),
-
-  userId: integer("user_id")
-    .notNull()
-    .references(() => users.id),
-
-  serverId: integer("server_id").references(() => servers.id),
-
-  planId: integer("plan_id")
-    .notNull()
-    .references(() => plans.id),
-
-  status: instanceStatusEnum("status").default("pending").notNull(),
-
-  ipAddress: text("ip_address"),
-  username: text("username"),
-  password: text("password"),
-
-  startDate: timestamp("start_date"),
-  expiryDate: timestamp("expiry_date"),
-  terminatedAt: timestamp("terminated_at"),
-
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at")
-    .defaultNow()
-    .$onUpdateFn(() => new Date())
-    .notNull(),
-})
-
-// RULE: Instances must ONLY be created AFTER invoice.status = "paid"
 
 /* ================= PLAN PRICING ================= */
 
@@ -208,7 +154,9 @@ export const orders = pgTable(
       .notNull()
       .references(() => planPricing.id),
 
-    // Snapshot (critical)
+    kind: purchaseKindEnum("kind").default("new_purchase").notNull(),
+
+    // Snapshot of the product the user purchased at checkout time.
     planName: text("plan_name").notNull(),
     planPrice: integer("plan_price").notNull(),
     durationDays: integer("duration_days").notNull(),
@@ -225,6 +173,8 @@ export const orders = pgTable(
     userIdIdx: index("orders_user_id_idx").on(table.userId),
     planIdIdx: index("orders_plan_id_idx").on(table.planId),
     planPricingIdIdx: index("orders_plan_pricing_id_idx").on(table.planPricingId),
+    kindIdx: index("orders_kind_idx").on(table.kind),
+    statusIdx: index("orders_status_idx").on(table.status),
   })
 )
 
@@ -266,18 +216,13 @@ export const invoices = pgTable(
       .notNull()
       .references(() => orders.id),
 
-    // IMPORTANT: generate safely (DB sequence or UUID, NOT count-based)
     invoiceNumber: text("invoice_number").notNull(),
 
     subtotal: integer("subtotal").notNull(),
     discount: integer("discount").default(0).notNull(),
     totalAmount: integer("total_amount").notNull(),
 
-    // discount must be <= subtotal
-    // totalAmount must equal subtotal - discount
-
     currency: text("currency").default("USD").notNull(),
-
     couponId: integer("coupon_id").references(() => coupons.id),
 
     status: invoiceStatusEnum("status").default("unpaid").notNull(),
@@ -298,6 +243,91 @@ export const invoices = pgTable(
     ),
     statusIdx: index("invoices_status_idx").on(table.status),
     expiresAtIdx: index("invoices_expires_at_idx").on(table.expiresAt),
+  })
+)
+
+/* ================= INSTANCES ================= */
+
+export const instances = pgTable(
+  "instances",
+  {
+    id: serial("id").primaryKey(),
+
+    userId: integer("user_id")
+      .notNull()
+      .references(() => users.id),
+
+    originOrderId: integer("origin_order_id")
+      .notNull()
+      .references(() => orders.id),
+
+    planId: integer("plan_id")
+      .notNull()
+      .references(() => plans.id),
+
+    status: instanceStatusEnum("status").default("pending").notNull(),
+
+    startDate: timestamp("start_date"),
+    expiryDate: timestamp("expiry_date"),
+    terminatedAt: timestamp("terminated_at"),
+
+    provisionAttempts: integer("provision_attempts").default(0).notNull(),
+    lastProvisionError: text("last_provision_error"),
+
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdateFn(() => new Date())
+      .notNull(),
+  },
+  (table) => ({
+    userIdIdx: index("instances_user_id_idx").on(table.userId),
+    planIdIdx: index("instances_plan_id_idx").on(table.planId),
+    statusIdx: index("instances_status_idx").on(table.status),
+    expiryDateIdx: index("instances_expiry_date_idx").on(table.expiryDate),
+    originOrderIdIdx: index("instances_origin_order_id_idx").on(
+      table.originOrderId
+    ),
+  })
+)
+
+/* ================= RESOURCES ================= */
+
+export const resources = pgTable(
+  "resources",
+  {
+    id: serial("id").primaryKey(),
+
+    instanceId: integer("instance_id")
+      .notNull()
+      .references(() => instances.id),
+
+    provider: text("provider").default("manual").notNull(),
+    externalId: text("external_id"),
+
+    ipAddress: text("ip_address"),
+    username: text("username"),
+    passwordEncrypted: text("password_encrypted"),
+
+    status: resourceStatusEnum("status").default("creating").notNull(),
+
+    lastSyncedAt: timestamp("last_synced_at"),
+    healthStatus: text("health_status"),
+
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdateFn(() => new Date())
+      .notNull(),
+  },
+  (table) => ({
+    instanceUnique: uniqueIndex("resources_instance_id_unique").on(
+      table.instanceId
+    ),
+    statusIdx: index("resources_status_idx").on(table.status),
+    providerExternalIdUnique: uniqueIndex(
+      "resources_provider_external_id_unique"
+    ).on(table.provider, table.externalId),
   })
 )
 
@@ -348,6 +378,8 @@ export const transactions = pgTable(
       .notNull()
       .references(() => invoices.id),
 
+    instanceId: integer("instance_id").references(() => instances.id),
+
     amount: integer("amount").notNull(),
 
     method: paymentMethodEnum("method").notNull(),
@@ -356,6 +388,7 @@ export const transactions = pgTable(
     status: transactionStatusEnum("status").default("pending").notNull(),
 
     reference: text("reference"),
+    idempotencyKey: text("idempotency_key"),
     failureReason: text("failure_reason"),
     metadata: jsonb("metadata"),
 
@@ -369,6 +402,14 @@ export const transactions = pgTable(
   (table) => ({
     invoiceIdIdx: index("transactions_invoice_id_idx").on(table.invoiceId),
     userIdIdx: index("transactions_user_id_idx").on(table.userId),
+    instanceIdIdx: index("transactions_instance_id_idx").on(table.instanceId),
+    statusIdx: index("transactions_status_idx").on(table.status),
+    referenceUnique: uniqueIndex("transactions_reference_unique").on(
+      table.reference
+    ),
+    idempotencyKeyUnique: uniqueIndex("transactions_idempotency_key_unique").on(
+      table.idempotencyKey
+    ),
   })
 )
 
@@ -382,7 +423,6 @@ export const tickets = pgTable("tickets", {
     .references(() => users.id),
 
   subject: text("subject").notNull(),
-
   status: ticketStatusEnum("status").default("open").notNull(),
 
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -400,7 +440,6 @@ export const messages = pgTable("messages", {
     .references(() => tickets.id),
 
   senderType: senderTypeEnum("sender_type").notNull(),
-
   message: text("message").notNull(),
 
   createdAt: timestamp("created_at").defaultNow().notNull(),

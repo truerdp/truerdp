@@ -15,6 +15,20 @@
       "when": 1775638278584,
       "tag": "0001_cheerful_iron_man",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1775648278584,
+      "tag": "0002_rich_nightcrawler",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1776230547383,
+      "tag": "0003_high_shen",
+      "breakpoints": true
     }
   ]
 }

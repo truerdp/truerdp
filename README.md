@@ -145,6 +145,7 @@ Backend env values (`apps/backend/.env.example`):
 DATABASE_URL="postgres://postgres:postgres@localhost:5432/truerdp"
 PORT=3003
 JWT_SECRET=change-this-in-production
+RESOURCE_CREDENTIALS_SECRET=change-this-too
 ```
 
 ## Commands

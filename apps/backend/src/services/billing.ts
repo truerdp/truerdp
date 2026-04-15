@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto"
-import { and, asc, desc, eq, inArray, sql } from "drizzle-orm"
+import { and, asc, desc, eq, inArray } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "../db.js"
 import {
@@ -8,6 +8,7 @@ import {
   orders,
   planPricing,
   plans,
+  resources,
   transactions,
 } from "../schema.js"
 import { calculatePrice } from "./pricing.js"
@@ -19,20 +20,6 @@ export const supportedPaymentMethodSchema = z.enum(["upi", "usdt_trc20"])
 export type SupportedPaymentMethod = z.infer<
   typeof supportedPaymentMethodSchema
 >
-
-const billingTransactionMetadataSchema = z.object({
-  purchaseType: z.enum(["new_purchase", "renewal"]).optional(),
-  instanceId: z.number().int().positive().nullable().optional(),
-  orderId: z.number().int().positive().optional(),
-  planPricingId: z.number().int().positive().optional(),
-})
-
-type BillingTransactionMetadata = {
-  purchaseType: "new_purchase" | "renewal"
-  instanceId: number | null
-  orderId?: number
-  planPricingId?: number
-}
 
 type TransactionSummaryRow = Awaited<
   ReturnType<ReturnType<typeof buildTransactionSummaryQuery>["orderBy"]>
@@ -56,31 +43,12 @@ function requireInsertedRecord<T>(value: T | undefined, label: string): T {
   return value
 }
 
-function parseBillingTransactionMetadata(
-  metadata: unknown
-): BillingTransactionMetadata {
-  const parsed = billingTransactionMetadataSchema.safeParse(metadata)
-
-  if (!parsed.success) {
-    return {
-      purchaseType: "new_purchase",
-      instanceId: null,
-    }
-  }
-
-  const instanceId = parsed.data.instanceId ?? null
-
-  return {
-    purchaseType:
-      parsed.data.purchaseType ?? (instanceId ? "renewal" : "new_purchase"),
-    instanceId,
-    orderId: parsed.data.orderId,
-    planPricingId: parsed.data.planPricingId,
-  }
-}
-
 function createInvoiceNumber() {
   return `INV-${randomUUID().replaceAll("-", "").slice(0, 12).toUpperCase()}`
+}
+
+function createTransactionReference() {
+  return `TXN-${randomUUID().replaceAll("-", "").slice(0, 12).toUpperCase()}`
 }
 
 function createInvoiceExpiry(baseDate = new Date()) {
@@ -95,14 +63,16 @@ function buildTransactionSummaryQuery() {
       transaction: {
         id: transactions.id,
         userId: transactions.userId,
+        invoiceId: transactions.invoiceId,
+        instanceId: transactions.instanceId,
         amount: transactions.amount,
         method: transactions.method,
+        gateway: transactions.gateway,
         status: transactions.status,
         reference: transactions.reference,
         failureReason: transactions.failureReason,
         createdAt: transactions.createdAt,
         confirmedAt: transactions.confirmedAt,
-        metadata: transactions.metadata,
       },
       invoice: {
         id: invoices.id,
@@ -115,6 +85,7 @@ function buildTransactionSummaryQuery() {
       },
       order: {
         id: orders.id,
+        kind: orders.kind,
         planId: orders.planId,
         planPricingId: orders.planPricingId,
         planName: orders.planName,
@@ -128,52 +99,46 @@ function buildTransactionSummaryQuery() {
         ram: plans.ram,
         storage: plans.storage,
       },
-      pricing: {
-        id: planPricing.id,
-        durationDays: planPricing.durationDays,
-        price: planPricing.price,
-      },
     })
     .from(transactions)
     .innerJoin(invoices, eq(transactions.invoiceId, invoices.id))
     .innerJoin(orders, eq(invoices.orderId, orders.id))
     .leftJoin(plans, eq(orders.planId, plans.id))
-    .leftJoin(planPricing, eq(orders.planPricingId, planPricing.id))
 }
 
-async function loadInstanceMap(rows: TransactionSummaryRow[]) {
+async function loadResourceMap(rows: TransactionSummaryRow[]) {
   const instanceIds = Array.from(
     new Set(
       rows
-        .map((row) => parseBillingTransactionMetadata(row.transaction.metadata))
-        .map((metadata) => metadata.instanceId)
+        .map((row) => row.transaction.instanceId)
         .filter((instanceId): instanceId is number => instanceId != null)
     )
   )
 
   if (instanceIds.length === 0) {
-    return new Map<number, { id: number; ipAddress: string | null }>()
+    return new Map<number, { instanceId: number; ipAddress: string | null }>()
   }
 
-  const linkedInstances = await db
+  const linkedResources = await db
     .select({
-      id: instances.id,
-      ipAddress: instances.ipAddress,
+      instanceId: resources.instanceId,
+      ipAddress: resources.ipAddress,
     })
-    .from(instances)
-    .where(inArray(instances.id, instanceIds))
+    .from(resources)
+    .where(inArray(resources.instanceId, instanceIds))
 
-  return new Map(linkedInstances.map((instance) => [instance.id, instance]))
+  return new Map(
+    linkedResources.map((resource) => [resource.instanceId, resource])
+  )
 }
 
 async function mapTransactionSummaries(rows: TransactionSummaryRow[]) {
-  const instanceMap = await loadInstanceMap(rows)
+  const resourceMap = await loadResourceMap(rows)
 
   return rows.map((row) => {
-    const metadata = parseBillingTransactionMetadata(row.transaction.metadata)
-    const instance = metadata.instanceId
-      ? instanceMap.get(metadata.instanceId) ?? {
-          id: metadata.instanceId,
+    const instance = row.transaction.instanceId
+      ? resourceMap.get(row.transaction.instanceId) ?? {
+          instanceId: row.transaction.instanceId,
           ipAddress: null,
         }
       : null
@@ -188,7 +153,7 @@ async function mapTransactionSummaries(rows: TransactionSummaryRow[]) {
       confirmedAt: row.transaction.confirmedAt,
       reference: row.transaction.reference,
       failureReason: row.transaction.failureReason,
-      kind: metadata.purchaseType,
+      kind: row.order.kind,
       order: {
         id: row.order.id,
         status: row.order.status,
@@ -214,7 +179,12 @@ async function mapTransactionSummaries(rows: TransactionSummaryRow[]) {
         ram: row.plan?.ram ?? 0,
         storage: row.plan?.storage ?? 0,
       },
-      instance,
+      instance: instance
+        ? {
+            id: instance.instanceId,
+            ipAddress: instance.ipAddress,
+          }
+        : null,
     }
   })
 }
@@ -273,8 +243,8 @@ export async function findPendingTransactionForInstance(
     .where(
       and(
         eq(transactions.userId, userId),
-        eq(transactions.status, "pending"),
-        sql`${transactions.metadata} ->> 'instanceId' = ${String(instanceId)}`
+        eq(transactions.instanceId, instanceId),
+        eq(transactions.status, "pending")
       )
     )
     .limit(1)
@@ -300,7 +270,7 @@ export async function createBillingTransaction(input: {
 
   const totalAmount = await calculatePrice(input.userId, input.planPricingId)
   const discount = Math.max(0, pricingSelection.price - totalAmount)
-  const purchaseType = input.instanceId ? "renewal" : "new_purchase"
+  const orderKind = input.instanceId ? "renewal" : "new_purchase"
   const now = new Date()
 
   const created = await db.transaction(async (tx) => {
@@ -310,6 +280,7 @@ export async function createBillingTransaction(input: {
         userId: input.userId,
         planId: pricingSelection.plan.id,
         planPricingId: pricingSelection.id,
+        kind: orderKind,
         planName: pricingSelection.plan.name,
         planPrice: pricingSelection.price,
         durationDays: pricingSelection.durationDays,
@@ -339,15 +310,11 @@ export async function createBillingTransaction(input: {
       .values({
         userId: input.userId,
         invoiceId: invoice.id,
+        instanceId: input.instanceId ?? null,
         amount: invoice.totalAmount,
         method: input.method,
         status: "pending",
-        metadata: {
-          purchaseType,
-          instanceId: input.instanceId ?? null,
-          orderId: order.id,
-          planPricingId: pricingSelection.id,
-        },
+        reference: createTransactionReference(),
       })
       .returning()
 
@@ -371,7 +338,8 @@ export async function createBillingTransaction(input: {
     status: created.transaction.status,
     createdAt: created.transaction.createdAt,
     confirmedAt: created.transaction.confirmedAt,
-    kind: purchaseType,
+    reference: created.transaction.reference,
+    kind: created.order.kind,
     order: {
       id: created.order.id,
       status: created.order.status,
@@ -419,7 +387,7 @@ export async function listInstanceTransactions(userId: number, instanceId: numbe
     .where(
       and(
         eq(transactions.userId, userId),
-        sql`${transactions.metadata} ->> 'instanceId' = ${String(instanceId)}`
+        eq(transactions.instanceId, instanceId)
       )
     )
     .orderBy(desc(transactions.createdAt))
@@ -443,10 +411,10 @@ export async function confirmPendingTransaction(transactionId: number) {
           id: transactions.id,
           userId: transactions.userId,
           invoiceId: transactions.invoiceId,
+          instanceId: transactions.instanceId,
           amount: transactions.amount,
           method: transactions.method,
           status: transactions.status,
-          metadata: transactions.metadata,
         },
         invoice: {
           id: invoices.id,
@@ -454,6 +422,7 @@ export async function confirmPendingTransaction(transactionId: number) {
         },
         order: {
           id: orders.id,
+          kind: orders.kind,
           planId: orders.planId,
           planPricingId: orders.planPricingId,
           durationDays: orders.durationDays,
@@ -480,21 +449,19 @@ export async function confirmPendingTransaction(transactionId: number) {
       throw new BillingError(400, "Invoice already paid")
     }
 
-    const metadata = parseBillingTransactionMetadata(current.transaction.metadata)
     const now = new Date()
-
     let instance = null
     let orderStatus: "processing" | "completed" = "processing"
 
-    if (metadata.purchaseType === "renewal") {
-      if (!metadata.instanceId) {
+    if (current.order.kind === "renewal") {
+      if (!current.transaction.instanceId) {
         throw new BillingError(400, "Renewal transaction missing instanceId")
       }
 
       const instanceResult = await tx
         .select()
         .from(instances)
-        .where(eq(instances.id, metadata.instanceId))
+        .where(eq(instances.id, current.transaction.instanceId))
         .limit(1)
 
       const existingInstance = instanceResult[0]
@@ -535,6 +502,7 @@ export async function confirmPendingTransaction(transactionId: number) {
         .insert(instances)
         .values({
           userId: current.transaction.userId,
+          originOrderId: current.order.id,
           planId: current.order.planId,
           status: "pending",
         })
@@ -543,19 +511,12 @@ export async function confirmPendingTransaction(transactionId: number) {
       instance = createdInstance[0] ?? null
     }
 
-    const nextMetadata = {
-      purchaseType: metadata.purchaseType,
-      instanceId: instance?.id ?? metadata.instanceId ?? null,
-      orderId: current.order.id,
-      planPricingId: current.order.planPricingId,
-    }
-
     await tx
       .update(transactions)
       .set({
+        instanceId: instance?.id ?? current.transaction.instanceId ?? null,
         status: "confirmed",
         confirmedAt: now,
-        metadata: nextMetadata,
       })
       .where(eq(transactions.id, current.transaction.id))
 
@@ -576,7 +537,7 @@ export async function confirmPendingTransaction(transactionId: number) {
 
     return {
       message:
-        metadata.purchaseType === "renewal"
+        current.order.kind === "renewal"
           ? "Renewal successful. Instance extended."
           : "Payment confirmed. Instance pending provisioning.",
       instance,
@@ -593,7 +554,7 @@ export async function confirmPendingTransaction(transactionId: number) {
         status: "confirmed" as const,
         confirmedAt: now,
       },
-      kind: metadata.purchaseType,
+      kind: current.order.kind,
     }
   })
 }

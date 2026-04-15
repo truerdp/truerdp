@@ -1,9 +1,9 @@
 import { FastifyInstance } from "fastify"
+import { and, eq } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "../db.js"
-import { eq } from "drizzle-orm"
 import { verifyAuth } from "../middleware/auth.js"
-import { instances } from "../schema.js"
+import { instances, resources } from "../schema.js"
 import {
   BillingError,
   createBillingTransaction,
@@ -13,14 +13,29 @@ import {
   listInstanceTransactions,
   supportedPaymentMethodSchema,
 } from "../services/billing.js"
+import { decryptCredential } from "../services/resource-credentials.js"
 
 const renewInstanceSchema = z.object({
   method: supportedPaymentMethodSchema.optional(),
   planPricingId: z.number().int().positive().optional(),
 })
 
+function getEffectiveInstanceStatus(input: {
+  status: typeof instances.$inferSelect.status
+  expiryDate: Date | null
+}) {
+  if (
+    input.status === "active" &&
+    input.expiryDate != null &&
+    input.expiryDate < new Date()
+  ) {
+    return "expired" as const
+  }
+
+  return input.status
+}
+
 export async function instanceRoutes(server: FastifyInstance) {
-  // Route for users to view their provisioned instances
   server.get(
     "/instances",
     { preHandler: verifyAuth },
@@ -29,31 +44,27 @@ export async function instanceRoutes(server: FastifyInstance) {
         const userId = request.user.userId
 
         const result = await db
-          .select()
+          .select({
+            id: instances.id,
+            userId: instances.userId,
+            status: instances.status,
+            startDate: instances.startDate,
+            expiryDate: instances.expiryDate,
+            ipAddress: resources.ipAddress,
+            username: resources.username,
+          })
           .from(instances)
+          .leftJoin(resources, eq(resources.instanceId, instances.id))
           .where(eq(instances.userId, userId))
 
-        const now = new Date()
-
-        // ⚠️ IMPORTANT: hide sensitive fields
-        const safeData = result.map((i) => {
-          let status = i.status
-
-          if (i.expiryDate && i.expiryDate < now && i.status === "active") {
-            status = "expired"
-          }
-
-          return {
-            id: i.id,
-            status,
-            ipAddress: i.ipAddress,
-            username: i.username,
-            startDate: i.startDate,
-            expiryDate: i.expiryDate,
-          }
-        })
-
-        return safeData
+        return result.map((instance) => ({
+          id: instance.id,
+          status: getEffectiveInstanceStatus(instance),
+          ipAddress: instance.ipAddress,
+          username: instance.username,
+          startDate: instance.startDate,
+          expiryDate: instance.expiryDate,
+        }))
       } catch (err: any) {
         server.log.error(err)
         return reply.status(500).send({
@@ -63,7 +74,6 @@ export async function instanceRoutes(server: FastifyInstance) {
     }
   )
 
-  // Route for users to view details of a specific instance
   server.get(
     "/instances/:id",
     { preHandler: verifyAuth },
@@ -73,8 +83,17 @@ export async function instanceRoutes(server: FastifyInstance) {
         const userId = request.user.userId
 
         const result = await db
-          .select()
+          .select({
+            id: instances.id,
+            userId: instances.userId,
+            status: instances.status,
+            startDate: instances.startDate,
+            expiryDate: instances.expiryDate,
+            ipAddress: resources.ipAddress,
+            username: resources.username,
+          })
           .from(instances)
+          .leftJoin(resources, eq(resources.instanceId, instances.id))
           .where(eq(instances.id, instanceId))
           .limit(1)
 
@@ -84,14 +103,13 @@ export async function instanceRoutes(server: FastifyInstance) {
           return reply.status(404).send({ error: "Instance not found" })
         }
 
-        // ✅ Ownership check
         if (instance.userId !== userId) {
           return reply.status(403).send({ error: "Forbidden" })
         }
 
         return {
           id: instance.id,
-          status: instance.status,
+          status: getEffectiveInstanceStatus(instance),
           ipAddress: instance.ipAddress,
           username: instance.username,
           startDate: instance.startDate,
@@ -106,7 +124,6 @@ export async function instanceRoutes(server: FastifyInstance) {
     }
   )
 
-  // Route for users to get credentials of a specific instance
   server.post(
     "/instances/:id/credentials",
     { preHandler: verifyAuth },
@@ -116,8 +133,17 @@ export async function instanceRoutes(server: FastifyInstance) {
         const userId = request.user.userId
 
         const result = await db
-          .select()
+          .select({
+            id: instances.id,
+            userId: instances.userId,
+            status: instances.status,
+            expiryDate: instances.expiryDate,
+            ipAddress: resources.ipAddress,
+            username: resources.username,
+            passwordEncrypted: resources.passwordEncrypted,
+          })
           .from(instances)
+          .leftJoin(resources, eq(resources.instanceId, instances.id))
           .where(eq(instances.id, instanceId))
           .limit(1)
 
@@ -127,22 +153,30 @@ export async function instanceRoutes(server: FastifyInstance) {
           return reply.status(404).send({ error: "Instance not found" })
         }
 
-        // ✅ Ownership check
         if (instance.userId !== userId) {
           return reply.status(403).send({ error: "Forbidden" })
         }
 
-        // ⚠️ Optional: only allow if active
-        if (instance.status !== "active") {
+        if (getEffectiveInstanceStatus(instance) !== "active") {
           return reply.status(400).send({
             error: "Instance not active",
+          })
+        }
+
+        if (
+          !instance.ipAddress ||
+          !instance.username ||
+          !instance.passwordEncrypted
+        ) {
+          return reply.status(400).send({
+            error: "Instance credentials are not available",
           })
         }
 
         return {
           ipAddress: instance.ipAddress,
           username: instance.username,
-          password: instance.password,
+          password: decryptCredential(instance.passwordEncrypted),
         }
       } catch (err: any) {
         server.log.error(err)
@@ -153,7 +187,6 @@ export async function instanceRoutes(server: FastifyInstance) {
     }
   )
 
-  //✅ Route for users to renew an instance (creates a new transaction)
   server.post(
     "/instances/:id/renew",
     { preHandler: verifyAuth },
@@ -179,11 +212,9 @@ export async function instanceRoutes(server: FastifyInstance) {
           return reply.status(403).send({ error: "Forbidden" })
         }
 
-        const isExpired =
-          instance.status === "expired" ||
-          (instance.expiryDate != null && instance.expiryDate < new Date())
+        const effectiveStatus = getEffectiveInstanceStatus(instance)
 
-        if (!["active", "expired"].includes(instance.status) && !isExpired) {
+        if (!["active", "expired"].includes(effectiveStatus)) {
           return reply.status(400).send({
             error: "Instance is not eligible for renewal",
           })
@@ -247,7 +278,6 @@ export async function instanceRoutes(server: FastifyInstance) {
     }
   )
 
-  // ✅ Route for users to view transactions of a specific instance
   server.get(
     "/instances/:id/transactions",
     { preHandler: verifyAuth },
@@ -256,22 +286,16 @@ export async function instanceRoutes(server: FastifyInstance) {
         const instanceId = Number(request.params.id)
         const userId = request.user.userId
 
-        // ✅ Get instance
         const instanceResult = await db
           .select()
           .from(instances)
-          .where(eq(instances.id, instanceId))
+          .where(
+            and(eq(instances.id, instanceId), eq(instances.userId, userId))
+          )
           .limit(1)
 
-        const instance = instanceResult[0]
-
-        if (!instance) {
+        if (!instanceResult[0]) {
           return reply.status(404).send({ error: "Instance not found" })
-        }
-
-        // ✅ Ownership check
-        if (instance.userId !== userId) {
-          return reply.status(403).send({ error: "Forbidden" })
         }
 
         const txs = await listInstanceTransactions(userId, instanceId)

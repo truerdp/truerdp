@@ -1,32 +1,43 @@
 import { FastifyInstance } from "fastify"
+import { and, asc, desc, eq, gte, lt, ne, sql } from "drizzle-orm"
+import z from "zod"
 import { db } from "../db.js"
 import {
-  transactions,
   instances,
-  users,
-  servers,
   invoices,
   orders,
+  resources,
+  transactions,
+  users,
 } from "../schema.js"
-import { and, asc, desc, eq, gte, lt, ne, or } from "drizzle-orm"
 import { verifyAuth } from "../middleware/auth.js"
-import { sql } from "drizzle-orm"
-import z from "zod"
 import {
   BillingError,
   confirmPendingTransaction,
   listPendingTransactions,
 } from "../services/billing.js"
+import { encryptCredential } from "../services/resource-credentials.js"
 
 const provisionSchema = z.object({
-  ipAddress: z.string(),
-  username: z.string(),
-  password: z.string(),
+  provider: z.string().trim().min(1).default("manual"),
+  externalId: z.string().trim().min(1).optional(),
+  ipAddress: z.string().trim().min(1),
+  username: z.string().trim().min(1),
+  password: z.string().min(1),
 })
 
 const extendInstanceSchema = z.object({
   days: z.number().int().positive(),
 })
+
+function requireAdmin(user: any, reply: any) {
+  if (user.role !== "admin") {
+    reply.status(403).send({ error: "Forbidden" })
+    return false
+  }
+
+  return true
+}
 
 export async function adminRoutes(server: FastifyInstance) {
   server.post(
@@ -35,10 +46,9 @@ export async function adminRoutes(server: FastifyInstance) {
     async (request: any, reply) => {
       try {
         const transactionId = Number(request.params.id)
-        const user = request.user
 
-        if (user.role !== "admin") {
-          return reply.status(403).send({ error: "Forbidden" })
+        if (!requireAdmin(request.user, reply)) {
+          return
         }
 
         if (Number.isNaN(transactionId)) {
@@ -62,67 +72,60 @@ export async function adminRoutes(server: FastifyInstance) {
     }
   )
 
-  //✅ Admin route to provision instance with IP and credentials (for now)
   server.post(
     "/admin/instances/:id/provision",
     { preHandler: verifyAuth },
     async (request: any, reply) => {
       try {
         const instanceId = Number(request.params.id)
-        const user = request.user
 
-        if (user.role !== "admin") {
-          return reply.status(403).send({ error: "Forbidden" })
+        if (!requireAdmin(request.user, reply)) {
+          return
+        }
+
+        if (Number.isNaN(instanceId)) {
+          return reply.status(400).send({ error: "Invalid instance id" })
         }
 
         const body = provisionSchema.parse(request.body)
 
-        // ✅ Get instance
-        const result = await db
+        const instanceResult = await db
           .select()
           .from(instances)
           .where(eq(instances.id, instanceId))
           .limit(1)
 
-        const instance = result[0]
+        const instance = instanceResult[0]
 
         if (!instance) {
           return reply.status(404).send({ error: "Instance not found" })
         }
 
-        if (instance.status !== "pending") {
+        if (!["pending", "provisioning", "failed"].includes(instance.status)) {
           return reply.status(400).send({
-            error: "Instance already provisioned",
+            error: "Instance cannot be provisioned in its current state",
           })
         }
 
-        const now = new Date()
         const linkedOrderResult = await db
           .select({
-            orderId: orders.id,
+            id: orders.id,
             durationDays: orders.durationDays,
+            status: orders.status,
           })
-          .from(transactions)
-          .innerJoin(invoices, eq(transactions.invoiceId, invoices.id))
-          .innerJoin(orders, eq(invoices.orderId, orders.id))
-          .where(
-            and(
-              eq(transactions.status, "confirmed"),
-              sql`${transactions.metadata} ->> 'instanceId' = ${String(instance.id)}`,
-              sql`${transactions.metadata} ->> 'purchaseType' = 'new_purchase'`
-            )
-          )
-          .orderBy(desc(transactions.createdAt))
+          .from(orders)
+          .where(eq(orders.id, instance.originOrderId))
           .limit(1)
 
         const linkedOrder = linkedOrderResult[0]
 
         if (!linkedOrder) {
           return reply.status(400).send({
-            error: "No paid purchase found for this instance",
+            error: "Instance is missing its originating order",
           })
         }
 
+        const now = new Date()
         const expiry = new Date(now)
         expiry.setDate(expiry.getDate() + linkedOrder.durationDays)
 
@@ -131,20 +134,47 @@ export async function adminRoutes(server: FastifyInstance) {
             .update(instances)
             .set({
               status: "active",
-              ipAddress: body.ipAddress,
-              username: body.username,
-              password: body.password,
               startDate: now,
               expiryDate: expiry,
+              provisionAttempts: instance.provisionAttempts + 1,
+              lastProvisionError: null,
             })
             .where(eq(instances.id, instance.id))
+
+          await tx
+            .insert(resources)
+            .values({
+              instanceId: instance.id,
+              provider: body.provider,
+              externalId: body.externalId,
+              ipAddress: body.ipAddress,
+              username: body.username,
+              passwordEncrypted: encryptCredential(body.password),
+              status: "running",
+              lastSyncedAt: now,
+              healthStatus: "healthy",
+            })
+            .onConflictDoUpdate({
+              target: resources.instanceId,
+              set: {
+                provider: body.provider,
+                externalId: body.externalId,
+                ipAddress: body.ipAddress,
+                username: body.username,
+                passwordEncrypted: encryptCredential(body.password),
+                status: "running",
+                lastSyncedAt: now,
+                healthStatus: "healthy",
+                updatedAt: now,
+              },
+            })
 
           await tx
             .update(orders)
             .set({
               status: "completed",
             })
-            .where(eq(orders.id, linkedOrder.orderId))
+            .where(eq(orders.id, linkedOrder.id))
         })
 
         return {
@@ -159,17 +189,15 @@ export async function adminRoutes(server: FastifyInstance) {
     }
   )
 
-  // Admin route to terminate an instance
   server.post(
     "/admin/instances/:id/terminate",
     { preHandler: verifyAuth },
     async (request: any, reply) => {
       try {
         const instanceId = Number(request.params.id)
-        const user = request.user
 
-        if (user.role !== "admin") {
-          return reply.status(403).send({ error: "Forbidden" })
+        if (!requireAdmin(request.user, reply)) {
+          return
         }
 
         if (Number.isNaN(instanceId)) {
@@ -205,14 +233,14 @@ export async function adminRoutes(server: FastifyInstance) {
             })
             .where(eq(instances.id, instance.id))
 
-          if (instance.serverId) {
-            await tx
-              .update(servers)
-              .set({
-                status: "available",
-              })
-              .where(eq(servers.id, instance.serverId))
-          }
+          await tx
+            .update(resources)
+            .set({
+              status: "deleted",
+              lastSyncedAt: terminatedAt,
+              updatedAt: terminatedAt,
+            })
+            .where(eq(resources.instanceId, instance.id))
         })
 
         return {
@@ -227,18 +255,16 @@ export async function adminRoutes(server: FastifyInstance) {
     }
   )
 
-  // Admin route to extend an instance expiry date
   server.post(
     "/admin/instances/:id/extend",
     { preHandler: verifyAuth },
     async (request: any, reply) => {
       try {
         const instanceId = Number(request.params.id)
-        const user = request.user
         const body = extendInstanceSchema.parse(request.body)
 
-        if (user.role !== "admin") {
-          return reply.status(403).send({ error: "Forbidden" })
+        if (!requireAdmin(request.user, reply)) {
+          return
         }
 
         if (Number.isNaN(instanceId)) {
@@ -292,14 +318,13 @@ export async function adminRoutes(server: FastifyInstance) {
     }
   )
 
-  // Admin route to view pending transactions
   server.get(
     "/admin/transactions/pending",
     { preHandler: verifyAuth },
     async (request: any, reply) => {
       try {
-        if (request.user.role !== "admin") {
-          return reply.status(403).send({ error: "Forbidden" })
+        if (!requireAdmin(request.user, reply)) {
+          return
         }
 
         return await listPendingTransactions()
@@ -312,14 +337,13 @@ export async function adminRoutes(server: FastifyInstance) {
     }
   )
 
-  // Admin route to view all expired instances
   server.get(
     "/admin/instances/expired",
     { preHandler: verifyAuth },
     async (request: any, reply) => {
       try {
-        if (request.user.role !== "admin") {
-          return reply.status(403).send({ error: "Forbidden" })
+        if (!requireAdmin(request.user, reply)) {
+          return
         }
 
         const today = new Date()
@@ -338,10 +362,7 @@ export async function adminRoutes(server: FastifyInstance) {
           .where(
             and(
               ne(instances.status, "terminated"),
-              or(
-                eq(instances.status, "expired"),
-                lt(instances.expiryDate, today)
-              )
+              lt(instances.expiryDate, today)
             )
           )
           .orderBy(asc(instances.expiryDate))
@@ -374,14 +395,13 @@ export async function adminRoutes(server: FastifyInstance) {
     }
   )
 
-  // Admin route to view active instances expiring soon
   server.get(
     "/admin/instances/expiring-soon",
     { preHandler: verifyAuth },
     async (request: any, reply) => {
       try {
-        if (request.user.role !== "admin") {
-          return reply.status(403).send({ error: "Forbidden" })
+        if (!requireAdmin(request.user, reply)) {
+          return
         }
 
         const today = new Date()
@@ -436,26 +456,31 @@ export async function adminRoutes(server: FastifyInstance) {
     }
   )
 
-  // Admin route to view all instances
   server.get(
     "/admin/instances",
     { preHandler: verifyAuth },
     async (request: any, reply) => {
       try {
-        if (request.user.role !== "admin") {
-          return reply.status(403).send({ error: "Forbidden" })
+        if (!requireAdmin(request.user, reply)) {
+          return
         }
 
-        const result = await db.select().from(instances)
+        const result = await db
+          .select({
+            id: instances.id,
+            userId: instances.userId,
+            status: instances.status,
+            startDate: instances.startDate,
+            expiryDate: instances.expiryDate,
+            ipAddress: resources.ipAddress,
+            provider: resources.provider,
+            resourceStatus: resources.status,
+          })
+          .from(instances)
+          .leftJoin(resources, eq(resources.instanceId, instances.id))
+          .orderBy(desc(instances.createdAt))
 
-        return result.map((i) => ({
-          id: i.id,
-          userId: i.userId,
-          status: i.status,
-          ipAddress: i.ipAddress,
-          startDate: i.startDate,
-          expiryDate: i.expiryDate,
-        }))
+        return result
       } catch (err: any) {
         server.log.error(err)
         return reply.status(500).send({
@@ -465,14 +490,13 @@ export async function adminRoutes(server: FastifyInstance) {
     }
   )
 
-  // Admin route to view stats
   server.get(
     "/admin/stats",
     { preHandler: verifyAuth },
     async (request: any, reply) => {
       try {
-        if (request.user.role !== "admin") {
-          return reply.status(403).send({ error: "Forbidden" })
+        if (!requireAdmin(request.user, reply)) {
+          return
         }
 
         const totalUsers = await db
@@ -484,7 +508,9 @@ export async function adminRoutes(server: FastifyInstance) {
           .from(transactions)
 
         const totalRevenue = await db
-          .select({ sum: sql<number>`coalesce(sum(${invoices.totalAmount}), 0)` })
+          .select({
+            sum: sql<number>`coalesce(sum(${invoices.totalAmount}), 0)`,
+          })
           .from(invoices)
           .where(eq(invoices.status, "paid"))
 

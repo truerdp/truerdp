@@ -7,10 +7,21 @@ import { verifyAuth } from "../middleware/auth.js"
 import { eq } from "drizzle-orm"
 
 export async function userRoutes(server: FastifyInstance) {
-  // Create user (for testing, remove in production or protect with admin auth)
+  // Public signup route
   server.post("/users", async (request, reply) => {
     try {
       const body = createUserSchema.parse(request.body)
+      const existingUser = await db
+        .select({ id: users.id })
+        .from(users)
+        .where(eq(users.email, body.email))
+        .limit(1)
+
+      if (existingUser[0]) {
+        return reply.status(409).send({
+          error: "Email already in use",
+        })
+      }
 
       const hashedPassword = await bcrypt.hash(body.password, 10)
       const emailLocalPart = body.email.split("@")[0] || "User"
@@ -23,7 +34,14 @@ export async function userRoutes(server: FastifyInstance) {
           firstName: body.firstName ?? emailLocalPart,
           lastName: body.lastName ?? "User",
         })
-        .returning()
+        .returning({
+          id: users.id,
+          email: users.email,
+          firstName: users.firstName,
+          lastName: users.lastName,
+          role: users.role,
+          createdAt: users.createdAt,
+        })
 
       return reply.status(201).send(newUser[0])
     } catch (err: any) {
@@ -52,8 +70,6 @@ export async function userRoutes(server: FastifyInstance) {
             firstName: users.firstName,
             lastName: users.lastName,
             role: users.role,
-            discountPercent: users.discountPercent,
-            discountFlat: users.discountFlat,
             createdAt: users.createdAt,
           })
           .from(users)
