@@ -19,6 +19,7 @@ import {
   DashboardSquare01Icon,
   ComputerTerminalIcon,
   Alert02Icon,
+  CreditCardIcon,
 } from "@hugeicons/core-free-icons"
 import { adminPaths } from "@/lib/paths"
 import { useProfile } from "@/hooks/use-profile"
@@ -39,6 +40,11 @@ const navMain = [
     title: "Instances",
     url: adminPaths.instances,
     icon: <HugeiconsIcon icon={ComputerTerminalIcon} strokeWidth={2} />,
+  },
+  {
+    title: "Transactions",
+    url: adminPaths.transactions,
+    icon: <HugeiconsIcon icon={CreditCardIcon} strokeWidth={2} />,
   },
   {
     title: "Expired Instances",
@@ -81,6 +87,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               (item.url === adminPaths.instances &&
                 segments[0] === "instances" &&
                 segments.length === 1) ||
+              (item.url === adminPaths.transactions &&
+                segments[0] === "transactions") ||
               (item.url === adminPaths.expiredInstances &&
                 segments[0] === "instances" &&
                 segments[1] === "expired"),

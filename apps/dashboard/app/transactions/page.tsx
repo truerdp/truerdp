@@ -23,6 +23,7 @@ import {
 } from "@hugeicons/core-free-icons"
 import Link from "next/link"
 import { dashboardPaths } from "@/lib/paths"
+import { formatAmount } from "@/lib/format"
 
 function TransactionsTableSkeleton() {
   return (
@@ -99,10 +100,6 @@ function getActionContent(status: Transaction["status"]) {
     case "failed":
       return <Badge variant="destructive">Failed</Badge>
   }
-}
-
-export function formatAmount(amount: number) {
-  return `₹${amount.toLocaleString()}`
 }
 
 function formatSafeDate(date: string) {

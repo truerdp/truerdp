@@ -31,6 +31,7 @@ import {
 } from "@workspace/ui/components/table"
 import Link from "next/link"
 import { dashboardPaths } from "@/lib/paths"
+import { formatAmount } from "@/lib/format"
 
 function InstanceTableSkeleton() {
   return (
@@ -100,8 +101,6 @@ export default function DashboardPage() {
         new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
     )
     .slice(0, 5)
-
-  const formatAmount = (amount: number) => `₹${amount.toLocaleString()}`
 
   const formatSafeDate = (dateString: string) => {
     const date = new Date(dateString)

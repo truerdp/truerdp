@@ -3,8 +3,11 @@ import { Geist_Mono, Geist } from "next/font/google"
 import "@workspace/ui/globals.css"
 import "./globals.css"
 import { TooltipProvider } from "@workspace/ui/components/tooltip"
+import { Toaster } from "@workspace/ui/components/sonner"
 import { ThemeProvider } from "@/components/theme-provider"
 import { cn } from "@workspace/ui/lib/utils"
+import { AppProviders } from "./providers"
+import SiteHeader from "@/components/site-header"
 
 const geist = Geist({ subsets: ["latin"], variable: "--font-sans" })
 
@@ -29,9 +32,15 @@ export default function RootLayout({
         geist.variable
       )}
     >
-      <body>
+      <body suppressHydrationWarning>
         <ThemeProvider>
-          <TooltipProvider>{children}</TooltipProvider>
+          <TooltipProvider>
+            <AppProviders>
+              <SiteHeader />
+              {children}
+              <Toaster />
+            </AppProviders>
+          </TooltipProvider>
         </ThemeProvider>
       </body>
     </html>

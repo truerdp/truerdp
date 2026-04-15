@@ -25,7 +25,7 @@ import { Separator } from "@workspace/ui/components/separator"
 import { Skeleton } from "@workspace/ui/components/skeleton"
 import RenewButton from "@/components/renew-button"
 import { cn } from "@workspace/ui/lib/utils"
-import { formatAmount } from "../../transactions/page"
+import { formatAmount } from "@/lib/format"
 
 interface DetailItemProps {
   label: string

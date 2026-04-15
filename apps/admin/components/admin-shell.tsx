@@ -46,6 +46,14 @@ function getBreadcrumbState(segments: string[]) {
     }
   }
 
+  if (segments[0] === "transactions") {
+    return {
+      currentLabel: "Transactions",
+      parentLabel: null,
+      parentHref: adminPaths.overview,
+    }
+  }
+
   return {
     currentLabel: "Admin",
     parentLabel: null,
