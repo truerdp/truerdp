@@ -8,10 +8,15 @@ export const api = async <T = unknown>(url: string, options?: RequestInit) => {
   const token =
     typeof window !== "undefined" ? localStorage.getItem("token") : null
   const method = options?.method?.toUpperCase()
-  const body = method === "POST" && options?.body == null ? "{}" : options?.body
+  const body =
+    (method === "POST" || method === "PUT" || method === "PATCH") &&
+    options?.body == null
+      ? "{}"
+      : options?.body
 
   const res = await fetch(`${apiBaseUrl}${url}`, {
     ...options,
+    method,
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,

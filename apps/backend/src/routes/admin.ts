@@ -1,11 +1,13 @@
 import { FastifyInstance } from "fastify"
-import { and, asc, desc, eq, gte, lt, ne, sql } from "drizzle-orm"
+import { and, asc, desc, eq, gte, inArray, lt, ne, sql } from "drizzle-orm"
 import z from "zod"
 import { db } from "../db.js"
 import {
   instances,
   invoices,
   orders,
+  planPricing,
+  plans,
   resources,
   transactions,
   users,
@@ -14,9 +16,11 @@ import { verifyAuth } from "../middleware/auth.js"
 import {
   BillingError,
   confirmPendingTransaction,
+  listAdminTransactions,
   listPendingTransactions,
 } from "../services/billing.js"
 import { encryptCredential } from "../services/resource-credentials.js"
+import { listAdminPlansWithPricing } from "../services/plan.js"
 
 const provisionSchema = z.object({
   provider: z.string().trim().min(1).default("manual"),
@@ -30,6 +34,36 @@ const extendInstanceSchema = z.object({
   days: z.number().int().positive(),
 })
 
+const planPricingInputSchema = z.object({
+  id: z.number().int().positive().optional(),
+  durationDays: z.number().int().positive(),
+  price: z.number().int().nonnegative(),
+  isActive: z.boolean().default(true),
+})
+
+const createPlanSchema = z.object({
+  name: z.string().trim().min(1),
+  cpu: z.number().int().positive(),
+  ram: z.number().int().positive(),
+  storage: z.number().int().positive(),
+  isActive: z.boolean().default(true),
+  pricingOptions: z.array(planPricingInputSchema.omit({ id: true })).min(1),
+})
+
+const updatePlanSchema = z.object({
+  name: z.string().trim().min(1),
+  cpu: z.number().int().positive(),
+  ram: z.number().int().positive(),
+  storage: z.number().int().positive(),
+  isActive: z.boolean().default(true),
+  defaultPricingId: z.number().int().positive().optional().nullable(),
+  pricingOptions: z.array(planPricingInputSchema).min(1),
+})
+
+const updatePlanStatusSchema = z.object({
+  isActive: z.boolean(),
+})
+
 function requireAdmin(user: any, reply: any) {
   if (user.role !== "admin") {
     reply.status(403).send({ error: "Forbidden" })
@@ -40,6 +74,288 @@ function requireAdmin(user: any, reply: any) {
 }
 
 export async function adminRoutes(server: FastifyInstance) {
+  server.get(
+    "/admin/plans",
+    { preHandler: verifyAuth },
+    async (request: any, reply) => {
+      try {
+        if (!requireAdmin(request.user, reply)) {
+          return
+        }
+
+        return await listAdminPlansWithPricing()
+      } catch (err: any) {
+        server.log.error(err)
+        return reply.status(500).send({
+          error: "Internal server error",
+        })
+      }
+    }
+  )
+
+  server.post(
+    "/admin/plans",
+    { preHandler: verifyAuth },
+    async (request: any, reply) => {
+      try {
+        if (!requireAdmin(request.user, reply)) {
+          return
+        }
+
+        const body = createPlanSchema.parse(request.body)
+        const uniqueDurations = new Set(
+          body.pricingOptions.map((x) => x.durationDays)
+        )
+
+        if (uniqueDurations.size !== body.pricingOptions.length) {
+          return reply.status(400).send({
+            error: "Pricing durations must be unique per plan",
+          })
+        }
+
+        const created = await db.transaction(async (tx) => {
+          const [plan] = await tx
+            .insert(plans)
+            .values({
+              name: body.name,
+              cpu: body.cpu,
+              ram: body.ram,
+              storage: body.storage,
+              isActive: body.isActive,
+            })
+            .returning({
+              id: plans.id,
+            })
+
+          if (!plan) {
+            throw new Error("Failed to create plan")
+          }
+
+          await tx.insert(planPricing).values(
+            body.pricingOptions.map((option) => ({
+              planId: plan.id,
+              durationDays: option.durationDays,
+              price: option.price,
+              isActive: option.isActive,
+            }))
+          )
+
+          return plan
+        })
+
+        return {
+          message: "Plan created successfully",
+          planId: created.id,
+        }
+      } catch (err: any) {
+        server.log.error(err)
+        return reply.status(400).send({
+          error: err.message || "Invalid request",
+        })
+      }
+    }
+  )
+
+  server.put(
+    "/admin/plans/:id",
+    { preHandler: verifyAuth },
+    async (request: any, reply) => {
+      try {
+        if (!requireAdmin(request.user, reply)) {
+          return
+        }
+
+        const planId = Number(request.params.id)
+
+        if (Number.isNaN(planId)) {
+          return reply.status(400).send({ error: "Invalid plan id" })
+        }
+
+        const body = updatePlanSchema.parse(request.body)
+        const uniqueDurations = new Set(
+          body.pricingOptions.map((x) => x.durationDays)
+        )
+
+        if (uniqueDurations.size !== body.pricingOptions.length) {
+          return reply.status(400).send({
+            error: "Pricing durations must be unique per plan",
+          })
+        }
+
+        const existingPlan = await db
+          .select({ id: plans.id })
+          .from(plans)
+          .where(eq(plans.id, planId))
+          .limit(1)
+
+        if (!existingPlan[0]) {
+          return reply.status(404).send({
+            error: "Plan not found",
+          })
+        }
+
+        await db.transaction(async (tx) => {
+          await tx
+            .update(plans)
+            .set({
+              name: body.name,
+              cpu: body.cpu,
+              ram: body.ram,
+              storage: body.storage,
+              isActive: body.isActive,
+              defaultPricingId: body.defaultPricingId ?? null,
+            })
+            .where(eq(plans.id, planId))
+
+          const existingPricing = await tx
+            .select({
+              id: planPricing.id,
+              durationDays: planPricing.durationDays,
+            })
+            .from(planPricing)
+            .where(eq(planPricing.planId, planId))
+
+          const existingById = new Map(existingPricing.map((x) => [x.id, x]))
+          const existingByDuration = new Map(
+            existingPricing.map((x) => [x.durationDays, x])
+          )
+          const touchedPricingIds: number[] = []
+
+          for (const option of body.pricingOptions) {
+            if (option.id != null) {
+              const matchedById = existingById.get(option.id)
+
+              if (!matchedById) {
+                throw new Error(
+                  `Pricing option ${option.id} does not belong to this plan`
+                )
+              }
+
+              await tx
+                .update(planPricing)
+                .set({
+                  durationDays: option.durationDays,
+                  price: option.price,
+                  isActive: option.isActive,
+                })
+                .where(eq(planPricing.id, option.id))
+
+              touchedPricingIds.push(option.id)
+              continue
+            }
+
+            const matchedByDuration = existingByDuration.get(
+              option.durationDays
+            )
+
+            if (matchedByDuration) {
+              await tx
+                .update(planPricing)
+                .set({
+                  price: option.price,
+                  isActive: option.isActive,
+                })
+                .where(eq(planPricing.id, matchedByDuration.id))
+
+              touchedPricingIds.push(matchedByDuration.id)
+              continue
+            }
+
+            const [insertedPricing] = await tx
+              .insert(planPricing)
+              .values({
+                planId,
+                durationDays: option.durationDays,
+                price: option.price,
+                isActive: option.isActive,
+              })
+              .returning({
+                id: planPricing.id,
+              })
+
+            if (!insertedPricing) {
+              throw new Error("Failed to create plan pricing option")
+            }
+
+            touchedPricingIds.push(insertedPricing.id)
+          }
+
+          const toDisable = existingPricing
+            .map((x) => x.id)
+            .filter((id) => !touchedPricingIds.includes(id))
+
+          if (toDisable.length > 0) {
+            await tx
+              .update(planPricing)
+              .set({ isActive: false })
+              .where(
+                and(
+                  eq(planPricing.planId, planId),
+                  inArray(planPricing.id, toDisable)
+                )
+              )
+          }
+        })
+
+        return {
+          message: "Plan updated successfully",
+        }
+      } catch (err: any) {
+        server.log.error(err)
+        return reply.status(400).send({
+          error: err.message || "Invalid request",
+        })
+      }
+    }
+  )
+
+  server.patch(
+    "/admin/plans/:id/status",
+    { preHandler: verifyAuth },
+    async (request: any, reply) => {
+      try {
+        if (!requireAdmin(request.user, reply)) {
+          return
+        }
+
+        const planId = Number(request.params.id)
+
+        if (Number.isNaN(planId)) {
+          return reply.status(400).send({ error: "Invalid plan id" })
+        }
+
+        const body = updatePlanStatusSchema.parse(request.body)
+
+        const [updated] = await db
+          .update(plans)
+          .set({
+            isActive: body.isActive,
+          })
+          .where(eq(plans.id, planId))
+          .returning({
+            id: plans.id,
+          })
+
+        if (!updated) {
+          return reply.status(404).send({
+            error: "Plan not found",
+          })
+        }
+
+        return reply.send({
+          message: body.isActive
+            ? "Plan activated successfully"
+            : "Plan deactivated successfully",
+        })
+      } catch (err: any) {
+        server.log.error(err)
+        return reply.status(400).send({
+          error: err.message || "Invalid request",
+        })
+      }
+    }
+  )
+
   server.post(
     "/admin/transactions/:id/confirm",
     { preHandler: verifyAuth },
@@ -319,6 +635,25 @@ export async function adminRoutes(server: FastifyInstance) {
   )
 
   server.get(
+    "/admin/transactions",
+    { preHandler: verifyAuth },
+    async (request: any, reply) => {
+      try {
+        if (!requireAdmin(request.user, reply)) {
+          return
+        }
+
+        return await listAdminTransactions()
+      } catch (err: any) {
+        server.log.error(err)
+        return reply.status(500).send({
+          error: "Internal server error",
+        })
+      }
+    }
+  )
+
+  server.get(
     "/admin/transactions/pending",
     { preHandler: verifyAuth },
     async (request: any, reply) => {
@@ -481,6 +816,83 @@ export async function adminRoutes(server: FastifyInstance) {
           .orderBy(desc(instances.createdAt))
 
         return result
+      } catch (err: any) {
+        server.log.error(err)
+        return reply.status(500).send({
+          error: "Internal server error",
+        })
+      }
+    }
+  )
+
+  server.get(
+    "/admin/instances/:id",
+    { preHandler: verifyAuth },
+    async (request: any, reply) => {
+      try {
+        const instanceId = Number(request.params.id)
+
+        if (!requireAdmin(request.user, reply)) {
+          return
+        }
+
+        if (Number.isNaN(instanceId)) {
+          return reply.status(400).send({ error: "Invalid instance id" })
+        }
+
+        const result = await db
+          .select({
+            instance: {
+              id: instances.id,
+              userId: instances.userId,
+              planId: instances.planId,
+              status: instances.status,
+              startDate: instances.startDate,
+              expiryDate: instances.expiryDate,
+              terminatedAt: instances.terminatedAt,
+              provisionAttempts: instances.provisionAttempts,
+              lastProvisionError: instances.lastProvisionError,
+              createdAt: instances.createdAt,
+              updatedAt: instances.updatedAt,
+            },
+            plan: {
+              id: plans.id,
+              name: plans.name,
+              cpu: plans.cpu,
+              ram: plans.ram,
+              storage: plans.storage,
+            },
+            user: {
+              id: users.id,
+              email: users.email,
+              firstName: users.firstName,
+              lastName: users.lastName,
+            },
+            resource: {
+              id: resources.id,
+              provider: resources.provider,
+              externalId: resources.externalId,
+              ipAddress: resources.ipAddress,
+              username: resources.username,
+              status: resources.status,
+              lastSyncedAt: resources.lastSyncedAt,
+              healthStatus: resources.healthStatus,
+              createdAt: resources.createdAt,
+              updatedAt: resources.updatedAt,
+            },
+          })
+          .from(instances)
+          .leftJoin(plans, eq(instances.planId, plans.id))
+          .leftJoin(users, eq(instances.userId, users.id))
+          .leftJoin(resources, eq(instances.id, resources.instanceId))
+          .where(eq(instances.id, instanceId))
+          .limit(1)
+
+        if (!result[0]) {
+          return reply.status(404).send({ error: "Instance not found" })
+        }
+
+        return result[0]
       } catch (err: any) {
         server.log.error(err)
         return reply.status(500).send({

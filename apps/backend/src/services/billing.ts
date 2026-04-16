@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto"
-import { and, asc, desc, eq, inArray } from "drizzle-orm"
+import { and, asc, desc, eq, inArray, sql } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "../db.js"
 import {
@@ -82,6 +82,7 @@ function buildTransactionSummaryQuery() {
         currency: invoices.currency,
         expiresAt: invoices.expiresAt,
         paidAt: invoices.paidAt,
+        createdAt: invoices.createdAt,
       },
       order: {
         id: orders.id,
@@ -137,10 +138,10 @@ async function mapTransactionSummaries(rows: TransactionSummaryRow[]) {
 
   return rows.map((row) => {
     const instance = row.transaction.instanceId
-      ? resourceMap.get(row.transaction.instanceId) ?? {
+      ? (resourceMap.get(row.transaction.instanceId) ?? {
           instanceId: row.transaction.instanceId,
           ipAddress: null,
-        }
+        })
       : null
 
     return {
@@ -171,6 +172,7 @@ async function mapTransactionSummaries(rows: TransactionSummaryRow[]) {
         currency: row.invoice.currency,
         expiresAt: row.invoice.expiresAt,
         paidAt: row.invoice.paidAt,
+        createdAt: row.invoice.createdAt,
       },
       plan: {
         id: row.order.planId,
@@ -382,7 +384,38 @@ export async function listUserTransactions(userId: number) {
   return mapTransactionSummaries(rows)
 }
 
-export async function listInstanceTransactions(userId: number, instanceId: number) {
+export async function listUserInvoices(userId: number) {
+  const rows = await buildTransactionSummaryQuery()
+    .where(eq(transactions.userId, userId))
+    .orderBy(desc(invoices.createdAt), desc(transactions.createdAt))
+
+  return rows.map((row) => ({
+    id: row.invoice.id,
+    invoiceNumber: row.invoice.invoiceNumber,
+    status: row.invoice.status,
+    totalAmount: row.invoice.totalAmount,
+    currency: row.invoice.currency,
+    expiresAt: row.invoice.expiresAt,
+    paidAt: row.invoice.paidAt,
+    createdAt: row.invoice.createdAt,
+    transaction: {
+      id: row.transaction.id,
+      reference: row.transaction.reference,
+      status: row.transaction.status,
+      method: row.transaction.method,
+    },
+    plan: {
+      name: row.order.planName,
+      durationDays: row.order.durationDays,
+      kind: row.order.kind,
+    },
+  }))
+}
+
+export async function listInstanceTransactions(
+  userId: number,
+  instanceId: number
+) {
   const rows = await buildTransactionSummaryQuery()
     .where(
       and(
@@ -399,6 +432,15 @@ export async function listPendingTransactions() {
   const rows = await buildTransactionSummaryQuery()
     .where(eq(transactions.status, "pending"))
     .orderBy(desc(transactions.createdAt))
+
+  return mapTransactionSummaries(rows)
+}
+
+export async function listAdminTransactions() {
+  const rows = await buildTransactionSummaryQuery().orderBy(
+    sql`case when ${transactions.status} = 'pending' then 0 else 1 end`,
+    desc(transactions.createdAt)
+  )
 
   return mapTransactionSummaries(rows)
 }
@@ -484,7 +526,9 @@ export async function confirmPendingTransaction(transactionId: number) {
           : now
 
       const newExpiryDate = new Date(baseDate)
-      newExpiryDate.setDate(newExpiryDate.getDate() + current.order.durationDays)
+      newExpiryDate.setDate(
+        newExpiryDate.getDate() + current.order.durationDays
+      )
 
       const updatedInstance = await tx
         .update(instances)

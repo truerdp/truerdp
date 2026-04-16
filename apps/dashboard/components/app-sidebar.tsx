@@ -45,6 +45,11 @@ const navMain = [
     url: dashboardPaths.transactions,
     icon: <HugeiconsIcon icon={CreditCardIcon} strokeWidth={2} />,
   },
+  {
+    title: "Invoices",
+    url: dashboardPaths.invoices,
+    icon: <HugeiconsIcon icon={CreditCardIcon} strokeWidth={2} />,
+  },
 ]
 
 const fallbackAvatar = "/avatars/shadcn.jpg"
@@ -82,7 +87,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               (item.url === dashboardPaths.instances &&
                 primarySegment === "instances") ||
               (item.url === dashboardPaths.transactions &&
-                primarySegment === "transactions"),
+                primarySegment === "transactions") ||
+              (item.url === dashboardPaths.invoices &&
+                primarySegment === "invoices"),
           }))}
         />
       </SidebarContent>

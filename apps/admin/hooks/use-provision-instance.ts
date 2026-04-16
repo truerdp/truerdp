@@ -34,6 +34,10 @@ export function useProvisionInstance() {
       toast.success("Instance provisioned successfully")
 
       await queryClient.invalidateQueries({
+        queryKey: queryKeys.transactions(),
+      })
+
+      await queryClient.invalidateQueries({
         queryKey: queryKeys.pendingTransactions(),
       })
 

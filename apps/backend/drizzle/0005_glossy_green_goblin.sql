@@ -1,0 +1,1 @@
+ALTER TABLE "plans" ADD COLUMN "default_pricing_id" integer;

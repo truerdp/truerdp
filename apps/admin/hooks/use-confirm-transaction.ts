@@ -44,6 +44,10 @@ export function useConfirmTransaction() {
       toast.success("Transaction confirmed")
 
       await queryClient.invalidateQueries({
+        queryKey: queryKeys.transactions(),
+      })
+
+      await queryClient.invalidateQueries({
         queryKey: queryKeys.pendingTransactions(),
       })
 

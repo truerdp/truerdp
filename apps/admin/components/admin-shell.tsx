@@ -46,11 +46,43 @@ function getBreadcrumbState(segments: string[]) {
     }
   }
 
+  if (segments[0] === "instances" && segments.length > 1) {
+    return {
+      currentLabel: `Instance #${segments[1]}`,
+      parentLabel: "Instances",
+      parentHref: adminPaths.instances,
+    }
+  }
+
   if (segments[0] === "transactions") {
     return {
       currentLabel: "Transactions",
       parentLabel: null,
       parentHref: adminPaths.overview,
+    }
+  }
+
+  if (segments[0] === "plans" && segments.length === 1) {
+    return {
+      currentLabel: "Plans",
+      parentLabel: null,
+      parentHref: adminPaths.overview,
+    }
+  }
+
+  if (segments[0] === "plans" && segments[1] === "create") {
+    return {
+      currentLabel: "Create Plan",
+      parentLabel: "Plans",
+      parentHref: adminPaths.plans,
+    }
+  }
+
+  if (segments[0] === "plans" && segments.length > 1) {
+    return {
+      currentLabel: "Plan Details",
+      parentLabel: "Plans",
+      parentHref: adminPaths.plans,
     }
   }
 

@@ -52,10 +52,7 @@ export const invoiceStatusEnum = pgEnum("invoice_status", [
   "expired",
 ])
 
-export const paymentMethodEnum = pgEnum("payment_method", [
-  "upi",
-  "usdt_trc20",
-])
+export const paymentMethodEnum = pgEnum("payment_method", ["upi", "usdt_trc20"])
 
 export const couponTypeEnum = pgEnum("coupon_type", ["percent", "flat"])
 
@@ -94,6 +91,8 @@ export const plans = pgTable("plans", {
   cpu: integer("cpu").notNull(),
   ram: integer("ram").notNull(),
   storage: integer("storage").notNull(),
+
+  defaultPricingId: integer("default_pricing_id"),
 
   isActive: boolean("is_active").default(true).notNull(),
 
@@ -172,7 +171,9 @@ export const orders = pgTable(
   (table) => ({
     userIdIdx: index("orders_user_id_idx").on(table.userId),
     planIdIdx: index("orders_plan_id_idx").on(table.planId),
-    planPricingIdIdx: index("orders_plan_pricing_id_idx").on(table.planPricingId),
+    planPricingIdIdx: index("orders_plan_pricing_id_idx").on(
+      table.planPricingId
+    ),
     kindIdx: index("orders_kind_idx").on(table.kind),
     statusIdx: index("orders_status_idx").on(table.status),
   })
@@ -409,6 +410,41 @@ export const transactions = pgTable(
     ),
     idempotencyKeyUnique: uniqueIndex("transactions_idempotency_key_unique").on(
       table.idempotencyKey
+    ),
+  })
+)
+
+/* ================= PAYMENT WEBHOOK EVENTS ================= */
+
+export const paymentWebhookEvents = pgTable(
+  "payment_webhook_events",
+  {
+    id: serial("id").primaryKey(),
+
+    provider: text("provider").notNull(),
+    eventId: text("event_id").notNull(),
+    eventType: text("event_type").notNull(),
+    externalReference: text("external_reference"),
+
+    status: text("status").default("received").notNull(),
+    payload: jsonb("payload").notNull(),
+    normalized: jsonb("normalized"),
+    errorMessage: text("error_message"),
+
+    processedAt: timestamp("processed_at"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdateFn(() => new Date())
+      .notNull(),
+  },
+  (table) => ({
+    providerEventUnique: uniqueIndex(
+      "payment_webhook_events_provider_event_unique"
+    ).on(table.provider, table.eventId),
+    statusIdx: index("payment_webhook_events_status_idx").on(table.status),
+    externalReferenceIdx: index("payment_webhook_events_external_ref_idx").on(
+      table.externalReference
     ),
   })
 )

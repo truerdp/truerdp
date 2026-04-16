@@ -1,0 +1,381 @@
+import { eq } from "drizzle-orm"
+import z from "zod"
+import { db } from "../db.js"
+import {
+  invoices,
+  orders,
+  paymentWebhookEvents,
+  transactions,
+} from "../schema.js"
+import { BillingError, confirmPendingTransaction } from "./billing.js"
+import { normalizeRazorpayEvent } from "./webhook-adapters/razorpay.js"
+
+const webhookProviderSchema = z.string().trim().min(1).max(64)
+
+const mockWebhookSchema = z.object({
+  eventId: z.string().trim().min(1),
+  eventType: z.enum(["payment.succeeded", "payment.failed"]),
+  reference: z.string().trim().min(1).optional(),
+  amount: z.number().int().nonnegative().optional(),
+  currency: z.string().trim().min(1).optional(),
+  occurredAt: z.string().datetime().optional(),
+  failureReason: z.string().trim().min(1).optional(),
+})
+
+export type NormalizedPaymentEvent = {
+  eventId: string
+  provider: string
+  eventType: "payment.succeeded" | "payment.failed"
+  externalReference: string | null
+  amount: number | null
+  currency: string | null
+  occurredAt: Date | null
+  failureReason: string | null
+}
+
+type WebhookIngestResult = {
+  duplicate: boolean
+  eventId: string
+  processingStatus: "processed" | "ignored"
+}
+
+function extractNestedObject(
+  payload: Record<string, unknown>,
+  key: string
+): Record<string, unknown> | null {
+  const value = payload[key]
+
+  if (value && typeof value === "object" && !Array.isArray(value)) {
+    return value as Record<string, unknown>
+  }
+
+  return null
+}
+
+function normalizeGenericWebhook(
+  provider: string,
+  rawPayload: Record<string, unknown>
+): NormalizedPaymentEvent {
+  const data = extractNestedObject(rawPayload, "data")
+
+  const eventId =
+    String(
+      rawPayload.id ??
+        rawPayload.eventId ??
+        rawPayload.event_id ??
+        data?.id ??
+        data?.eventId ??
+        data?.event_id ??
+        ""
+    ).trim() || null
+
+  if (!eventId) {
+    throw new Error("Unable to determine webhook event id")
+  }
+
+  const rawEventType = String(
+    rawPayload.type ?? rawPayload.eventType ?? rawPayload.event ?? ""
+  ).toLowerCase()
+
+  const eventType: "payment.succeeded" | "payment.failed" =
+    rawEventType.includes("success") || rawEventType.includes("paid")
+      ? "payment.succeeded"
+      : "payment.failed"
+
+  const externalReference =
+    String(
+      rawPayload.reference ??
+        rawPayload.transactionReference ??
+        rawPayload.tx_ref ??
+        data?.reference ??
+        data?.transactionReference ??
+        data?.tx_ref ??
+        ""
+    ).trim() || null
+
+  const amountSource =
+    rawPayload.amount ??
+    data?.amount ??
+    rawPayload.totalAmount ??
+    data?.totalAmount
+  const amount =
+    typeof amountSource === "number" && Number.isFinite(amountSource)
+      ? Math.floor(amountSource)
+      : null
+
+  const currency =
+    String(rawPayload.currency ?? data?.currency ?? "").trim() || null
+
+  const occurredAtValue =
+    rawPayload.occurredAt ??
+    rawPayload.createdAt ??
+    rawPayload.timestamp ??
+    data?.occurredAt ??
+    data?.createdAt ??
+    data?.timestamp
+
+  const occurredAt =
+    typeof occurredAtValue === "string" && occurredAtValue.trim().length > 0
+      ? new Date(occurredAtValue)
+      : null
+
+  return {
+    eventId,
+    provider,
+    eventType,
+    externalReference,
+    amount,
+    currency,
+    occurredAt:
+      occurredAt && !Number.isNaN(occurredAt.getTime()) ? occurredAt : null,
+    failureReason:
+      String(rawPayload.failureReason ?? data?.failureReason ?? "").trim() ||
+      null,
+  }
+}
+
+function normalizeWebhookPayload(
+  provider: string,
+  rawPayload: unknown
+): NormalizedPaymentEvent {
+  if (provider === "mock") {
+    const payload = mockWebhookSchema.parse(rawPayload)
+
+    return {
+      eventId: payload.eventId,
+      provider,
+      eventType: payload.eventType,
+      externalReference: payload.reference ?? null,
+      amount: payload.amount ?? null,
+      currency: payload.currency ?? null,
+      occurredAt: payload.occurredAt ? new Date(payload.occurredAt) : null,
+      failureReason: payload.failureReason ?? null,
+    }
+  }
+
+  if (
+    !rawPayload ||
+    typeof rawPayload !== "object" ||
+    Array.isArray(rawPayload)
+  ) {
+    throw new Error("Invalid webhook payload")
+  }
+
+  const payloadObj = rawPayload as Record<string, unknown>
+
+  if (provider === "razorpay") {
+    const razorpayInfo = normalizeRazorpayEvent(payloadObj)
+
+    const eventId =
+      String(payloadObj.id ?? (payloadObj as any).event_id ?? "").trim() || null
+
+    if (!eventId) {
+      throw new Error("Unable to determine Razorpay event id")
+    }
+
+    const paymentData =
+      (payloadObj as any).payload?.payment ?? (payloadObj as any).payment ?? {}
+    const paymentDataObj =
+      typeof paymentData === "object" && paymentData !== null ? paymentData : {}
+
+    const amount =
+      typeof (paymentDataObj as any).amount === "number"
+        ? Math.floor((paymentDataObj as any).amount)
+        : null
+    const currency =
+      String((paymentDataObj as any).currency ?? "").trim() || "INR"
+    const createdAt =
+      typeof (paymentDataObj as any).created_at === "number"
+        ? new Date((paymentDataObj as any).created_at * 1000)
+        : null
+
+    return {
+      eventId,
+      provider,
+      eventType: razorpayInfo.eventType,
+      externalReference: razorpayInfo.reference,
+      amount,
+      currency,
+      occurredAt:
+        createdAt && !Number.isNaN(createdAt.getTime()) ? createdAt : null,
+      failureReason:
+        String((paymentDataObj as any).error_description ?? "").trim() || null,
+    }
+  }
+
+  return normalizeGenericWebhook(provider, payloadObj)
+}
+
+async function updateWebhookEventStatus(input: {
+  eventRowId: number
+  status: "processed" | "ignored" | "failed"
+  errorMessage?: string | null
+}) {
+  await db
+    .update(paymentWebhookEvents)
+    .set({
+      status: input.status,
+      errorMessage: input.errorMessage ?? null,
+      processedAt: new Date(),
+    })
+    .where(eq(paymentWebhookEvents.id, input.eventRowId))
+}
+
+async function markPendingTransactionAsFailed(input: {
+  transactionId: number
+  invoiceId: number
+  reason: string
+}) {
+  await db.transaction(async (tx) => {
+    const [invoiceRecord] = await tx
+      .select({ orderId: invoices.orderId })
+      .from(invoices)
+      .where(eq(invoices.id, input.invoiceId))
+      .limit(1)
+
+    await tx
+      .update(transactions)
+      .set({
+        status: "failed",
+        failureReason: input.reason,
+      })
+      .where(eq(transactions.id, input.transactionId))
+
+    await tx
+      .update(invoices)
+      .set({
+        status: "expired",
+      })
+      .where(eq(invoices.id, input.invoiceId))
+
+    if (invoiceRecord?.orderId) {
+      await tx
+        .update(orders)
+        .set({ status: "cancelled" })
+        .where(eq(orders.id, invoiceRecord.orderId))
+    }
+  })
+}
+
+async function processWebhookEvent(input: {
+  eventRowId: number
+  normalized: NormalizedPaymentEvent
+}): Promise<"processed" | "ignored"> {
+  const { normalized } = input
+
+  if (!normalized.externalReference) {
+    await updateWebhookEventStatus({
+      eventRowId: input.eventRowId,
+      status: "ignored",
+    })
+
+    return "ignored"
+  }
+
+  const [transaction] = await db
+    .select({
+      id: transactions.id,
+      status: transactions.status,
+      invoiceId: transactions.invoiceId,
+    })
+    .from(transactions)
+    .where(eq(transactions.reference, normalized.externalReference))
+    .limit(1)
+
+  if (!transaction) {
+    await updateWebhookEventStatus({
+      eventRowId: input.eventRowId,
+      status: "ignored",
+      errorMessage: "No matching transaction for webhook reference",
+    })
+
+    return "ignored"
+  }
+
+  if (normalized.eventType === "payment.succeeded") {
+    if (transaction.status === "pending") {
+      try {
+        await confirmPendingTransaction(transaction.id)
+      } catch (error) {
+        if (!(error instanceof BillingError) || error.statusCode !== 400) {
+          throw error
+        }
+      }
+    }
+
+    await updateWebhookEventStatus({
+      eventRowId: input.eventRowId,
+      status: "processed",
+    })
+
+    return "processed"
+  }
+
+  if (transaction.status === "pending") {
+    await markPendingTransactionAsFailed({
+      transactionId: transaction.id,
+      invoiceId: transaction.invoiceId,
+      reason: normalized.failureReason ?? "Payment failed via webhook",
+    })
+  }
+
+  await updateWebhookEventStatus({
+    eventRowId: input.eventRowId,
+    status: "processed",
+  })
+
+  return "processed"
+}
+
+export async function ingestPaymentWebhook(input: {
+  provider: string
+  payload: unknown
+}): Promise<WebhookIngestResult> {
+  const provider = webhookProviderSchema.parse(input.provider)
+  const normalized = normalizeWebhookPayload(provider, input.payload)
+
+  const [inserted] = await db
+    .insert(paymentWebhookEvents)
+    .values({
+      provider,
+      eventId: normalized.eventId,
+      eventType: normalized.eventType,
+      externalReference: normalized.externalReference,
+      payload: input.payload,
+      normalized,
+      status: "received",
+    })
+    .onConflictDoNothing({
+      target: [paymentWebhookEvents.provider, paymentWebhookEvents.eventId],
+    })
+    .returning({ id: paymentWebhookEvents.id })
+
+  if (!inserted) {
+    return {
+      duplicate: true,
+      eventId: normalized.eventId,
+      processingStatus: "ignored",
+    }
+  }
+
+  try {
+    const processingStatus = await processWebhookEvent({
+      eventRowId: inserted.id,
+      normalized,
+    })
+
+    return {
+      duplicate: false,
+      eventId: normalized.eventId,
+      processingStatus,
+    }
+  } catch (error) {
+    await updateWebhookEventStatus({
+      eventRowId: inserted.id,
+      status: "failed",
+      errorMessage: error instanceof Error ? error.message : "Unknown error",
+    })
+
+    throw error
+  }
+}

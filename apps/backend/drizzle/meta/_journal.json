@@ -29,6 +29,13 @@
       "when": 1776230547383,
       "tag": "0003_high_shen",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1776326400000,
+      "tag": "0004_fuzzy_gateway",
+      "breakpoints": true
     }
   ]
 }

@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import Link from "next/link"
 import { format } from "date-fns"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { Alert02Icon, Package02Icon } from "@hugeicons/core-free-icons"
@@ -241,15 +242,22 @@ export default function AdminInstancesPage() {
                       {formatDateTime(instance.expiryDate)}
                     </TableCell>
                     <TableCell>
-                      {needsProvisioning && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleProvisionInstance(instance.id)}
-                        >
-                          Provision
-                        </Button>
-                      )}
+                      <div className="flex gap-2">
+                        <Link href={`/instances/${instance.id}` as any}>
+                          <Button size="sm" variant="outline">
+                            View
+                          </Button>
+                        </Link>
+                        {needsProvisioning && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleProvisionInstance(instance.id)}
+                          >
+                            Provision
+                          </Button>
+                        )}
+                      </div>
                     </TableCell>
                   </TableRow>
                 )

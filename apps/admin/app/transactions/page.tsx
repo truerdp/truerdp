@@ -27,7 +27,7 @@ import {
   TableRow,
 } from "@workspace/ui/components/table"
 import { Badge } from "@workspace/ui/components/badge"
-import { usePendingTransactions } from "@/hooks/use-pending-transactions"
+import { useTransactions } from "@/hooks/use-transactions"
 import { useConfirmTransaction } from "@/hooks/use-confirm-transaction"
 import { ProvisionInstanceDialog } from "@/components/provision-instance-dialog"
 
@@ -95,24 +95,36 @@ function PendingTransactionsSkeleton() {
   )
 }
 
-function PendingTransactionsEmpty() {
+function TransactionsEmpty() {
   return (
     <Empty>
       <EmptyHeader>
         <EmptyMedia variant="icon">
           <HugeiconsIcon icon={CreditCardIcon} strokeWidth={2} />
         </EmptyMedia>
-        <EmptyTitle>No pending transactions</EmptyTitle>
+        <EmptyTitle>No transactions found</EmptyTitle>
         <EmptyDescription>
-          New payment requests will appear here for admin confirmation.
+          Transactions will appear here when users create payments.
         </EmptyDescription>
       </EmptyHeader>
     </Empty>
   )
 }
 
+function getStatusBadgeVariant(status: "pending" | "confirmed" | "failed") {
+  if (status === "pending") {
+    return "secondary"
+  }
+
+  if (status === "confirmed") {
+    return "outline"
+  }
+
+  return "destructive"
+}
+
 export default function AdminTransactionsPage() {
-  const { data, isLoading, isError, error } = usePendingTransactions()
+  const { data, isLoading, isError, error } = useTransactions()
   const confirmMutation = useConfirmTransaction()
   const [provisionDialogOpen, setProvisionDialogOpen] = useState(false)
   const [selectedInstanceId, setSelectedInstanceId] = useState<number | null>(
@@ -140,7 +152,7 @@ export default function AdminTransactionsPage() {
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Transactions</h1>
         <p className="text-sm text-muted-foreground">
-          Review pending payments and confirm them to move orders forward.
+          Review all transactions with pending ones prioritized for action.
         </p>
       </div>
 
@@ -155,11 +167,11 @@ export default function AdminTransactionsPage() {
             strokeWidth={2}
             className="size-4"
           />
-          <span>{error.message || "Failed to load pending transactions."}</span>
+          <span>{error.message || "Failed to load transactions."}</span>
         </div>
       ) : transactions.length === 0 ? (
         <div className="rounded-lg border">
-          <PendingTransactionsEmpty />
+          <TransactionsEmpty />
         </div>
       ) : (
         <div className="rounded-lg border">
@@ -171,6 +183,7 @@ export default function AdminTransactionsPage() {
                 <TableHead>Plan</TableHead>
                 <TableHead>Amount</TableHead>
                 <TableHead>Method</TableHead>
+                <TableHead>Status</TableHead>
                 <TableHead>Created</TableHead>
                 <TableHead>Action</TableHead>
               </TableRow>
@@ -212,26 +225,36 @@ export default function AdminTransactionsPage() {
                       {transaction.method}
                     </Badge>
                   </TableCell>
+                  <TableCell>
+                    <Badge
+                      variant={getStatusBadgeVariant(transaction.status)}
+                      className="uppercase"
+                    >
+                      {transaction.status}
+                    </Badge>
+                  </TableCell>
                   <TableCell className="text-sm text-muted-foreground">
                     {formatDateTime(transaction.createdAt)}
                   </TableCell>
                   <TableCell>
-                    <Button
-                      size="sm"
-                      onClick={() => handleConfirmTransaction(transaction.id)}
-                      disabled={confirmMutation.isPending}
-                    >
-                      {confirmMutation.isPending ? (
-                        <Spinner data-icon="inline-start" />
-                      ) : (
-                        <HugeiconsIcon
-                          icon={TaskDone02Icon}
-                          strokeWidth={2}
-                          data-icon="inline-start"
-                        />
-                      )}
-                      Confirm
-                    </Button>
+                    {transaction.status === "pending" && (
+                      <Button
+                        size="sm"
+                        onClick={() => handleConfirmTransaction(transaction.id)}
+                        disabled={confirmMutation.isPending}
+                      >
+                        {confirmMutation.isPending ? (
+                          <Spinner data-icon="inline-start" />
+                        ) : (
+                          <HugeiconsIcon
+                            icon={TaskDone02Icon}
+                            strokeWidth={2}
+                            data-icon="inline-start"
+                          />
+                        )}
+                        Confirm
+                      </Button>
+                    )}
                   </TableCell>
                 </TableRow>
               ))}

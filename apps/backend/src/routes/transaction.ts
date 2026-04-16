@@ -10,6 +10,7 @@ import {
   findPendingTransactionForInstance,
   getDefaultPlanPricingForPlan,
   getPlanPricingById,
+  listUserInvoices,
   listUserTransactions,
   supportedPaymentMethodSchema,
 } from "../services/billing.js"
@@ -48,10 +49,7 @@ export async function transactionRoutes(server: FastifyInstance) {
           })
         }
 
-        if (
-          body.planId != null &&
-          selectedPricing.planId !== body.planId
-        ) {
+        if (body.planId != null && selectedPricing.planId !== body.planId) {
           return reply.status(400).send({
             error: "Selected pricing does not belong to the requested plan",
           })
@@ -83,10 +81,7 @@ export async function transactionRoutes(server: FastifyInstance) {
           const isExpired =
             instance.expiryDate != null && instance.expiryDate < new Date()
 
-          if (
-            !["active", "expired"].includes(instance.status) &&
-            !isExpired
-          ) {
+          if (!["active", "expired"].includes(instance.status) && !isExpired) {
             return reply.status(400).send({
               error: "Instance is not eligible for renewal",
             })
@@ -134,6 +129,21 @@ export async function transactionRoutes(server: FastifyInstance) {
     async (request: any, reply) => {
       try {
         return await listUserTransactions(request.user.userId)
+      } catch (err: any) {
+        request.log.error(err)
+        return reply.status(500).send({
+          error: "Internal server error",
+        })
+      }
+    }
+  )
+
+  server.get(
+    "/invoices",
+    { preHandler: verifyAuth },
+    async (request: any, reply) => {
+      try {
+        return await listUserInvoices(request.user.userId)
       } catch (err: any) {
         request.log.error(err)
         return reply.status(500).send({
