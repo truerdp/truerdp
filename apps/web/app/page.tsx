@@ -34,6 +34,28 @@ export default function Page() {
     return `${plans.length} active plan${plans.length > 1 ? "s" : ""}`
   }, [isLoading, plans.length])
 
+  const plansByType = useMemo(() => {
+    return plans.reduce<Record<string, typeof plans>>((acc, plan) => {
+      const key = plan.planType
+      if (!acc[key]) {
+        acc[key] = []
+      }
+      acc[key].push(plan)
+      return acc
+    }, {})
+  }, [plans])
+
+  const plansByLocation = useMemo(() => {
+    return plans.reduce<Record<string, typeof plans>>((acc, plan) => {
+      const key = plan.planLocation
+      if (!acc[key]) {
+        acc[key] = []
+      }
+      acc[key].push(plan)
+      return acc
+    }, {})
+  }, [plans])
+
   function startCheckout(planPricingId: number) {
     const checkoutPath = `${webPaths.checkout}?planPricingId=${planPricingId}`
 
@@ -121,6 +143,52 @@ export default function Page() {
           </article>
         ))}
       </section>
+
+      {!isLoading && !error && plans.length > 0 ? (
+        <section className="mt-10 grid gap-6 lg:grid-cols-2">
+          <div className="rounded-xl border bg-muted/20 p-5">
+            <h2 className="text-lg font-semibold">Plans by Type</h2>
+            <div className="mt-4 space-y-4">
+              {Object.entries(plansByType).map(([planType, groupedPlans]) => (
+                <div key={planType} className="space-y-2">
+                  <div className="text-sm font-medium text-muted-foreground">
+                    {planType}
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {groupedPlans.map((plan) => (
+                      <Badge key={plan.id} variant="outline">
+                        {plan.name}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="rounded-xl border bg-muted/20 p-5">
+            <h2 className="text-lg font-semibold">Plans by Location</h2>
+            <div className="mt-4 space-y-4">
+              {Object.entries(plansByLocation).map(
+                ([planLocation, groupedPlans]) => (
+                  <div key={planLocation} className="space-y-2">
+                    <div className="text-sm font-medium text-muted-foreground">
+                      {planLocation}
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {groupedPlans.map((plan) => (
+                        <Badge key={plan.id} variant="outline">
+                          {plan.name}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                )
+              )}
+            </div>
+          </div>
+        </section>
+      ) : null}
     </main>
   )
 }

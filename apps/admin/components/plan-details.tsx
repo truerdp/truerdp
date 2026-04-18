@@ -18,6 +18,13 @@ import { Spinner } from "@workspace/ui/components/spinner"
 import { Switch } from "@workspace/ui/components/switch"
 import { Badge } from "@workspace/ui/components/badge"
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@workspace/ui/components/select"
+import {
   Field,
   FieldDescription,
   FieldError,
@@ -35,8 +42,19 @@ const planFormSchema = z
   .object({
     name: z.string().trim().min(1, "Plan name is required"),
     cpu: z.number().int().positive("CPU must be greater than 0"),
+    cpuName: z.string().trim().min(1, "CPU name is required"),
+    cpuThreads: z.number().int().positive("CPU threads must be greater than 0"),
     ram: z.number().int().positive("RAM must be greater than 0"),
+    ramType: z.string().trim().min(1, "RAM type is required"),
     storage: z.number().int().positive("Storage must be greater than 0"),
+    storageType: z.enum(["HDD", "SSD"]),
+    bandwidth: z.string().trim().min(1, "Bandwidth is required"),
+    os: z.string().trim().min(1, "OS is required"),
+    osVersion: z.string().trim().min(1, "OS version is required"),
+    planType: z.enum(["Dedicated", "Residential"]),
+    portSpeed: z.string().trim().min(1, "Port speed is required"),
+    setupFees: z.number().int().nonnegative("Setup fees cannot be negative"),
+    planLocation: z.string().trim().min(1, "Plan location is required"),
     defaultPricingId: z.number().int().positive().optional().nullable(),
     pricingOptions: z
       .array(
@@ -74,8 +92,19 @@ function getDefaultEditableValues(plan: Plan): PlanFormValues {
   return {
     name: plan.name,
     cpu: plan.cpu,
+    cpuName: plan.cpuName,
+    cpuThreads: plan.cpuThreads,
     ram: plan.ram,
+    ramType: plan.ramType,
     storage: plan.storage,
+    storageType: plan.storageType,
+    bandwidth: plan.bandwidth,
+    os: plan.os,
+    osVersion: plan.osVersion,
+    planType: plan.planType,
+    portSpeed: plan.portSpeed,
+    setupFees: plan.setupFees,
+    planLocation: plan.planLocation,
     defaultPricingId: plan.defaultPricingId,
     pricingOptions: plan.pricingOptions.map((option) => ({
       pricingId: option.id,
@@ -132,8 +161,19 @@ export function PlanDetails({ planId }: PlanDetailsProps) {
       data: {
         name: values.name,
         cpu: values.cpu,
+        cpuName: values.cpuName,
+        cpuThreads: values.cpuThreads,
         ram: values.ram,
+        ramType: values.ramType,
         storage: values.storage,
+        storageType: values.storageType,
+        bandwidth: values.bandwidth,
+        os: values.os,
+        osVersion: values.osVersion,
+        planType: values.planType,
+        portSpeed: values.portSpeed,
+        setupFees: values.setupFees,
+        planLocation: values.planLocation,
         isActive: plan.isActive,
         defaultPricingId: values.defaultPricingId,
         pricingOptions: values.pricingOptions.map((option) => ({
@@ -227,17 +267,53 @@ export function PlanDetails({ planId }: PlanDetailsProps) {
                   <div className="rounded-lg bg-muted/50 p-3">
                     <div className="text-sm text-muted-foreground">CPU</div>
                     <div className="text-2xl font-bold">{plan.cpu}</div>
-                    <div className="text-xs text-muted-foreground">vCores</div>
+                    <div className="text-xs text-muted-foreground">
+                      {plan.cpuName} • {plan.cpuThreads} threads
+                    </div>
                   </div>
                   <div className="rounded-lg bg-muted/50 p-3">
                     <div className="text-sm text-muted-foreground">RAM</div>
                     <div className="text-2xl font-bold">{plan.ram}</div>
-                    <div className="text-xs text-muted-foreground">GB</div>
+                    <div className="text-xs text-muted-foreground">
+                      GB • {plan.ramType}
+                    </div>
                   </div>
                   <div className="rounded-lg bg-muted/50 p-3">
                     <div className="text-sm text-muted-foreground">Storage</div>
                     <div className="text-2xl font-bold">{plan.storage}</div>
-                    <div className="text-xs text-muted-foreground">GB</div>
+                    <div className="text-xs text-muted-foreground">
+                      GB • {plan.storageType}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <h2 className="mb-3 text-sm font-semibold">Catalog Metadata</h2>
+                <div className="grid grid-cols-1 gap-3 text-sm md:grid-cols-2">
+                  <div className="rounded-lg bg-muted/30 p-3">
+                    <span className="text-muted-foreground">Plan Type:</span>{" "}
+                    {plan.planType}
+                  </div>
+                  <div className="rounded-lg bg-muted/30 p-3">
+                    <span className="text-muted-foreground">Location:</span>{" "}
+                    {plan.planLocation}
+                  </div>
+                  <div className="rounded-lg bg-muted/30 p-3">
+                    <span className="text-muted-foreground">OS:</span> {plan.os}{" "}
+                    {plan.osVersion}
+                  </div>
+                  <div className="rounded-lg bg-muted/30 p-3">
+                    <span className="text-muted-foreground">Bandwidth:</span>{" "}
+                    {plan.bandwidth}
+                  </div>
+                  <div className="rounded-lg bg-muted/30 p-3">
+                    <span className="text-muted-foreground">Port Speed:</span>{" "}
+                    {plan.portSpeed}
+                  </div>
+                  <div className="rounded-lg bg-muted/30 p-3">
+                    <span className="text-muted-foreground">Setup Fees:</span>{" "}
+                    {formatPrice(plan.setupFees)}
                   </div>
                 </div>
               </div>
@@ -347,6 +423,204 @@ export function PlanDetails({ planId }: PlanDetailsProps) {
                   />
                   {errors.storage && (
                     <FieldError>{errors.storage.message}</FieldError>
+                  )}
+                </Field>
+              </div>
+
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+                <Field data-invalid={!!errors.cpuThreads}>
+                  <FieldLabel htmlFor="plan-cpu-threads">
+                    CPU Threads
+                  </FieldLabel>
+                  <Input
+                    id="plan-cpu-threads"
+                    type="number"
+                    min={1}
+                    disabled={updatePlan.isPending}
+                    aria-invalid={!!errors.cpuThreads}
+                    {...register("cpuThreads", { valueAsNumber: true })}
+                  />
+                  {errors.cpuThreads && (
+                    <FieldError>{errors.cpuThreads.message}</FieldError>
+                  )}
+                </Field>
+
+                <Field data-invalid={!!errors.cpuName}>
+                  <FieldLabel htmlFor="plan-cpu-name">CPU Name</FieldLabel>
+                  <Input
+                    id="plan-cpu-name"
+                    type="text"
+                    disabled={updatePlan.isPending}
+                    aria-invalid={!!errors.cpuName}
+                    {...register("cpuName")}
+                  />
+                  {errors.cpuName && (
+                    <FieldError>{errors.cpuName.message}</FieldError>
+                  )}
+                </Field>
+
+                <Field data-invalid={!!errors.ramType}>
+                  <FieldLabel htmlFor="plan-ram-type">RAM Type</FieldLabel>
+                  <Input
+                    id="plan-ram-type"
+                    type="text"
+                    disabled={updatePlan.isPending}
+                    aria-invalid={!!errors.ramType}
+                    {...register("ramType")}
+                  />
+                  {errors.ramType && (
+                    <FieldError>{errors.ramType.message}</FieldError>
+                  )}
+                </Field>
+              </div>
+
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
+                <Field data-invalid={!!errors.storageType}>
+                  <FieldLabel htmlFor="plan-storage-type">
+                    Storage Type
+                  </FieldLabel>
+                  <Controller
+                    control={control}
+                    name="storageType"
+                    render={({ field }) => (
+                      <Select
+                        value={field.value}
+                        onValueChange={field.onChange}
+                        disabled={updatePlan.isPending}
+                      >
+                        <SelectTrigger
+                          id="plan-storage-type"
+                          aria-invalid={!!errors.storageType}
+                        >
+                          <SelectValue placeholder="Select storage type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="SSD">SSD</SelectItem>
+                          <SelectItem value="HDD">HDD</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
+                  {errors.storageType && (
+                    <FieldError>{errors.storageType.message}</FieldError>
+                  )}
+                </Field>
+
+                <Field data-invalid={!!errors.planType}>
+                  <FieldLabel htmlFor="plan-type">Plan Type</FieldLabel>
+                  <Controller
+                    control={control}
+                    name="planType"
+                    render={({ field }) => (
+                      <Select
+                        value={field.value}
+                        onValueChange={field.onChange}
+                        disabled={updatePlan.isPending}
+                      >
+                        <SelectTrigger
+                          id="plan-type"
+                          aria-invalid={!!errors.planType}
+                        >
+                          <SelectValue placeholder="Select plan type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Dedicated">Dedicated</SelectItem>
+                          <SelectItem value="Residential">
+                            Residential
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
+                  {errors.planType && (
+                    <FieldError>{errors.planType.message}</FieldError>
+                  )}
+                </Field>
+
+                <Field data-invalid={!!errors.planLocation}>
+                  <FieldLabel htmlFor="plan-location">Location</FieldLabel>
+                  <Input
+                    id="plan-location"
+                    type="text"
+                    disabled={updatePlan.isPending}
+                    aria-invalid={!!errors.planLocation}
+                    {...register("planLocation")}
+                  />
+                  {errors.planLocation && (
+                    <FieldError>{errors.planLocation.message}</FieldError>
+                  )}
+                </Field>
+
+                <Field data-invalid={!!errors.setupFees}>
+                  <FieldLabel htmlFor="plan-setup-fees">
+                    Setup Fees (USD)
+                  </FieldLabel>
+                  <Input
+                    id="plan-setup-fees"
+                    type="number"
+                    min={0}
+                    disabled={updatePlan.isPending}
+                    aria-invalid={!!errors.setupFees}
+                    {...register("setupFees", { valueAsNumber: true })}
+                  />
+                  {errors.setupFees && (
+                    <FieldError>{errors.setupFees.message}</FieldError>
+                  )}
+                </Field>
+              </div>
+
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
+                <Field data-invalid={!!errors.bandwidth}>
+                  <FieldLabel htmlFor="plan-bandwidth">Bandwidth</FieldLabel>
+                  <Input
+                    id="plan-bandwidth"
+                    type="text"
+                    disabled={updatePlan.isPending}
+                    aria-invalid={!!errors.bandwidth}
+                    {...register("bandwidth")}
+                  />
+                  {errors.bandwidth && (
+                    <FieldError>{errors.bandwidth.message}</FieldError>
+                  )}
+                </Field>
+
+                <Field data-invalid={!!errors.portSpeed}>
+                  <FieldLabel htmlFor="plan-port-speed">Port Speed</FieldLabel>
+                  <Input
+                    id="plan-port-speed"
+                    type="text"
+                    disabled={updatePlan.isPending}
+                    aria-invalid={!!errors.portSpeed}
+                    {...register("portSpeed")}
+                  />
+                  {errors.portSpeed && (
+                    <FieldError>{errors.portSpeed.message}</FieldError>
+                  )}
+                </Field>
+
+                <Field data-invalid={!!errors.os}>
+                  <FieldLabel htmlFor="plan-os">OS</FieldLabel>
+                  <Input
+                    id="plan-os"
+                    type="text"
+                    disabled={updatePlan.isPending}
+                    aria-invalid={!!errors.os}
+                    {...register("os")}
+                  />
+                  {errors.os && <FieldError>{errors.os.message}</FieldError>}
+                </Field>
+
+                <Field data-invalid={!!errors.osVersion}>
+                  <FieldLabel htmlFor="plan-os-version">OS Version</FieldLabel>
+                  <Input
+                    id="plan-os-version"
+                    type="text"
+                    disabled={updatePlan.isPending}
+                    aria-invalid={!!errors.osVersion}
+                    {...register("osVersion")}
+                  />
+                  {errors.osVersion && (
+                    <FieldError>{errors.osVersion.message}</FieldError>
                   )}
                 </Field>
               </div>

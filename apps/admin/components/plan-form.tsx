@@ -14,6 +14,13 @@ import { Input } from "@workspace/ui/components/input"
 import { Spinner } from "@workspace/ui/components/spinner"
 import { Switch } from "@workspace/ui/components/switch"
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@workspace/ui/components/select"
+import {
   Field,
   FieldDescription,
   FieldError,
@@ -27,8 +34,19 @@ const planFormSchema = z
   .object({
     name: z.string().trim().min(1, "Plan name is required"),
     cpu: z.number().int().positive("CPU must be greater than 0"),
+    cpuName: z.string().trim().min(1, "CPU name is required"),
+    cpuThreads: z.number().int().positive("CPU threads must be greater than 0"),
     ram: z.number().int().positive("RAM must be greater than 0"),
+    ramType: z.string().trim().min(1, "RAM type is required"),
     storage: z.number().int().positive("Storage must be greater than 0"),
+    storageType: z.enum(["HDD", "SSD"]),
+    bandwidth: z.string().trim().min(1, "Bandwidth is required"),
+    os: z.string().trim().min(1, "OS is required"),
+    osVersion: z.string().trim().min(1, "OS version is required"),
+    planType: z.enum(["Dedicated", "Residential"]),
+    portSpeed: z.string().trim().min(1, "Port speed is required"),
+    setupFees: z.number().int().nonnegative("Setup fees cannot be negative"),
+    planLocation: z.string().trim().min(1, "Plan location is required"),
     pricingOptions: z
       .array(
         z.object({
@@ -71,8 +89,19 @@ interface PlanFormProps {
 const defaultFormValues: PlanFormValues = {
   name: "",
   cpu: 2,
+  cpuName: "Intel Xeon",
+  cpuThreads: 2,
   ram: 4,
+  ramType: "DDR4",
   storage: 80,
+  storageType: "SSD",
+  bandwidth: "2TB",
+  os: "Windows",
+  osVersion: "Windows Server 2022",
+  planType: "Dedicated",
+  portSpeed: "1Gbps",
+  setupFees: 0,
+  planLocation: "USA",
   pricingOptions: [
     {
       durationDays: 30,
@@ -169,6 +198,21 @@ export function PlanForm({
               {errors.cpu && <FieldError>{errors.cpu.message}</FieldError>}
             </Field>
 
+            <Field data-invalid={!!errors.cpuThreads}>
+              <FieldLabel htmlFor="plan-cpu-threads">CPU Threads</FieldLabel>
+              <Input
+                id="plan-cpu-threads"
+                type="number"
+                min={1}
+                disabled={isPending}
+                aria-invalid={!!errors.cpuThreads}
+                {...register("cpuThreads", { valueAsNumber: true })}
+              />
+              {errors.cpuThreads && (
+                <FieldError>{errors.cpuThreads.message}</FieldError>
+              )}
+            </Field>
+
             <Field data-invalid={!!errors.ram}>
               <FieldLabel htmlFor="plan-ram">RAM (GB)</FieldLabel>
               <Input
@@ -194,6 +238,186 @@ export function PlanForm({
               />
               {errors.storage && (
                 <FieldError>{errors.storage.message}</FieldError>
+              )}
+            </Field>
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+            <Field data-invalid={!!errors.cpuName}>
+              <FieldLabel htmlFor="plan-cpu-name">CPU Name</FieldLabel>
+              <Input
+                id="plan-cpu-name"
+                type="text"
+                disabled={isPending}
+                aria-invalid={!!errors.cpuName}
+                {...register("cpuName")}
+              />
+              {errors.cpuName && (
+                <FieldError>{errors.cpuName.message}</FieldError>
+              )}
+            </Field>
+
+            <Field data-invalid={!!errors.ramType}>
+              <FieldLabel htmlFor="plan-ram-type">RAM Type</FieldLabel>
+              <Input
+                id="plan-ram-type"
+                type="text"
+                disabled={isPending}
+                aria-invalid={!!errors.ramType}
+                {...register("ramType")}
+              />
+              {errors.ramType && (
+                <FieldError>{errors.ramType.message}</FieldError>
+              )}
+            </Field>
+
+            <Field data-invalid={!!errors.storageType}>
+              <FieldLabel htmlFor="plan-storage-type">Storage Type</FieldLabel>
+              <Controller
+                control={control}
+                name="storageType"
+                render={({ field }) => (
+                  <Select
+                    value={field.value}
+                    onValueChange={field.onChange}
+                    disabled={isPending}
+                  >
+                    <SelectTrigger
+                      id="plan-storage-type"
+                      aria-invalid={!!errors.storageType}
+                    >
+                      <SelectValue placeholder="Select storage type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="SSD">SSD</SelectItem>
+                      <SelectItem value="HDD">HDD</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+              {errors.storageType && (
+                <FieldError>{errors.storageType.message}</FieldError>
+              )}
+            </Field>
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+            <Field data-invalid={!!errors.bandwidth}>
+              <FieldLabel htmlFor="plan-bandwidth">Bandwidth</FieldLabel>
+              <Input
+                id="plan-bandwidth"
+                type="text"
+                placeholder="2TB"
+                disabled={isPending}
+                aria-invalid={!!errors.bandwidth}
+                {...register("bandwidth")}
+              />
+              {errors.bandwidth && (
+                <FieldError>{errors.bandwidth.message}</FieldError>
+              )}
+            </Field>
+
+            <Field data-invalid={!!errors.portSpeed}>
+              <FieldLabel htmlFor="plan-port-speed">Port Speed</FieldLabel>
+              <Input
+                id="plan-port-speed"
+                type="text"
+                placeholder="1Gbps"
+                disabled={isPending}
+                aria-invalid={!!errors.portSpeed}
+                {...register("portSpeed")}
+              />
+              {errors.portSpeed && (
+                <FieldError>{errors.portSpeed.message}</FieldError>
+              )}
+            </Field>
+
+            <Field data-invalid={!!errors.setupFees}>
+              <FieldLabel htmlFor="plan-setup-fees">
+                Setup Fees (USD)
+              </FieldLabel>
+              <Input
+                id="plan-setup-fees"
+                type="number"
+                min={0}
+                disabled={isPending}
+                aria-invalid={!!errors.setupFees}
+                {...register("setupFees", { valueAsNumber: true })}
+              />
+              {errors.setupFees && (
+                <FieldError>{errors.setupFees.message}</FieldError>
+              )}
+            </Field>
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
+            <Field data-invalid={!!errors.os}>
+              <FieldLabel htmlFor="plan-os">OS</FieldLabel>
+              <Input
+                id="plan-os"
+                type="text"
+                disabled={isPending}
+                aria-invalid={!!errors.os}
+                {...register("os")}
+              />
+              {errors.os && <FieldError>{errors.os.message}</FieldError>}
+            </Field>
+
+            <Field data-invalid={!!errors.osVersion}>
+              <FieldLabel htmlFor="plan-os-version">OS Version</FieldLabel>
+              <Input
+                id="plan-os-version"
+                type="text"
+                disabled={isPending}
+                aria-invalid={!!errors.osVersion}
+                {...register("osVersion")}
+              />
+              {errors.osVersion && (
+                <FieldError>{errors.osVersion.message}</FieldError>
+              )}
+            </Field>
+
+            <Field data-invalid={!!errors.planType}>
+              <FieldLabel htmlFor="plan-type">Plan Type</FieldLabel>
+              <Controller
+                control={control}
+                name="planType"
+                render={({ field }) => (
+                  <Select
+                    value={field.value}
+                    onValueChange={field.onChange}
+                    disabled={isPending}
+                  >
+                    <SelectTrigger
+                      id="plan-type"
+                      aria-invalid={!!errors.planType}
+                    >
+                      <SelectValue placeholder="Select plan type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Dedicated">Dedicated</SelectItem>
+                      <SelectItem value="Residential">Residential</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+              {errors.planType && (
+                <FieldError>{errors.planType.message}</FieldError>
+              )}
+            </Field>
+
+            <Field data-invalid={!!errors.planLocation}>
+              <FieldLabel htmlFor="plan-location">Plan Location</FieldLabel>
+              <Input
+                id="plan-location"
+                type="text"
+                placeholder="USA"
+                disabled={isPending}
+                aria-invalid={!!errors.planLocation}
+                {...register("planLocation")}
+              />
+              {errors.planLocation && (
+                <FieldError>{errors.planLocation.message}</FieldError>
               )}
             </Field>
           </div>

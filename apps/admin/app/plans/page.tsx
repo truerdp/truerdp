@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react"
 import Link from "next/link"
-import { usePlans, type Plan } from "@/hooks/use-plans"
+import { usePlans } from "@/hooks/use-plans"
 import { useTogglePlanStatus } from "@/hooks/use-manage-plans"
 import {
   Empty,
@@ -61,6 +61,7 @@ function PlansSkeleton() {
         <TableRow>
           <TableHead>Plan</TableHead>
           <TableHead>Status</TableHead>
+          <TableHead>Category</TableHead>
           <TableHead>Resources</TableHead>
           <TableHead>Pricing Options</TableHead>
           <TableHead>Action</TableHead>
@@ -74,6 +75,9 @@ function PlansSkeleton() {
             </TableCell>
             <TableCell>
               <Skeleton className="h-6 w-16" />
+            </TableCell>
+            <TableCell>
+              <Skeleton className="h-4 w-24" />
             </TableCell>
             <TableCell>
               <Skeleton className="h-4 w-44" />
@@ -252,6 +256,7 @@ export default function AdminPlansPage() {
               <TableRow>
                 <TableHead>Plan</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead>Category</TableHead>
                 <TableHead>Resources</TableHead>
                 <TableHead>Pricing Options</TableHead>
                 <TableHead className="w-48">Action</TableHead>
@@ -272,6 +277,12 @@ export default function AdminPlansPage() {
                     <Badge variant={plan.isActive ? "secondary" : "outline"}>
                       {plan.isActive ? "Active" : "Inactive"}
                     </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex flex-col text-xs text-muted-foreground">
+                      <span>{plan.planType}</span>
+                      <span>{plan.planLocation}</span>
+                    </div>
                   </TableCell>
                   <TableCell>
                     <span className="text-sm">

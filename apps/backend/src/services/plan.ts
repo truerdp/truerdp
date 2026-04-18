@@ -6,8 +6,19 @@ interface PlanWithPricing {
   id: number
   name: string
   cpu: number
+  cpuName: string
+  cpuThreads: number
   ram: number
+  ramType: string
   storage: number
+  storageType: string
+  bandwidth: string
+  os: string
+  osVersion: string
+  planType: string
+  portSpeed: string
+  setupFees: number
+  planLocation: string
   isActive: boolean
   defaultPricingId: number | null
   pricingOptions: Array<{
@@ -24,8 +35,19 @@ function mapPlanRows(
       id: number
       name: string
       cpu: number
+      cpuName: string
+      cpuThreads: number
       ram: number
+      ramType: string
       storage: number
+      storageType: string
+      bandwidth: string
+      os: string
+      osVersion: string
+      planType: string
+      portSpeed: string
+      setupFees: number
+      planLocation: string
       isActive: boolean
       defaultPricingId: number | null
     }
@@ -47,8 +69,19 @@ function mapPlanRows(
           id: row.plan.id,
           name: row.plan.name,
           cpu: row.plan.cpu,
+          cpuName: row.plan.cpuName,
+          cpuThreads: row.plan.cpuThreads,
           ram: row.plan.ram,
+          ramType: row.plan.ramType,
           storage: row.plan.storage,
+          storageType: row.plan.storageType,
+          bandwidth: row.plan.bandwidth,
+          os: row.plan.os,
+          osVersion: row.plan.osVersion,
+          planType: row.plan.planType,
+          portSpeed: row.plan.portSpeed,
+          setupFees: row.plan.setupFees,
+          planLocation: row.plan.planLocation,
           isActive: row.plan.isActive,
           defaultPricingId: row.plan.defaultPricingId,
           pricingOptions: [],
@@ -96,8 +129,19 @@ export async function listActivePlansWithPricing() {
         id: plans.id,
         name: plans.name,
         cpu: plans.cpu,
+        cpuName: plans.cpuName,
+        cpuThreads: plans.cpuThreads,
         ram: plans.ram,
+        ramType: plans.ramType,
         storage: plans.storage,
+        storageType: plans.storageType,
+        bandwidth: plans.bandwidth,
+        os: plans.os,
+        osVersion: plans.osVersion,
+        planType: plans.planType,
+        portSpeed: plans.portSpeed,
+        setupFees: plans.setupFees,
+        planLocation: plans.planLocation,
         isActive: plans.isActive,
         defaultPricingId: plans.defaultPricingId,
       },
@@ -123,8 +167,19 @@ export async function listAdminPlansWithPricing() {
         id: plans.id,
         name: plans.name,
         cpu: plans.cpu,
+        cpuName: plans.cpuName,
+        cpuThreads: plans.cpuThreads,
         ram: plans.ram,
+        ramType: plans.ramType,
         storage: plans.storage,
+        storageType: plans.storageType,
+        bandwidth: plans.bandwidth,
+        os: plans.os,
+        osVersion: plans.osVersion,
+        planType: plans.planType,
+        portSpeed: plans.portSpeed,
+        setupFees: plans.setupFees,
+        planLocation: plans.planLocation,
         isActive: plans.isActive,
         defaultPricingId: plans.defaultPricingId,
       },

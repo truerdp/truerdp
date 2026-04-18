@@ -3,7 +3,7 @@ import { and, eq } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "../db.js"
 import { verifyAuth } from "../middleware/auth.js"
-import { instances, resources } from "../schema.js"
+import { instances, resources, servers } from "../schema.js"
 import {
   BillingError,
   createBillingTransaction,
@@ -50,11 +50,12 @@ export async function instanceRoutes(server: FastifyInstance) {
             status: instances.status,
             startDate: instances.startDate,
             expiryDate: instances.expiryDate,
-            ipAddress: resources.ipAddress,
+            ipAddress: servers.ipAddress,
             username: resources.username,
           })
           .from(instances)
           .leftJoin(resources, eq(resources.instanceId, instances.id))
+          .leftJoin(servers, eq(resources.serverId, servers.id))
           .where(eq(instances.userId, userId))
 
         return result.map((instance) => ({
@@ -89,11 +90,12 @@ export async function instanceRoutes(server: FastifyInstance) {
             status: instances.status,
             startDate: instances.startDate,
             expiryDate: instances.expiryDate,
-            ipAddress: resources.ipAddress,
+            ipAddress: servers.ipAddress,
             username: resources.username,
           })
           .from(instances)
           .leftJoin(resources, eq(resources.instanceId, instances.id))
+          .leftJoin(servers, eq(resources.serverId, servers.id))
           .where(eq(instances.id, instanceId))
           .limit(1)
 
@@ -138,12 +140,13 @@ export async function instanceRoutes(server: FastifyInstance) {
             userId: instances.userId,
             status: instances.status,
             expiryDate: instances.expiryDate,
-            ipAddress: resources.ipAddress,
+            ipAddress: servers.ipAddress,
             username: resources.username,
             passwordEncrypted: resources.passwordEncrypted,
           })
           .from(instances)
           .leftJoin(resources, eq(resources.instanceId, instances.id))
+          .leftJoin(servers, eq(resources.serverId, servers.id))
           .where(eq(instances.id, instanceId))
           .limit(1)
 

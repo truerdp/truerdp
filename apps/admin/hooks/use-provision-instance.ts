@@ -6,11 +6,9 @@ import { toast } from "sonner"
 import { queryKeys } from "@/lib/query-keys"
 
 export interface ProvisionRequest {
-  provider?: string
-  externalId?: string
-  ipAddress: string
-  username: string
-  password: string
+  serverId: number
+  username?: string
+  password?: string
 }
 
 interface ProvisionResponse {

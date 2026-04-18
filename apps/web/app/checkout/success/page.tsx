@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { useMemo } from "react"
+import { Suspense, useMemo } from "react"
 import { useSearchParams } from "next/navigation"
 import { HugeiconsIcon } from "@hugeicons/react"
 import {
@@ -30,7 +30,7 @@ import { formatAmount } from "@/lib/format"
 import { useTransactions } from "@/hooks/use-transactions"
 import { webPaths } from "@/lib/paths"
 
-export default function CheckoutSuccessPage() {
+function CheckoutSuccessPageContent() {
   const searchParams = useSearchParams()
   const transactionId = Number(searchParams.get("transactionId") ?? "")
   const hasTransactionId = Number.isInteger(transactionId) && transactionId > 0
@@ -175,5 +175,30 @@ export default function CheckoutSuccessPage() {
         </CardContent>
       </Card>
     </main>
+  )
+}
+
+function CheckoutSuccessFallback() {
+  return (
+    <main className="mx-auto w-full max-w-3xl px-6 py-12">
+      <Card>
+        <CardHeader>
+          <Skeleton className="h-6 w-52" />
+          <Skeleton className="h-4 w-64" />
+        </CardHeader>
+        <CardContent className="flex flex-col gap-3">
+          <Skeleton className="h-14 w-full" />
+          <Skeleton className="h-14 w-full" />
+        </CardContent>
+      </Card>
+    </main>
+  )
+}
+
+export default function CheckoutSuccessPage() {
+  return (
+    <Suspense fallback={<CheckoutSuccessFallback />}>
+      <CheckoutSuccessPageContent />
+    </Suspense>
   )
 }

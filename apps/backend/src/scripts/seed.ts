@@ -2,7 +2,7 @@ import "dotenv/config"
 import bcrypt from "bcrypt"
 import { and, eq, notInArray } from "drizzle-orm"
 import { closeDbConnection, db } from "../db.js"
-import { planPricing, plans, users } from "../schema.js"
+import { planPricing, plans, servers, users } from "../schema.js"
 
 const DEFAULT_PASSWORD = "password123"
 const DEFAULT_PLAN_NAME = "Starter RDP"
@@ -174,6 +174,41 @@ async function upsertPlanPricing(planId: number) {
   return pricingOptions
 }
 
+async function upsertServer() {
+  const [server] = await db
+    .insert(servers)
+    .values({
+      provider: "manual",
+      externalId: null,
+      ipAddress: "10.0.0.10",
+      cpu: 2,
+      ram: 4,
+      storage: 80,
+      status: "available",
+      lastAssignedAt: null,
+    })
+    .onConflictDoUpdate({
+      target: servers.ipAddress,
+      set: {
+        provider: "manual",
+        externalId: null,
+        cpu: 2,
+        ram: 4,
+        storage: 80,
+        status: "available",
+        lastAssignedAt: null,
+      },
+    })
+    .returning({
+      id: servers.id,
+      provider: servers.provider,
+      ipAddress: servers.ipAddress,
+      status: servers.status,
+    })
+
+  return requireSeedRecord(server, "server")
+}
+
 async function seed() {
   const adminUser = await upsertUser({
     email: "admin@truerdp.local",
@@ -191,6 +226,7 @@ async function seed() {
 
   const plan = await upsertPlan()
   const pricingOptions = await upsertPlanPricing(plan.id)
+  const server = await upsertServer()
 
   console.log("Seed complete")
   console.log({
@@ -198,6 +234,7 @@ async function seed() {
     normalUser,
     plan,
     pricingOptions,
+    server,
     password: DEFAULT_PASSWORD,
   })
 }

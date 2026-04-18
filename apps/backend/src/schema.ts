@@ -1,3 +1,4 @@
+import { sql } from "drizzle-orm"
 import {
   boolean,
   index,
@@ -25,12 +26,16 @@ export const instanceStatusEnum = pgEnum("instance_status", [
   "failed",
 ])
 
+export const serverStatusEnum = pgEnum("server_status", [
+  "available",
+  "assigned",
+  "cleaning",
+  "retired",
+])
+
 export const resourceStatusEnum = pgEnum("resource_status", [
-  "creating",
-  "running",
-  "stopped",
-  "failed",
-  "deleted",
+  "active",
+  "released",
 ])
 
 export const transactionStatusEnum = pgEnum("transaction_status", [
@@ -89,8 +94,19 @@ export const plans = pgTable("plans", {
 
   name: text("name").notNull(),
   cpu: integer("cpu").notNull(),
+  cpuName: text("cpu_name").default("Intel Xeon").notNull(),
+  cpuThreads: integer("cpu_threads").default(2).notNull(),
   ram: integer("ram").notNull(),
+  ramType: text("ram_type").default("DDR4").notNull(),
   storage: integer("storage").notNull(),
+  storageType: text("storage_type").default("SSD").notNull(),
+  bandwidth: text("bandwidth").default("2TB").notNull(),
+  os: text("os").default("Windows").notNull(),
+  osVersion: text("os_version").default("Windows Server 2022").notNull(),
+  planType: text("plan_type").default("Dedicated").notNull(),
+  portSpeed: text("port_speed").default("1Gbps").notNull(),
+  setupFees: integer("setup_fees").default(0).notNull(),
+  planLocation: text("plan_location").default("USA").notNull(),
 
   defaultPricingId: integer("default_pricing_id"),
 
@@ -292,7 +308,44 @@ export const instances = pgTable(
   })
 )
 
-/* ================= RESOURCES ================= */
+/* ================= SERVERS (INVENTORY) ================= */
+
+export const servers = pgTable(
+  "servers",
+  {
+    id: serial("id").primaryKey(),
+
+    provider: text("provider").default("manual").notNull(),
+    externalId: text("external_id"),
+
+    ipAddress: text("ip_address").notNull(),
+    cpu: integer("cpu").notNull(),
+    ram: integer("ram").notNull(),
+    storage: integer("storage").notNull(),
+
+    status: serverStatusEnum("status").default("available").notNull(),
+
+    lastAssignedAt: timestamp("last_assigned_at"),
+
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdateFn(() => new Date())
+      .notNull(),
+  },
+  (table) => ({
+    ipAddressUnique: uniqueIndex("servers_ip_address_unique").on(
+      table.ipAddress
+    ),
+    statusIdx: index("servers_status_idx").on(table.status),
+    providerExternalIdIdx: index("servers_provider_external_id_idx").on(
+      table.provider,
+      table.externalId
+    ),
+  })
+)
+
+/* ================= RESOURCES (ASSIGNMENT) ================= */
 
 export const resources = pgTable(
   "resources",
@@ -303,17 +356,17 @@ export const resources = pgTable(
       .notNull()
       .references(() => instances.id),
 
-    provider: text("provider").default("manual").notNull(),
-    externalId: text("external_id"),
+    serverId: integer("server_id")
+      .notNull()
+      .references(() => servers.id),
 
-    ipAddress: text("ip_address"),
     username: text("username"),
     passwordEncrypted: text("password_encrypted"),
 
-    status: resourceStatusEnum("status").default("creating").notNull(),
+    status: resourceStatusEnum("status").default("active").notNull(),
 
-    lastSyncedAt: timestamp("last_synced_at"),
-    healthStatus: text("health_status"),
+    assignedAt: timestamp("assigned_at").defaultNow().notNull(),
+    releasedAt: timestamp("released_at"),
 
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at")
@@ -325,10 +378,14 @@ export const resources = pgTable(
     instanceUnique: uniqueIndex("resources_instance_id_unique").on(
       table.instanceId
     ),
+    serverUnique: uniqueIndex("resources_server_id_unique")
+      .on(table.serverId)
+      .where(sql`${table.status} = 'active'`),
     statusIdx: index("resources_status_idx").on(table.status),
-    providerExternalIdUnique: uniqueIndex(
-      "resources_provider_external_id_unique"
-    ).on(table.provider, table.externalId),
+    instanceServerIdx: index("resources_instance_server_idx").on(
+      table.instanceId,
+      table.serverId
+    ),
   })
 )
 

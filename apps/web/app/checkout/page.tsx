@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { Suspense, useMemo, useState } from "react"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 import { toast } from "sonner"
@@ -50,7 +50,7 @@ interface CreateTransactionResponse {
   id: number
 }
 
-export default function CheckoutPage() {
+function CheckoutPageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { data, isLoading, error } = usePlans()
@@ -266,5 +266,30 @@ export default function CheckoutPage() {
         </Card>
       ) : null}
     </main>
+  )
+}
+
+function CheckoutPageFallback() {
+  return (
+    <main className="mx-auto w-full max-w-3xl px-6 py-12">
+      <Card>
+        <CardHeader>
+          <Skeleton className="h-6 w-44" />
+          <Skeleton className="h-4 w-64" />
+        </CardHeader>
+        <CardContent className="flex flex-col gap-3">
+          <Skeleton className="h-18 w-full" />
+          <Skeleton className="h-18 w-full" />
+        </CardContent>
+      </Card>
+    </main>
+  )
+}
+
+export default function CheckoutPage() {
+  return (
+    <Suspense fallback={<CheckoutPageFallback />}>
+      <CheckoutPageContent />
+    </Suspense>
   )
 }

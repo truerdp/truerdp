@@ -9,6 +9,7 @@ import {
   planPricing,
   plans,
   resources,
+  servers,
   transactions,
 } from "../schema.js"
 import { calculatePrice } from "./pricing.js"
@@ -123,9 +124,10 @@ async function loadResourceMap(rows: TransactionSummaryRow[]) {
   const linkedResources = await db
     .select({
       instanceId: resources.instanceId,
-      ipAddress: resources.ipAddress,
+      ipAddress: servers.ipAddress,
     })
     .from(resources)
+    .leftJoin(servers, eq(resources.serverId, servers.id))
     .where(inArray(resources.instanceId, instanceIds))
 
   return new Map(

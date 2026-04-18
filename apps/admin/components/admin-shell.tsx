@@ -86,6 +86,14 @@ function getBreadcrumbState(segments: string[]) {
     }
   }
 
+  if (segments[0] === "servers") {
+    return {
+      currentLabel: "Servers",
+      parentLabel: null,
+      parentHref: adminPaths.overview,
+    }
+  }
+
   return {
     currentLabel: "Admin",
     parentLabel: null,

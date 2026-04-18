@@ -9,6 +9,7 @@ import {
   planPricing,
   plans,
   resources,
+  servers,
   transactions,
   users,
 } from "../schema.js"
@@ -21,13 +22,16 @@ import {
 } from "../services/billing.js"
 import { encryptCredential } from "../services/resource-credentials.js"
 import { listAdminPlansWithPricing } from "../services/plan.js"
+import {
+  allocateServerToInstance,
+  AllocationError,
+  deallocateServer,
+} from "../services/allocation.js"
 
 const provisionSchema = z.object({
-  provider: z.string().trim().min(1).default("manual"),
-  externalId: z.string().trim().min(1).optional(),
-  ipAddress: z.string().trim().min(1),
-  username: z.string().trim().min(1),
-  password: z.string().min(1),
+  serverId: z.number().int().positive(),
+  username: z.string().trim().min(1).optional(),
+  password: z.string().min(1).optional(),
 })
 
 const extendInstanceSchema = z.object({
@@ -44,8 +48,19 @@ const planPricingInputSchema = z.object({
 const createPlanSchema = z.object({
   name: z.string().trim().min(1),
   cpu: z.number().int().positive(),
+  cpuName: z.string().trim().min(1).default("Intel Xeon"),
+  cpuThreads: z.number().int().positive().default(2),
   ram: z.number().int().positive(),
+  ramType: z.string().trim().min(1).default("DDR4"),
   storage: z.number().int().positive(),
+  storageType: z.enum(["HDD", "SSD"]).default("SSD"),
+  bandwidth: z.string().trim().min(1).default("2TB"),
+  os: z.string().trim().min(1).default("Windows"),
+  osVersion: z.string().trim().min(1).default("Windows Server 2022"),
+  planType: z.enum(["Dedicated", "Residential"]).default("Dedicated"),
+  portSpeed: z.string().trim().min(1).default("1Gbps"),
+  setupFees: z.number().int().nonnegative().default(0),
+  planLocation: z.string().trim().min(1).default("USA"),
   isActive: z.boolean().default(true),
   pricingOptions: z.array(planPricingInputSchema.omit({ id: true })).min(1),
 })
@@ -53,8 +68,19 @@ const createPlanSchema = z.object({
 const updatePlanSchema = z.object({
   name: z.string().trim().min(1),
   cpu: z.number().int().positive(),
+  cpuName: z.string().trim().min(1),
+  cpuThreads: z.number().int().positive(),
   ram: z.number().int().positive(),
+  ramType: z.string().trim().min(1),
   storage: z.number().int().positive(),
+  storageType: z.enum(["HDD", "SSD"]),
+  bandwidth: z.string().trim().min(1),
+  os: z.string().trim().min(1),
+  osVersion: z.string().trim().min(1),
+  planType: z.enum(["Dedicated", "Residential"]),
+  portSpeed: z.string().trim().min(1),
+  setupFees: z.number().int().nonnegative(),
+  planLocation: z.string().trim().min(1),
   isActive: z.boolean().default(true),
   defaultPricingId: z.number().int().positive().optional().nullable(),
   pricingOptions: z.array(planPricingInputSchema).min(1),
@@ -62,6 +88,22 @@ const updatePlanSchema = z.object({
 
 const updatePlanStatusSchema = z.object({
   isActive: z.boolean(),
+})
+
+const serverInputSchema = z.object({
+  provider: z.string().trim().min(1).default("manual"),
+  externalId: z.string().trim().min(1).nullable().optional(),
+  ipAddress: z.string().trim().min(1),
+  cpu: z.number().int().positive(),
+  ram: z.number().int().positive(),
+  storage: z.number().int().positive(),
+  status: z
+    .enum(["available", "assigned", "cleaning", "retired"])
+    .default("available"),
+})
+
+const serverStatusUpdateSchema = z.object({
+  status: z.enum(["available", "assigned", "cleaning", "retired"]),
 })
 
 function requireAdmin(user: any, reply: any) {
@@ -119,8 +161,19 @@ export async function adminRoutes(server: FastifyInstance) {
             .values({
               name: body.name,
               cpu: body.cpu,
+              cpuName: body.cpuName,
+              cpuThreads: body.cpuThreads,
               ram: body.ram,
+              ramType: body.ramType,
               storage: body.storage,
+              storageType: body.storageType,
+              bandwidth: body.bandwidth,
+              os: body.os,
+              osVersion: body.osVersion,
+              planType: body.planType,
+              portSpeed: body.portSpeed,
+              setupFees: body.setupFees,
+              planLocation: body.planLocation,
               isActive: body.isActive,
             })
             .returning({
@@ -200,8 +253,19 @@ export async function adminRoutes(server: FastifyInstance) {
             .set({
               name: body.name,
               cpu: body.cpu,
+              cpuName: body.cpuName,
+              cpuThreads: body.cpuThreads,
               ram: body.ram,
+              ramType: body.ramType,
               storage: body.storage,
+              storageType: body.storageType,
+              bandwidth: body.bandwidth,
+              os: body.os,
+              osVersion: body.osVersion,
+              planType: body.planType,
+              portSpeed: body.portSpeed,
+              setupFees: body.setupFees,
+              planLocation: body.planLocation,
               isActive: body.isActive,
               defaultPricingId: body.defaultPricingId ?? null,
             })
@@ -445,45 +509,28 @@ export async function adminRoutes(server: FastifyInstance) {
         const expiry = new Date(now)
         expiry.setDate(expiry.getDate() + linkedOrder.durationDays)
 
+        // Allocate server and update instance
+        const allocated = await allocateServerToInstance(
+          instanceId,
+          body.serverId,
+          body.username && body.password
+            ? {
+                username: body.username,
+                passwordEncrypted: encryptCredential(body.password),
+              }
+            : undefined
+        )
+
+        // Update instance expiry date and order status (these weren't set during allocation)
         await db.transaction(async (tx) => {
           await tx
             .update(instances)
             .set({
-              status: "active",
-              startDate: now,
               expiryDate: expiry,
               provisionAttempts: instance.provisionAttempts + 1,
               lastProvisionError: null,
             })
-            .where(eq(instances.id, instance.id))
-
-          await tx
-            .insert(resources)
-            .values({
-              instanceId: instance.id,
-              provider: body.provider,
-              externalId: body.externalId,
-              ipAddress: body.ipAddress,
-              username: body.username,
-              passwordEncrypted: encryptCredential(body.password),
-              status: "running",
-              lastSyncedAt: now,
-              healthStatus: "healthy",
-            })
-            .onConflictDoUpdate({
-              target: resources.instanceId,
-              set: {
-                provider: body.provider,
-                externalId: body.externalId,
-                ipAddress: body.ipAddress,
-                username: body.username,
-                passwordEncrypted: encryptCredential(body.password),
-                status: "running",
-                lastSyncedAt: now,
-                healthStatus: "healthy",
-                updatedAt: now,
-              },
-            })
+            .where(eq(instances.id, instanceId))
 
           await tx
             .update(orders)
@@ -495,9 +542,16 @@ export async function adminRoutes(server: FastifyInstance) {
 
         return {
           message: "Instance provisioned successfully",
+          resource: allocated.resource,
+          server: allocated.server,
         }
       } catch (err: any) {
         server.log.error(err)
+        if (err instanceof AllocationError) {
+          return reply.status(err.statusCode).send({
+            error: err.message,
+          })
+        }
         return reply.status(400).send({
           error: err.message || "Invalid request",
         })
@@ -540,24 +594,17 @@ export async function adminRoutes(server: FastifyInstance) {
 
         const terminatedAt = new Date()
 
-        await db.transaction(async (tx) => {
-          await tx
-            .update(instances)
-            .set({
-              status: "terminated",
-              terminatedAt,
-            })
-            .where(eq(instances.id, instance.id))
+        // Deallocate server and mark resource as released
+        await deallocateServer(instanceId)
 
-          await tx
-            .update(resources)
-            .set({
-              status: "deleted",
-              lastSyncedAt: terminatedAt,
-              updatedAt: terminatedAt,
-            })
-            .where(eq(resources.instanceId, instance.id))
-        })
+        // Mark instance as terminated
+        await db
+          .update(instances)
+          .set({
+            status: "terminated",
+            terminatedAt,
+          })
+          .where(eq(instances.id, instanceId))
 
         return {
           message: "Instance terminated successfully",
@@ -807,12 +854,13 @@ export async function adminRoutes(server: FastifyInstance) {
             status: instances.status,
             startDate: instances.startDate,
             expiryDate: instances.expiryDate,
-            ipAddress: resources.ipAddress,
-            provider: resources.provider,
+            ipAddress: servers.ipAddress,
+            provider: servers.provider,
             resourceStatus: resources.status,
           })
           .from(instances)
           .leftJoin(resources, eq(resources.instanceId, instances.id))
+          .leftJoin(servers, eq(resources.serverId, servers.id))
           .orderBy(desc(instances.createdAt))
 
         return result
@@ -870,21 +918,32 @@ export async function adminRoutes(server: FastifyInstance) {
             },
             resource: {
               id: resources.id,
-              provider: resources.provider,
-              externalId: resources.externalId,
-              ipAddress: resources.ipAddress,
               username: resources.username,
               status: resources.status,
-              lastSyncedAt: resources.lastSyncedAt,
-              healthStatus: resources.healthStatus,
+              assignedAt: resources.assignedAt,
+              releasedAt: resources.releasedAt,
               createdAt: resources.createdAt,
               updatedAt: resources.updatedAt,
+            },
+            server: {
+              id: servers.id,
+              provider: servers.provider,
+              externalId: servers.externalId,
+              ipAddress: servers.ipAddress,
+              cpu: servers.cpu,
+              ram: servers.ram,
+              storage: servers.storage,
+              status: servers.status,
+              lastAssignedAt: servers.lastAssignedAt,
+              createdAt: servers.createdAt,
+              updatedAt: servers.updatedAt,
             },
           })
           .from(instances)
           .leftJoin(plans, eq(instances.planId, plans.id))
           .leftJoin(users, eq(instances.userId, users.id))
           .leftJoin(resources, eq(instances.id, resources.instanceId))
+          .leftJoin(servers, eq(resources.serverId, servers.id))
           .where(eq(instances.id, instanceId))
           .limit(1)
 
@@ -897,6 +956,188 @@ export async function adminRoutes(server: FastifyInstance) {
         server.log.error(err)
         return reply.status(500).send({
           error: "Internal server error",
+        })
+      }
+    }
+  )
+
+  server.get(
+    "/admin/servers",
+    { preHandler: verifyAuth },
+    async (request: any, reply) => {
+      try {
+        if (!requireAdmin(request.user, reply)) {
+          return
+        }
+
+        const result = await db
+          .select({
+            id: servers.id,
+            provider: servers.provider,
+            externalId: servers.externalId,
+            ipAddress: servers.ipAddress,
+            cpu: servers.cpu,
+            ram: servers.ram,
+            storage: servers.storage,
+            status: servers.status,
+            lastAssignedAt: servers.lastAssignedAt,
+            createdAt: servers.createdAt,
+            updatedAt: servers.updatedAt,
+            activeResourceId: resources.id,
+            activeInstanceId: instances.id,
+            activeResourceUsername: resources.username,
+          })
+          .from(servers)
+          .leftJoin(
+            resources,
+            and(
+              eq(resources.serverId, servers.id),
+              eq(resources.status, "active")
+            )
+          )
+          .leftJoin(instances, eq(resources.instanceId, instances.id))
+          .orderBy(asc(servers.id))
+
+        return result
+      } catch (err: any) {
+        server.log.error(err)
+        return reply.status(500).send({
+          error: "Internal server error",
+        })
+      }
+    }
+  )
+
+  server.get(
+    "/admin/servers/available",
+    { preHandler: verifyAuth },
+    async (request: any, reply) => {
+      try {
+        if (!requireAdmin(request.user, reply)) {
+          return
+        }
+
+        const availableServers = await db
+          .select()
+          .from(servers)
+          .where(eq(servers.status, "available"))
+
+        return availableServers
+      } catch (err: any) {
+        server.log.error(err)
+        return reply.status(500).send({
+          error: "Internal server error",
+        })
+      }
+    }
+  )
+
+  server.post(
+    "/admin/servers",
+    { preHandler: verifyAuth },
+    async (request: any, reply) => {
+      try {
+        if (!requireAdmin(request.user, reply)) {
+          return
+        }
+
+        const body = serverInputSchema.parse(request.body)
+
+        const [createdServer] = await db
+          .insert(servers)
+          .values({
+            provider: body.provider,
+            externalId: body.externalId ?? null,
+            ipAddress: body.ipAddress,
+            cpu: body.cpu,
+            ram: body.ram,
+            storage: body.storage,
+            status: body.status,
+          })
+          .returning({
+            id: servers.id,
+            provider: servers.provider,
+            externalId: servers.externalId,
+            ipAddress: servers.ipAddress,
+            cpu: servers.cpu,
+            ram: servers.ram,
+            storage: servers.storage,
+            status: servers.status,
+            lastAssignedAt: servers.lastAssignedAt,
+            createdAt: servers.createdAt,
+            updatedAt: servers.updatedAt,
+          })
+
+        if (!createdServer) {
+          return reply.status(500).send({
+            error: "Failed to create server",
+          })
+        }
+
+        return {
+          message: "Server created successfully",
+          server: createdServer,
+        }
+      } catch (err: any) {
+        server.log.error(err)
+        return reply.status(400).send({
+          error: err.message || "Invalid request",
+        })
+      }
+    }
+  )
+
+  server.patch(
+    "/admin/servers/:id/status",
+    { preHandler: verifyAuth },
+    async (request: any, reply) => {
+      try {
+        if (!requireAdmin(request.user, reply)) {
+          return
+        }
+
+        const serverId = Number(request.params.id)
+
+        if (Number.isNaN(serverId)) {
+          return reply.status(400).send({ error: "Invalid server id" })
+        }
+
+        const body = serverStatusUpdateSchema.parse(request.body)
+
+        const [updatedServer] = await db
+          .update(servers)
+          .set({
+            status: body.status,
+          })
+          .where(eq(servers.id, serverId))
+          .returning({
+            id: servers.id,
+            provider: servers.provider,
+            externalId: servers.externalId,
+            ipAddress: servers.ipAddress,
+            cpu: servers.cpu,
+            ram: servers.ram,
+            storage: servers.storage,
+            status: servers.status,
+            lastAssignedAt: servers.lastAssignedAt,
+            createdAt: servers.createdAt,
+            updatedAt: servers.updatedAt,
+          })
+
+        if (!updatedServer) {
+          return reply.status(404).send({
+            error: "Server not found",
+          })
+        }
+
+        return {
+          message: "Server status updated successfully",
+          server: updatedServer,
+        }
+      } catch (err: any) {
+        server.log.error(err)
+        return reply.status(400).send({
+          error: err.message || "Invalid request",
         })
       }
     }

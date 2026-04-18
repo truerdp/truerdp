@@ -48,6 +48,11 @@ const navMain = [
     icon: <HugeiconsIcon icon={Package02Icon} strokeWidth={2} />,
   },
   {
+    title: "Servers",
+    url: adminPaths.servers,
+    icon: <HugeiconsIcon icon={Package02Icon} strokeWidth={2} />,
+  },
+  {
     title: "Transactions",
     url: adminPaths.transactions,
     icon: <HugeiconsIcon icon={CreditCardIcon} strokeWidth={2} />,
@@ -89,6 +94,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           items={data.navMain.map((item) => ({
             ...item,
             isActive:
+              (item.url === adminPaths.servers && segments[0] === "servers") ||
               (item.url === adminPaths.overview && segments.length === 0) ||
               (item.url === adminPaths.instances &&
                 segments[0] === "instances" &&
