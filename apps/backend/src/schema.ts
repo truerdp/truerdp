@@ -308,6 +308,40 @@ export const instances = pgTable(
   })
 )
 
+/* ================= INSTANCE EXTENSIONS ================= */
+
+export const instanceExtensions = pgTable(
+  "instance_extensions",
+  {
+    id: serial("id").primaryKey(),
+
+    instanceId: integer("instance_id")
+      .notNull()
+      .references(() => instances.id),
+
+    extendedByUserId: integer("extended_by_user_id")
+      .notNull()
+      .references(() => users.id),
+
+    previousExpiryDate: timestamp("previous_expiry_date").notNull(),
+    newExpiryDate: timestamp("new_expiry_date").notNull(),
+    daysExtended: integer("days_extended").notNull(),
+
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => ({
+    instanceIdIdx: index("instance_extensions_instance_id_idx").on(
+      table.instanceId
+    ),
+    extendedByUserIdIdx: index(
+      "instance_extensions_extended_by_user_id_idx"
+    ).on(table.extendedByUserId),
+    createdAtIdx: index("instance_extensions_created_at_idx").on(
+      table.createdAt
+    ),
+  })
+)
+
 /* ================= SERVERS (INVENTORY) ================= */
 
 export const servers = pgTable(

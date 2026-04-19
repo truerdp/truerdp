@@ -17,6 +17,7 @@ import {
   AlertDescription,
   AlertTitle,
 } from "@workspace/ui/components/alert"
+import TerminateInstanceDialog from "@/components/terminate-instance-dialog"
 import { useInstanceDetails } from "@/hooks/use-instance-details"
 
 function formatDateTime(dateString: string | null | undefined) {
@@ -57,14 +58,10 @@ function getResourceStatusVariant(
   status: string
 ): "default" | "secondary" | "destructive" | "outline" {
   switch (status) {
-    case "running":
+    case "active":
       return "default"
-    case "creating":
+    case "released":
       return "outline"
-    case "stopped":
-    case "failed":
-    case "deleted":
-      return "destructive"
     default:
       return "secondary"
   }
@@ -97,7 +94,7 @@ export function InstanceDetails({ instanceId }: InstanceDetailsProps) {
     )
   }
 
-  const { instance, plan, user, resource } = data
+  const { instance, plan, user, resource, server, extensionHistory } = data
 
   return (
     <div className="space-y-6">
@@ -111,10 +108,15 @@ export function InstanceDetails({ instanceId }: InstanceDetailsProps) {
                 Created on {formatDateTime(instance.createdAt)}
               </CardDescription>
             </div>
-            <Badge variant={getStatusVariant(instance.status)}>
-              {instance.status.charAt(0).toUpperCase() +
-                instance.status.slice(1).replace(/_/g, " ")}
-            </Badge>
+            <div className="flex items-center gap-2">
+              <Badge variant={getStatusVariant(instance.status)}>
+                {instance.status.charAt(0).toUpperCase() +
+                  instance.status.slice(1).replace(/_/g, " ")}
+              </Badge>
+              {instance.status !== "terminated" && (
+                <TerminateInstanceDialog instanceId={instance.id} />
+              )}
+            </div>
           </div>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -199,6 +201,43 @@ export function InstanceDetails({ instanceId }: InstanceDetailsProps) {
               </Alert>
             )}
           </div>
+
+          <div>
+            <h3 className="mb-3 text-sm font-medium">Extension History</h3>
+            {extensionHistory.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                No extension actions recorded yet.
+              </p>
+            ) : (
+              <div className="space-y-2">
+                {extensionHistory.map((event) => (
+                  <div
+                    key={event.id}
+                    className="rounded-lg border bg-muted/30 p-3 text-sm"
+                  >
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div className="font-medium">
+                        +{event.daysExtended} days
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        {formatDateTime(event.createdAt)}
+                      </div>
+                    </div>
+                    <div className="mt-1 text-xs text-muted-foreground">
+                      Expiry: {formatDateTime(event.previousExpiryDate)} -&gt;{" "}
+                      {formatDateTime(event.newExpiryDate)}
+                    </div>
+                    <div className="mt-1 text-xs text-muted-foreground">
+                      Extended by:{" "}
+                      {event.extendedBy
+                        ? `${event.extendedBy.firstName} ${event.extendedBy.lastName} (${event.extendedBy.email})`
+                        : "Unknown admin"}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </CardContent>
       </Card>
 
@@ -227,7 +266,7 @@ export function InstanceDetails({ instanceId }: InstanceDetailsProps) {
                 <div>
                   <p className="text-xs text-muted-foreground">IP Address</p>
                   <p className="mt-1 font-mono text-sm">
-                    {resource.ipAddress || "-"}
+                    {server?.ipAddress || "-"}
                   </p>
                 </div>
                 <div>
@@ -245,12 +284,12 @@ export function InstanceDetails({ instanceId }: InstanceDetailsProps) {
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
                   <p className="text-xs text-muted-foreground">Provider</p>
-                  <p className="mt-1 text-sm">{resource.provider || "-"}</p>
+                  <p className="mt-1 text-sm">{server?.provider || "-"}</p>
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">External ID</p>
                   <p className="mt-1 font-mono text-sm">
-                    {resource.externalId || "-"}
+                    {server?.externalId || "-"}
                   </p>
                 </div>
               </div>
@@ -258,30 +297,24 @@ export function InstanceDetails({ instanceId }: InstanceDetailsProps) {
 
             {/* Health & Sync */}
             <div>
-              <h3 className="mb-3 text-sm font-medium">Health & Sync</h3>
+              <h3 className="mb-3 text-sm font-medium">Assignment Timeline</h3>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
-                  <p className="text-xs text-muted-foreground">Health Status</p>
+                  <p className="text-xs text-muted-foreground">Assigned At</p>
                   <div className="mt-1 flex items-center gap-2">
-                    {resource.healthStatus === "healthy" ? (
-                      <>
-                        <HugeiconsIcon
-                          icon={Check}
-                          className="h-4 w-4 text-green-600"
-                        />
-                        <span className="text-sm">Healthy</span>
-                      </>
-                    ) : (
-                      <span className="text-sm">
-                        {resource.healthStatus || "-"}
-                      </span>
-                    )}
+                    <HugeiconsIcon
+                      icon={Check}
+                      className="h-4 w-4 text-green-600"
+                    />
+                    <span className="text-sm">
+                      {formatDateTime(resource.assignedAt)}
+                    </span>
                   </div>
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">Last Synced</p>
+                  <p className="text-xs text-muted-foreground">Released At</p>
                   <p className="mt-1 text-sm">
-                    {formatDateTime(resource.lastSyncedAt)}
+                    {formatDateTime(resource.releasedAt)}
                   </p>
                 </div>
               </div>

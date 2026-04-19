@@ -19,5 +19,8 @@
   },
   "rtl": false,
   "menuColor": "inverted",
-  "menuAccent": "bold"
+  "menuAccent": "bold",
+  "registries": {
+    "@shadcnblocks": "https://shadcnblocks.com/r/{name}.json"
+  }
 }

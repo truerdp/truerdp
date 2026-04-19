@@ -2,6 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query"
 import { api } from "@workspace/api"
+import { getAuthToken } from "@/lib/auth"
 import { queryKeys } from "@/lib/query-keys"
 
 export interface Profile {
@@ -13,9 +14,12 @@ export interface Profile {
 }
 
 export function useProfile() {
+  const token = getAuthToken()
+
   return useQuery<Profile>({
     queryKey: queryKeys.profile(),
     queryFn: () => api("/profile"),
     staleTime: 5 * 60 * 1000,
+    enabled: !!token,
   })
 }

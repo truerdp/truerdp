@@ -42,6 +42,7 @@ import {
 import { getAuthToken } from "@/lib/auth"
 import { formatAmount } from "@/lib/format"
 import { usePlans } from "@/hooks/use-plans"
+import { useTransactions } from "@/hooks/use-transactions"
 import { webPaths } from "@/lib/paths"
 
 type PaymentMethod = "upi" | "usdt_trc20"
@@ -54,6 +55,7 @@ function CheckoutPageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { data, isLoading, error } = usePlans()
+  const { data: transactions } = useTransactions()
   const [method, setMethod] = useState<PaymentMethod>("upi")
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -81,6 +83,28 @@ function CheckoutPageContent() {
     return null
   }, [data, hasValidPlanPricingId, planPricingId])
 
+  const existingPendingTransaction = useMemo(() => {
+    if (!selectedPricing || !transactions) {
+      return null
+    }
+
+    const now = Date.now()
+
+    return (
+      transactions.find((transaction) => {
+        const expiresAt = new Date(transaction.invoice.expiresAt).getTime()
+
+        return (
+          transaction.pricing.id === selectedPricing.pricing.id &&
+          transaction.status === "pending" &&
+          transaction.invoice.status === "unpaid" &&
+          !Number.isNaN(expiresAt) &&
+          expiresAt >= now
+        )
+      }) ?? null
+    )
+  }, [selectedPricing, transactions])
+
   async function onCreateTransaction() {
     if (!selectedPricing) {
       return
@@ -105,7 +129,11 @@ function CheckoutPageContent() {
         }
       )
 
-      toast.success("Transaction created")
+      toast.success(
+        existingPendingTransaction
+          ? "Continuing with your existing unpaid invoice"
+          : "Transaction created"
+      )
       router.push(`${webPaths.checkoutSuccess}?transactionId=${transaction.id}`)
     } catch (submitError) {
       const message =
@@ -210,6 +238,22 @@ function CheckoutPageContent() {
               </Badge>
             </div>
 
+            {existingPendingTransaction && (
+              <Alert>
+                <HugeiconsIcon icon={CreditCardIcon} strokeWidth={2} />
+                <AlertTitle>Existing unpaid invoice found</AlertTitle>
+                <AlertDescription>
+                  Invoice {existingPendingTransaction.invoice.invoiceNumber} is
+                  still open for this plan until{" "}
+                  {new Date(
+                    existingPendingTransaction.invoice.expiresAt
+                  ).toLocaleString()}
+                  . Continuing will reuse that invoice instead of creating a new
+                  one.
+                </AlertDescription>
+              </Alert>
+            )}
+
             <div className="rounded-xl border p-4">
               <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">Plan</span>
@@ -260,7 +304,9 @@ function CheckoutPageContent() {
           <CardFooter>
             <Button onClick={onCreateTransaction} disabled={isSubmitting}>
               {isSubmitting ? <Spinner data-icon="inline-start" /> : null}
-              Create transaction
+              {existingPendingTransaction
+                ? "Continue with unpaid invoice"
+                : "Create transaction"}
             </Button>
           </CardFooter>
         </Card>

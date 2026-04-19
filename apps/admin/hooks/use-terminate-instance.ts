@@ -17,8 +17,16 @@ export function useTerminateInstance() {
       api(`/admin/instances/${instanceId}/terminate`, {
         method: "POST",
       }),
-    onSuccess: async () => {
+    onSuccess: async (_data, instanceId) => {
       toast.success("Instance terminated successfully")
+
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.allInstances(),
+      })
+
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.instanceDetails(instanceId),
+      })
 
       await queryClient.invalidateQueries({
         queryKey: queryKeys.expiringSoonInstances(),
@@ -27,6 +35,9 @@ export function useTerminateInstance() {
       await queryClient.invalidateQueries({
         queryKey: queryKeys.expiredInstances(),
       })
+    },
+    onError: (error) => {
+      toast.error(error.message || "Failed to terminate instance")
     },
   })
 }

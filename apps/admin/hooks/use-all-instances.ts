@@ -18,7 +18,10 @@ export interface Instance {
   expiryDate: string | null
   ipAddress: string | null
   provider: string | null
-  resourceStatus: "creating" | "running" | "deleted" | null
+  resourceStatus: "active" | "released" | null
+  extensionCount: number
+  lastExtensionAt: string | null
+  lastExtensionDays: number | null
 }
 
 export function useAllInstances() {

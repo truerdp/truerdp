@@ -40,16 +40,39 @@ export interface InstanceDetails {
   } | null
   resource: {
     id: number
-    provider: string
-    externalId: string | null
-    ipAddress: string | null
     username: string | null
-    status: "creating" | "running" | "stopped" | "failed" | "deleted"
-    lastSyncedAt: string | null
-    healthStatus: string | null
+    status: "active" | "released"
+    assignedAt: string
+    releasedAt: string | null
     createdAt: string
     updatedAt: string
   } | null
+  server: {
+    id: number
+    provider: string
+    externalId: string | null
+    ipAddress: string
+    cpu: number
+    ram: number
+    storage: number
+    status: "available" | "assigned" | "cleaning" | "retired"
+    lastAssignedAt: string | null
+    createdAt: string
+    updatedAt: string
+  } | null
+  extensionHistory: Array<{
+    id: number
+    previousExpiryDate: string
+    newExpiryDate: string
+    daysExtended: number
+    createdAt: string
+    extendedBy: {
+      id: number
+      email: string
+      firstName: string
+      lastName: string
+    } | null
+  }>
 }
 
 export function useInstanceDetails(instanceId: number) {

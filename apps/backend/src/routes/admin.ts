@@ -3,6 +3,7 @@ import { and, asc, desc, eq, gte, inArray, lt, ne, sql } from "drizzle-orm"
 import z from "zod"
 import { db } from "../db.js"
 import {
+  instanceExtensions,
   instances,
   invoices,
   orders,
@@ -509,6 +510,18 @@ export async function adminRoutes(server: FastifyInstance) {
         const expiry = new Date(now)
         expiry.setDate(expiry.getDate() + linkedOrder.durationDays)
 
+        // Older paid instances may still be marked pending or failed.
+        // Move them into provisioning before allocation so the allocator
+        // can enforce the spec's "provisioning -> active" transition.
+        if (instance.status !== "provisioning") {
+          await db
+            .update(instances)
+            .set({
+              status: "provisioning",
+            })
+            .where(eq(instances.id, instanceId))
+        }
+
         // Allocate server and update instance
         const allocated = await allocateServerToInstance(
           instanceId,
@@ -658,15 +671,27 @@ export async function adminRoutes(server: FastifyInstance) {
             .send({ error: "Instance expiry date not set" })
         }
 
-        const newExpiryDate = new Date(instance.expiryDate)
+        const previousExpiryDate = instance.expiryDate
+
+        const newExpiryDate = new Date(previousExpiryDate)
         newExpiryDate.setDate(newExpiryDate.getDate() + body.days)
 
-        await db
-          .update(instances)
-          .set({
-            expiryDate: newExpiryDate,
+        await db.transaction(async (tx) => {
+          await tx
+            .update(instances)
+            .set({
+              expiryDate: newExpiryDate,
+            })
+            .where(eq(instances.id, instance.id))
+
+          await tx.insert(instanceExtensions).values({
+            instanceId: instance.id,
+            extendedByUserId: request.user.userId,
+            previousExpiryDate,
+            newExpiryDate,
+            daysExtended: body.days,
           })
-          .where(eq(instances.id, instance.id))
+        })
 
         return {
           message: "Instance extended successfully",
@@ -857,6 +882,25 @@ export async function adminRoutes(server: FastifyInstance) {
             ipAddress: servers.ipAddress,
             provider: servers.provider,
             resourceStatus: resources.status,
+            extensionCount: sql<number>`(
+              select count(*)::int
+              from ${instanceExtensions} ie
+              where ie.instance_id = ${instances.id}
+            )`,
+            lastExtensionAt: sql<string | null>`(
+              select ie.created_at::text
+              from ${instanceExtensions} ie
+              where ie.instance_id = ${instances.id}
+              order by ie.created_at desc
+              limit 1
+            )`,
+            lastExtensionDays: sql<number | null>`(
+              select ie.days_extended
+              from ${instanceExtensions} ie
+              where ie.instance_id = ${instances.id}
+              order by ie.created_at desc
+              limit 1
+            )`,
           })
           .from(instances)
           .leftJoin(resources, eq(resources.instanceId, instances.id))
@@ -951,7 +995,29 @@ export async function adminRoutes(server: FastifyInstance) {
           return reply.status(404).send({ error: "Instance not found" })
         }
 
-        return result[0]
+        const extensionHistory = await db
+          .select({
+            id: instanceExtensions.id,
+            previousExpiryDate: instanceExtensions.previousExpiryDate,
+            newExpiryDate: instanceExtensions.newExpiryDate,
+            daysExtended: instanceExtensions.daysExtended,
+            createdAt: instanceExtensions.createdAt,
+            extendedBy: {
+              id: users.id,
+              email: users.email,
+              firstName: users.firstName,
+              lastName: users.lastName,
+            },
+          })
+          .from(instanceExtensions)
+          .leftJoin(users, eq(instanceExtensions.extendedByUserId, users.id))
+          .where(eq(instanceExtensions.instanceId, instanceId))
+          .orderBy(desc(instanceExtensions.createdAt))
+
+        return {
+          ...result[0],
+          extensionHistory,
+        }
       } catch (err: any) {
         server.log.error(err)
         return reply.status(500).send({

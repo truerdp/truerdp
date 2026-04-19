@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto"
-import { and, asc, desc, eq, inArray, sql } from "drizzle-orm"
+import { and, asc, desc, eq, inArray, isNull, sql } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "../db.js"
 import {
@@ -14,7 +14,7 @@ import {
 } from "../schema.js"
 import { calculatePrice } from "./pricing.js"
 
-const PAYMENT_WINDOW_HOURS = 24
+const PAYMENT_WINDOW_HOURS = 48
 
 export const supportedPaymentMethodSchema = z.enum(["upi", "usdt_trc20"])
 
@@ -56,6 +56,207 @@ function createInvoiceExpiry(baseDate = new Date()) {
   const expiresAt = new Date(baseDate)
   expiresAt.setHours(expiresAt.getHours() + PAYMENT_WINDOW_HOURS)
   return expiresAt
+}
+
+type BillingTransactionRecord = {
+  transaction: typeof transactions.$inferSelect
+  invoice: typeof invoices.$inferSelect
+  order: typeof orders.$inferSelect
+  plan: {
+    id: number
+    name: string
+    cpu: number
+    ram: number
+    storage: number
+  }
+}
+
+function formatBillingTransactionResponse(record: BillingTransactionRecord) {
+  return {
+    id: record.transaction.id,
+    userId: record.transaction.userId,
+    amount: record.transaction.amount,
+    method: record.transaction.method,
+    status: record.transaction.status,
+    createdAt: record.transaction.createdAt,
+    confirmedAt: record.transaction.confirmedAt,
+    reference: record.transaction.reference,
+    kind: record.order.kind,
+    order: {
+      id: record.order.id,
+      status: record.order.status,
+    },
+    invoice: {
+      id: record.invoice.id,
+      invoiceNumber: record.invoice.invoiceNumber,
+      status: record.invoice.status,
+      totalAmount: record.invoice.totalAmount,
+      currency: record.invoice.currency,
+      expiresAt: record.invoice.expiresAt,
+      paidAt: record.invoice.paidAt,
+    },
+    plan: {
+      id: record.plan.id,
+      name: record.plan.name,
+      cpu: record.plan.cpu,
+      ram: record.plan.ram,
+      storage: record.plan.storage,
+    },
+    pricing: {
+      id: record.order.planPricingId,
+      durationDays: record.order.durationDays,
+      price: record.order.planPrice,
+    },
+    instance: record.transaction.instanceId
+      ? {
+          id: record.transaction.instanceId,
+          ipAddress: null,
+        }
+      : null,
+  }
+}
+
+async function expireStaleBillingAttempts(input: {
+  userId: number
+  planPricingId: number
+  instanceId?: number
+  now: Date
+}) {
+  const staleAttempts = await db
+    .select({
+      transactionId: transactions.id,
+      invoiceId: invoices.id,
+      orderId: orders.id,
+    })
+    .from(transactions)
+    .innerJoin(invoices, eq(transactions.invoiceId, invoices.id))
+    .innerJoin(orders, eq(invoices.orderId, orders.id))
+    .where(
+      and(
+        eq(transactions.userId, input.userId),
+        eq(transactions.status, "pending"),
+        eq(invoices.status, "unpaid"),
+        eq(orders.planPricingId, input.planPricingId),
+        sql`${invoices.expiresAt} < ${input.now}`,
+        input.instanceId != null
+          ? eq(transactions.instanceId, input.instanceId)
+          : isNull(transactions.instanceId)
+      )
+    )
+
+  if (staleAttempts.length === 0) {
+    return
+  }
+
+  await db.transaction(async (tx) => {
+    for (const attempt of staleAttempts) {
+      await tx
+        .update(transactions)
+        .set({
+          status: "failed",
+          failureReason: "Invoice expired",
+        })
+        .where(eq(transactions.id, attempt.transactionId))
+
+      await tx
+        .update(invoices)
+        .set({
+          status: "expired",
+        })
+        .where(eq(invoices.id, attempt.invoiceId))
+
+      await tx
+        .update(orders)
+        .set({
+          status: "cancelled",
+        })
+        .where(eq(orders.id, attempt.orderId))
+    }
+  })
+}
+
+async function findReusableBillingTransaction(input: {
+  userId: number
+  planPricingId: number
+  instanceId?: number
+  now: Date
+}) {
+  const reusableAttempts = await db
+    .select({
+      transaction: {
+        id: transactions.id,
+        userId: transactions.userId,
+        invoiceId: transactions.invoiceId,
+        instanceId: transactions.instanceId,
+        amount: transactions.amount,
+        method: transactions.method,
+        gateway: transactions.gateway,
+        status: transactions.status,
+        reference: transactions.reference,
+        idempotencyKey: transactions.idempotencyKey,
+        failureReason: transactions.failureReason,
+        metadata: transactions.metadata,
+        confirmedAt: transactions.confirmedAt,
+        createdAt: transactions.createdAt,
+        updatedAt: transactions.updatedAt,
+      },
+      invoice: {
+        id: invoices.id,
+        orderId: invoices.orderId,
+        invoiceNumber: invoices.invoiceNumber,
+        subtotal: invoices.subtotal,
+        discount: invoices.discount,
+        totalAmount: invoices.totalAmount,
+        currency: invoices.currency,
+        couponId: invoices.couponId,
+        status: invoices.status,
+        expiresAt: invoices.expiresAt,
+        paidAt: invoices.paidAt,
+        createdAt: invoices.createdAt,
+        updatedAt: invoices.updatedAt,
+      },
+      order: {
+        id: orders.id,
+        userId: orders.userId,
+        planId: orders.planId,
+        planPricingId: orders.planPricingId,
+        kind: orders.kind,
+        planName: orders.planName,
+        planPrice: orders.planPrice,
+        durationDays: orders.durationDays,
+        status: orders.status,
+        createdAt: orders.createdAt,
+        updatedAt: orders.updatedAt,
+      },
+      plan: {
+        id: plans.id,
+        name: orders.planName,
+        cpu: plans.cpu,
+        ram: plans.ram,
+        storage: plans.storage,
+      },
+    })
+    .from(transactions)
+    .innerJoin(invoices, eq(transactions.invoiceId, invoices.id))
+    .innerJoin(orders, eq(invoices.orderId, orders.id))
+    .innerJoin(plans, eq(orders.planId, plans.id))
+    .where(
+      and(
+        eq(transactions.userId, input.userId),
+        eq(transactions.status, "pending"),
+        eq(invoices.status, "unpaid"),
+        eq(orders.status, "pending_payment"),
+        eq(orders.planPricingId, input.planPricingId),
+        sql`${invoices.expiresAt} >= ${input.now}`,
+        input.instanceId != null
+          ? eq(transactions.instanceId, input.instanceId)
+          : isNull(transactions.instanceId)
+      )
+    )
+    .orderBy(desc(transactions.createdAt))
+    .limit(1)
+
+  return reusableAttempts[0] ?? null
 }
 
 function buildTransactionSummaryQuery() {
@@ -277,6 +478,24 @@ export async function createBillingTransaction(input: {
   const orderKind = input.instanceId ? "renewal" : "new_purchase"
   const now = new Date()
 
+  await expireStaleBillingAttempts({
+    userId: input.userId,
+    planPricingId: pricingSelection.id,
+    instanceId: input.instanceId,
+    now,
+  })
+
+  const reusableTransaction = await findReusableBillingTransaction({
+    userId: input.userId,
+    planPricingId: pricingSelection.id,
+    instanceId: input.instanceId,
+    now,
+  })
+
+  if (reusableTransaction) {
+    return formatBillingTransactionResponse(reusableTransaction)
+  }
+
   const created = await db.transaction(async (tx) => {
     const insertedOrders = await tx
       .insert(orders)
@@ -334,29 +553,10 @@ export async function createBillingTransaction(input: {
     }
   })
 
-  return {
-    id: created.transaction.id,
-    userId: created.transaction.userId,
-    amount: created.transaction.amount,
-    method: created.transaction.method,
-    status: created.transaction.status,
-    createdAt: created.transaction.createdAt,
-    confirmedAt: created.transaction.confirmedAt,
-    reference: created.transaction.reference,
-    kind: created.order.kind,
-    order: {
-      id: created.order.id,
-      status: created.order.status,
-    },
-    invoice: {
-      id: created.invoice.id,
-      invoiceNumber: created.invoice.invoiceNumber,
-      status: created.invoice.status,
-      totalAmount: created.invoice.totalAmount,
-      currency: created.invoice.currency,
-      expiresAt: created.invoice.expiresAt,
-      paidAt: created.invoice.paidAt,
-    },
+  return formatBillingTransactionResponse({
+    transaction: created.transaction,
+    invoice: created.invoice,
+    order: created.order,
     plan: {
       id: pricingSelection.plan.id,
       name: created.order.planName,
@@ -364,18 +564,7 @@ export async function createBillingTransaction(input: {
       ram: pricingSelection.plan.ram,
       storage: pricingSelection.plan.storage,
     },
-    pricing: {
-      id: pricingSelection.id,
-      durationDays: created.order.durationDays,
-      price: created.order.planPrice,
-    },
-    instance: input.instanceId
-      ? {
-          id: input.instanceId,
-          ipAddress: null,
-        }
-      : null,
-  }
+  })
 }
 
 export async function listUserTransactions(userId: number) {
@@ -550,7 +739,7 @@ export async function confirmPendingTransaction(transactionId: number) {
           userId: current.transaction.userId,
           originOrderId: current.order.id,
           planId: current.order.planId,
-          status: "pending",
+          status: "provisioning",
         })
         .returning()
 
@@ -585,7 +774,7 @@ export async function confirmPendingTransaction(transactionId: number) {
       message:
         current.order.kind === "renewal"
           ? "Renewal successful. Instance extended."
-          : "Payment confirmed. Instance pending provisioning.",
+          : "Payment confirmed. Instance is ready for provisioning.",
       instance,
       order: {
         id: current.order.id,

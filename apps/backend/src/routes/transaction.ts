@@ -7,7 +7,6 @@ import { verifyAuth } from "../middleware/auth.js"
 import {
   BillingError,
   createBillingTransaction,
-  findPendingTransactionForInstance,
   getDefaultPlanPricingForPlan,
   getPlanPricingById,
   listUserInvoices,
@@ -87,16 +86,6 @@ export async function transactionRoutes(server: FastifyInstance) {
             })
           }
 
-          const pendingTransaction = await findPendingTransactionForInstance(
-            userId,
-            body.instanceId
-          )
-
-          if (pendingTransaction) {
-            return reply.status(400).send({
-              error: "Pending transaction already exists",
-            })
-          }
         }
 
         const transaction = await createBillingTransaction({

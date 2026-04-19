@@ -7,7 +7,6 @@ import { instances, resources, servers } from "../schema.js"
 import {
   BillingError,
   createBillingTransaction,
-  findPendingTransactionForInstance,
   getDefaultPlanPricingForPlan,
   getPlanPricingById,
   listInstanceTransactions,
@@ -220,17 +219,6 @@ export async function instanceRoutes(server: FastifyInstance) {
         if (!["active", "expired"].includes(effectiveStatus)) {
           return reply.status(400).send({
             error: "Instance is not eligible for renewal",
-          })
-        }
-
-        const pendingTransaction = await findPendingTransactionForInstance(
-          userId,
-          instanceId
-        )
-
-        if (pendingTransaction) {
-          return reply.status(400).send({
-            error: "Pending transaction already exists",
           })
         }
 

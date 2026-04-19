@@ -21,6 +21,11 @@
       "sourceType": "github",
       "computedHash": "063a0e6448123cd359ad0044cc46b0e490cc7964d45ef4bb9fd842bd2ffbca67"
     },
+    "resend": {
+      "source": "vercel-labs/emulate",
+      "sourceType": "github",
+      "computedHash": "befe9541ba124f54974f2af5ef7bbbb35b1e2009d4870ab3cb5f7ba80a0ae8e6"
+    },
     "shadcn": {
       "source": "shadcn/ui",
       "sourceType": "github",
