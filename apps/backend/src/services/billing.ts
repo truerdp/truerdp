@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto"
-import { and, asc, desc, eq, inArray, isNull, sql } from "drizzle-orm"
+import { and, asc, desc, eq, gte, inArray, isNull, lt, sql } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "../db.js"
 import {
@@ -137,7 +137,7 @@ async function expireStaleBillingAttempts(input: {
         eq(transactions.status, "pending"),
         eq(invoices.status, "unpaid"),
         eq(orders.planPricingId, input.planPricingId),
-        sql`${invoices.expiresAt} < ${input.now}`,
+        lt(invoices.expiresAt, input.now),
         input.instanceId != null
           ? eq(transactions.instanceId, input.instanceId)
           : isNull(transactions.instanceId)
@@ -247,7 +247,7 @@ async function findReusableBillingTransaction(input: {
         eq(invoices.status, "unpaid"),
         eq(orders.status, "pending_payment"),
         eq(orders.planPricingId, input.planPricingId),
-        sql`${invoices.expiresAt} >= ${input.now}`,
+        gte(invoices.expiresAt, input.now),
         input.instanceId != null
           ? eq(transactions.instanceId, input.instanceId)
           : isNull(transactions.instanceId)

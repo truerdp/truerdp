@@ -7,7 +7,7 @@ Truerdp is a `pnpm` + Turborepo monorepo with:
 - shared packages for UI, ESLint config, and TypeScript config
 
 This root README focuses on the current working development setup.
-Detailed product, domain, lifecycle, backend, and operations rules are maintained in `docs/`.
+Detailed product, domain, lifecycle, backend, and operations notes are maintained in the repo markdown files.
 
 ## Current Status
 
@@ -18,48 +18,47 @@ Current implementation highlights:
 - `apps/dashboard` includes an authenticated dashboard with instance listing, instance details, renewal flow, and invoice-backed transaction history
 - `apps/web` and `apps/admin` are still scaffold-level shells and have not yet been brought up to product parity with the dashboard/backend flow
 
-## Documentation
-
-Start here:
-
-- [docs/README.md](docs/README.md)
-
-Complete documentation set:
-
-1. [Architecture](docs/01_ARCHITECTURE.md)
-2. [Domain Model](docs/02_DOMAIN_MODEL.md)
-3. [Lifecycle](docs/03_LIFECYCLE.md)
-4. [Authentication and Authorization](docs/04_AUTH.md)
-5. [State Rules](docs/05_STATE_RULES.md)
-6. [Backend Contract](docs/06_BACKEND_CONTRACT.md)
-7. [Database Schema](docs/07_DATABASE_SCHEMA.md)
-8. [Product Rules](docs/08_PRODUCT_RULES.md)
-9. [Payments](docs/09_PAYMENTS.md)
-10. [Admin Workflow](docs/10_ADMIN_WORKFLOW.md)
-11. [Backend Structure](docs/11_BACKEND_STRUCTURE.md)
-12. [AI Context](docs/12_AI_CONTEXT.md)
-13. [Support](docs/13_SUPPORT.md)
-14. [DevOps](docs/14_DEVOPS.md)
-15. [Frontend Development](docs/15_FRONTEND_DEVELOPMENT.md)
-
 ## Repository Layout
 
 ```text
 truerdp/
+|-- .agents/
+|-- .continue/
+|-- .dockerignore
+|-- .env
+|-- .env.example
+|-- .eslintrc.js
+|-- .gitignore
+|-- .npmrc
+|-- .postman/
+|-- .prettierignore
+|-- .prettierrc
+|-- .vscode/
+|-- about.md
+|-- BUSINESS_FLOW.md
 |-- apps/
 |   |-- admin/
 |   |-- backend/
 |   |-- dashboard/
 |   `-- web/
-|-- docs/
+|-- docker-compose.yml
+|-- ENHANCEMENT.md
+|-- FRONTEND_DEVELOPMENT.md
+|-- package.json
 |-- packages/
+|   |-- api/
 |   |-- eslint-config/
 |   |-- typescript-config/
 |   `-- ui/
-|-- package.json
+|-- pnpm-lock.yaml
 |-- pnpm-workspace.yaml
+|-- postman/
+|-- progress.md
+|-- RAZORPAY_WEBHOOKS.md
+|-- skills/
+|-- skills-lock.json
+|-- tsconfig.json
 |-- turbo.json
-`-- tsconfig.json
 ```
 
 Workspace members are defined in `pnpm-workspace.yaml`:
@@ -181,6 +180,8 @@ pnpm --filter backend db:push
 pnpm --filter backend db:seed
 pnpm --filter backend db:studio
 ```
+
+For billing and transaction work, make sure the backend migrations are current before retrying a failed checkout flow. The transaction path depends on the latest `orders`, `invoices`, and `transactions` schema.
 
 ## Local DB Reset
 
