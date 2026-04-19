@@ -3,6 +3,8 @@
 import { useState } from "react"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
+import { HugeiconsIcon } from "@hugeicons/react"
+import { ViewIcon, ViewOffIcon } from "@hugeicons/core-free-icons"
 import { toast } from "sonner"
 import { api } from "@workspace/api"
 import { cn } from "@workspace/ui/lib/utils"
@@ -22,6 +24,12 @@ import {
   FieldLabel,
 } from "@workspace/ui/components/field"
 import { Input } from "@workspace/ui/components/input"
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupButton,
+  InputGroupInput,
+} from "@workspace/ui/components/input-group"
 import { Spinner } from "@workspace/ui/components/spinner"
 import { setAuthToken } from "@/lib/auth"
 import { webPaths } from "@/lib/paths"
@@ -38,6 +46,7 @@ export function LoginForm({
   const searchParams = useSearchParams()
   const [error, setError] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -98,7 +107,29 @@ export function LoginForm({
               </Field>
               <Field>
                 <FieldLabel htmlFor="password">Password</FieldLabel>
-                <Input id="password" name="password" type="password" required />
+                <InputGroup>
+                  <InputGroupInput
+                    id="password"
+                    name="password"
+                    type={showPassword ? "text" : "password"}
+                    required
+                  />
+                  <InputGroupAddon align="inline-end">
+                    <InputGroupButton
+                      size="icon-xs"
+                      aria-label={
+                        showPassword ? "Hide password" : "Show password"
+                      }
+                      onClick={() => setShowPassword((prev) => !prev)}
+                    >
+                      <HugeiconsIcon
+                        icon={showPassword ? ViewOffIcon : ViewIcon}
+                        strokeWidth={2}
+                        size={16}
+                      />
+                    </InputGroupButton>
+                  </InputGroupAddon>
+                </InputGroup>
               </Field>
               <Field>
                 <Button type="submit" disabled={isSubmitting}>

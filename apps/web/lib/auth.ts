@@ -1,3 +1,5 @@
+export const AUTH_TOKEN_CHANGED_EVENT = "auth-token-changed"
+
 export function getAuthToken() {
   if (typeof window === "undefined") {
     return null
@@ -12,6 +14,7 @@ export function setAuthToken(token: string) {
   }
 
   localStorage.setItem("token", token)
+  window.dispatchEvent(new Event(AUTH_TOKEN_CHANGED_EVENT))
 }
 
 export function clearAuthToken() {
@@ -20,4 +23,5 @@ export function clearAuthToken() {
   }
 
   localStorage.removeItem("token")
+  window.dispatchEvent(new Event(AUTH_TOKEN_CHANGED_EVENT))
 }

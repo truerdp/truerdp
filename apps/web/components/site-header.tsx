@@ -12,6 +12,7 @@ import {
   UserAdd01Icon,
 } from "@hugeicons/core-free-icons"
 import Link from "next/link"
+import { usePathname } from "next/navigation"
 import { useEffect, useState, type ReactNode } from "react"
 import {
   Accordion,
@@ -35,7 +36,11 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@workspace/ui/components/sheet"
-import { clearAuthToken, getAuthToken } from "@/lib/auth"
+import {
+  AUTH_TOKEN_CHANGED_EVENT,
+  clearAuthToken,
+  getAuthToken,
+} from "@/lib/auth"
 import { webPaths } from "@/lib/paths"
 
 interface MenuItem {
@@ -47,19 +52,29 @@ interface MenuItem {
 }
 
 export default function SiteHeader() {
+  const pathname = usePathname()
   const [hasToken, setHasToken] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const [isMounted, setIsMounted] = useState(false)
-  const isAuthenticated = isMounted && hasToken
+  const isAuthenticated = hasToken
 
   useEffect(() => {
-    setHasToken(Boolean(getAuthToken()))
-    setIsMounted(true)
-  }, [])
+    function syncAuthState() {
+      setHasToken(Boolean(getAuthToken()))
+    }
+
+    syncAuthState()
+
+    window.addEventListener(AUTH_TOKEN_CHANGED_EVENT, syncAuthState)
+    window.addEventListener("storage", syncAuthState)
+
+    return () => {
+      window.removeEventListener(AUTH_TOKEN_CHANGED_EVENT, syncAuthState)
+      window.removeEventListener("storage", syncAuthState)
+    }
+  }, [pathname])
 
   function onLogout() {
     clearAuthToken()
-    setHasToken(false)
     setMobileMenuOpen(false)
   }
 

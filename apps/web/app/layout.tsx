@@ -38,7 +38,7 @@ export default function RootLayout({
             <AppProviders>
               <SiteHeader />
               {children}
-              <Toaster />
+              <Toaster richColors position="top-center" duration={5000} />
             </AppProviders>
           </TooltipProvider>
         </ThemeProvider>
