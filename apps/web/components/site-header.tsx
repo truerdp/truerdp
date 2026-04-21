@@ -12,8 +12,10 @@ import {
   UserAdd01Icon,
 } from "@hugeicons/core-free-icons"
 import Link from "next/link"
-import { usePathname } from "next/navigation"
-import { useEffect, useState, type ReactNode } from "react"
+import { useRouter } from "next/navigation"
+import { useState, type ReactNode } from "react"
+import { useQueryClient } from "@tanstack/react-query"
+import { toast } from "sonner"
 import {
   Accordion,
   AccordionContent,
@@ -36,11 +38,8 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@workspace/ui/components/sheet"
-import {
-  AUTH_TOKEN_CHANGED_EVENT,
-  clearAuthToken,
-  getAuthToken,
-} from "@/lib/auth"
+import { logout } from "@/lib/auth"
+import { useProfile } from "@/hooks/use-profile"
 import { webPaths } from "@/lib/paths"
 
 interface MenuItem {
@@ -52,30 +51,29 @@ interface MenuItem {
 }
 
 export default function SiteHeader() {
-  const pathname = usePathname()
-  const [hasToken, setHasToken] = useState(false)
+  const router = useRouter()
+  const queryClient = useQueryClient()
+  const profileQuery = useProfile()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const isAuthenticated = hasToken
+  const [isLoggingOut, setIsLoggingOut] = useState(false)
+  const isAuthenticated = !profileQuery.isError && Boolean(profileQuery.data)
 
-  useEffect(() => {
-    function syncAuthState() {
-      setHasToken(Boolean(getAuthToken()))
+  async function onLogout() {
+    try {
+      setIsLoggingOut(true)
+      await logout()
+      queryClient.setQueryData(["profile"], null)
+      await queryClient.invalidateQueries()
+      toast.success("Logged out")
+      router.refresh()
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Unable to logout"
+      toast.error(message)
+    } finally {
+      setIsLoggingOut(false)
+      setMobileMenuOpen(false)
     }
-
-    syncAuthState()
-
-    window.addEventListener(AUTH_TOKEN_CHANGED_EVENT, syncAuthState)
-    window.addEventListener("storage", syncAuthState)
-
-    return () => {
-      window.removeEventListener(AUTH_TOKEN_CHANGED_EVENT, syncAuthState)
-      window.removeEventListener("storage", syncAuthState)
-    }
-  }, [pathname])
-
-  function onLogout() {
-    clearAuthToken()
-    setMobileMenuOpen(false)
   }
 
   const menu: MenuItem[] = [
@@ -92,9 +90,9 @@ export default function SiteHeader() {
         },
         {
           title: "Checkout",
-          description: "Generate invoice-first transactions for provisioning.",
+          description: "Start by selecting a plan to create an order.",
           icon: <HugeiconsIcon icon={CreditCardIcon} strokeWidth={2} />,
-          url: webPaths.checkout,
+          url: webPaths.home,
         },
       ],
     },
@@ -165,7 +163,12 @@ export default function SiteHeader() {
                   </Link>
                 </>
               ) : (
-                <Button size="sm" variant="secondary" onClick={onLogout}>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={onLogout}
+                  disabled={isLoggingOut}
+                >
                   <HugeiconsIcon
                     icon={Logout01Icon}
                     strokeWidth={2}
@@ -274,6 +277,7 @@ export default function SiteHeader() {
                           variant="secondary"
                           className="w-full"
                           onClick={onLogout}
+                          disabled={isLoggingOut}
                         >
                           <HugeiconsIcon
                             icon={Logout01Icon}

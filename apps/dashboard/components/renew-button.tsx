@@ -1,8 +1,9 @@
 "use client"
 
 import { useMutation, useQueryClient } from "@tanstack/react-query"
-import { api } from "@workspace/api"
+import { clientApi } from "@workspace/api"
 import { queryKeys } from "@/lib/query-keys"
+import { buildWebCheckoutReviewUrl } from "@/lib/auth"
 import { Button } from "@workspace/ui/components/button"
 import {
   Tooltip,
@@ -15,6 +16,10 @@ interface RenewButtonProps {
   disabled?: boolean
 }
 
+interface RenewOrderResponse {
+  orderId: number
+}
+
 export default function RenewButton({
   instanceId,
   disabled = false,
@@ -23,12 +28,12 @@ export default function RenewButton({
 
   const mutation = useMutation({
     mutationFn: async () => {
-      return api(`/instances/${instanceId}/renew`, {
+      return clientApi<RenewOrderResponse>(`/instances/${instanceId}/renew`, {
         method: "POST",
-        body: JSON.stringify({}),
+        body: {},
       })
     },
-    onSuccess: () => {
+    onSuccess: (response) => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.instance(instanceId),
       })
@@ -44,6 +49,8 @@ export default function RenewButton({
       queryClient.invalidateQueries({
         queryKey: queryKeys.instances(),
       })
+
+      window.location.assign(buildWebCheckoutReviewUrl(response.orderId))
     },
   })
 

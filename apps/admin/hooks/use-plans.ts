@@ -1,7 +1,7 @@
 "use client"
 
 import { useQuery } from "@tanstack/react-query"
-import { api } from "@workspace/api"
+import { clientApi } from "@workspace/api"
 import { queryKeys } from "@/lib/query-keys"
 
 export interface PlanPricingOption {
@@ -36,6 +36,6 @@ export interface Plan {
 export function usePlans() {
   return useQuery<Plan[]>({
     queryKey: queryKeys.plans(),
-    queryFn: () => api("/admin/plans"),
+    queryFn: () => clientApi("/admin/plans"),
   })
 }

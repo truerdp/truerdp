@@ -1,7 +1,7 @@
 "use client"
 
 import { useQuery } from "@tanstack/react-query"
-import { api } from "@workspace/api"
+import { clientApi } from "@workspace/api"
 import { queryKeys } from "@/lib/query-keys"
 
 export interface PendingTransaction {
@@ -43,6 +43,6 @@ export interface PendingTransaction {
 export function usePendingTransactions() {
   return useQuery<PendingTransaction[]>({
     queryKey: queryKeys.pendingTransactions(),
-    queryFn: () => api("/admin/transactions/pending"),
+    queryFn: () => clientApi("/admin/transactions/pending"),
   })
 }

@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { Suspense, useMemo } from "react"
+import { Suspense, useEffect, useMemo, useState } from "react"
 import { useSearchParams } from "next/navigation"
 import { HugeiconsIcon } from "@hugeicons/react"
 import {
@@ -32,9 +32,16 @@ import { webPaths } from "@/lib/paths"
 
 function CheckoutSuccessPageContent() {
   const searchParams = useSearchParams()
+  const [hasMounted, setHasMounted] = useState(false)
+  const orderId = Number(searchParams.get("orderId") ?? "")
+  const hasOrderId = Number.isInteger(orderId) && orderId > 0
   const transactionId = Number(searchParams.get("transactionId") ?? "")
   const hasTransactionId = Number.isInteger(transactionId) && transactionId > 0
   const { data, isLoading } = useTransactions()
+
+  useEffect(() => {
+    setHasMounted(true)
+  }, [])
 
   const transaction = useMemo(() => {
     if (!data || !hasTransactionId) {
@@ -65,7 +72,7 @@ function CheckoutSuccessPageContent() {
     )
   }
 
-  if (isLoading) {
+  if (!hasMounted || isLoading) {
     return (
       <main className="mx-auto w-full max-w-3xl px-6 py-12">
         <Card>
@@ -117,6 +124,9 @@ function CheckoutSuccessPageContent() {
         <CardContent className="flex flex-col gap-5">
           <div className="flex flex-wrap items-center gap-2">
             <Badge variant="secondary">Transaction #{transaction.id}</Badge>
+            {hasOrderId ? (
+              <Badge variant="outline">Order #{orderId}</Badge>
+            ) : null}
             <Badge variant="outline" className="capitalize">
               {transaction.status}
             </Badge>

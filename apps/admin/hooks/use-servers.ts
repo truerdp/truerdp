@@ -1,7 +1,7 @@
 "use client"
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { api } from "@workspace/api"
+import { clientApi } from "@workspace/api"
 import { toast } from "sonner"
 import { queryKeys } from "@/lib/query-keys"
 
@@ -35,7 +35,7 @@ export interface CreateServerInput {
 export function useServers() {
   return useQuery<ServerInventoryItem[]>({
     queryKey: queryKeys.servers(),
-    queryFn: () => api("/admin/servers"),
+    queryFn: () => clientApi("/admin/servers"),
   })
 }
 
@@ -48,9 +48,9 @@ export function useCreateServer() {
     CreateServerInput
   >({
     mutationFn: (input) =>
-      api("/admin/servers", {
+      clientApi("/admin/servers", {
         method: "POST",
-        body: JSON.stringify(input),
+        body: input,
       }),
     onSuccess: async () => {
       toast.success("Server created successfully")
@@ -74,9 +74,9 @@ export function useUpdateServerStatus() {
     { serverId: number; status: ServerInventoryItem["status"] }
   >({
     mutationFn: ({ serverId, status }) =>
-      api(`/admin/servers/${serverId}/status`, {
+      clientApi(`/admin/servers/${serverId}/status`, {
         method: "PATCH",
-        body: JSON.stringify({ status }),
+        body: { status },
       }),
     onSuccess: async () => {
       toast.success("Server status updated successfully")

@@ -5,6 +5,7 @@ import { useSelectedLayoutSegments } from "next/navigation"
 import type { ReactNode } from "react"
 
 import { AppSidebar } from "@/components/app-sidebar"
+import { AuthGuard } from "@/components/auth-guard"
 import { adminPaths } from "@/lib/paths"
 import {
   Breadcrumb,
@@ -62,6 +63,14 @@ function getBreadcrumbState(segments: string[]) {
     }
   }
 
+  if (segments[0] === "invoices") {
+    return {
+      currentLabel: "Invoices",
+      parentLabel: null,
+      parentHref: adminPaths.overview,
+    }
+  }
+
   if (segments[0] === "plans" && segments.length === 1) {
     return {
       currentLabel: "Plans",
@@ -106,41 +115,43 @@ export default function AdminShell({ children }: { children: ReactNode }) {
   const { currentLabel, parentLabel, parentHref } = getBreadcrumbState(segments)
 
   return (
-    <SidebarProvider>
-      <AppSidebar />
-      <SidebarInset>
-        <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
-          <SidebarTrigger className="-ml-1" />
-          <Separator
-            orientation="vertical"
-            className="mr-2 data-vertical:h-4 data-vertical:self-auto"
-          />
-          <Breadcrumb>
-            <BreadcrumbList>
-              <BreadcrumbItem className="hidden md:block">
-                <BreadcrumbLink render={<Link href={adminPaths.overview} />}>
-                  Admin
-                </BreadcrumbLink>
-              </BreadcrumbItem>
-              <BreadcrumbSeparator className="hidden md:block" />
-              {parentLabel && (
-                <>
-                  <BreadcrumbItem className="hidden md:block">
-                    <BreadcrumbLink render={<Link href={parentHref} />}>
-                      {parentLabel}
-                    </BreadcrumbLink>
-                  </BreadcrumbItem>
-                  <BreadcrumbSeparator className="hidden md:block" />
-                </>
-              )}
-              <BreadcrumbItem>
-                <BreadcrumbPage>{currentLabel}</BreadcrumbPage>
-              </BreadcrumbItem>
-            </BreadcrumbList>
-          </Breadcrumb>
-        </header>
-        <div className="flex flex-1 flex-col p-6">{children}</div>
-      </SidebarInset>
-    </SidebarProvider>
+    <AuthGuard>
+      <SidebarProvider>
+        <AppSidebar />
+        <SidebarInset>
+          <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
+            <SidebarTrigger className="-ml-1" />
+            <Separator
+              orientation="vertical"
+              className="mr-2 data-vertical:h-4 data-vertical:self-auto"
+            />
+            <Breadcrumb>
+              <BreadcrumbList>
+                <BreadcrumbItem className="hidden md:block">
+                  <BreadcrumbLink render={<Link href={adminPaths.overview} />}>
+                    Admin
+                  </BreadcrumbLink>
+                </BreadcrumbItem>
+                <BreadcrumbSeparator className="hidden md:block" />
+                {parentLabel && (
+                  <>
+                    <BreadcrumbItem className="hidden md:block">
+                      <BreadcrumbLink render={<Link href={parentHref} />}>
+                        {parentLabel}
+                      </BreadcrumbLink>
+                    </BreadcrumbItem>
+                    <BreadcrumbSeparator className="hidden md:block" />
+                  </>
+                )}
+                <BreadcrumbItem>
+                  <BreadcrumbPage>{currentLabel}</BreadcrumbPage>
+                </BreadcrumbItem>
+              </BreadcrumbList>
+            </Breadcrumb>
+          </header>
+          <div className="flex flex-1 flex-col p-6">{children}</div>
+        </SidebarInset>
+      </SidebarProvider>
+    </AuthGuard>
   )
 }

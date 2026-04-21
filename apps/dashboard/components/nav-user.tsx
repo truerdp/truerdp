@@ -1,5 +1,8 @@
 "use client"
 
+import { useState } from "react"
+import { useQueryClient } from "@tanstack/react-query"
+import { useRouter } from "next/navigation"
 import {
   Avatar,
   AvatarFallback,
@@ -30,6 +33,7 @@ import {
   NotificationIcon,
   LogoutIcon,
 } from "@hugeicons/core-free-icons"
+import { buildWebLoginUrl, logout } from "@/lib/auth"
 
 export function NavUser({
   user,
@@ -43,6 +47,21 @@ export function NavUser({
   isLoading?: boolean
 }) {
   const { isMobile } = useSidebar()
+  const router = useRouter()
+  const queryClient = useQueryClient()
+  const [isLoggingOut, setIsLoggingOut] = useState(false)
+
+  async function handleLogout() {
+    try {
+      setIsLoggingOut(true)
+      await logout()
+      await queryClient.invalidateQueries()
+      window.location.replace(buildWebLoginUrl(window.location.href))
+    } finally {
+      setIsLoggingOut(false)
+      router.refresh()
+    }
+  }
 
   const userText = isLoading ? (
     <div className="grid flex-1 gap-1 text-left">
@@ -128,7 +147,7 @@ export function NavUser({
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
+            <DropdownMenuItem onClick={handleLogout} disabled={isLoggingOut}>
               <HugeiconsIcon icon={LogoutIcon} strokeWidth={2} />
               Log out
             </DropdownMenuItem>

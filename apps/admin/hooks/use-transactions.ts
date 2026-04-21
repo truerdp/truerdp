@@ -1,12 +1,18 @@
 "use client"
 
 import { useQuery } from "@tanstack/react-query"
-import { api } from "@workspace/api"
+import { clientApi } from "@workspace/api"
 import { queryKeys } from "@/lib/query-keys"
 
 export interface AdminTransaction {
   id: number
   userId: number
+  user: {
+    id: number
+    firstName: string
+    lastName: string
+    email: string
+  }
   amount: number
   method: "upi" | "usdt_trc20"
   status: "pending" | "confirmed" | "failed"
@@ -43,6 +49,6 @@ export interface AdminTransaction {
 export function useTransactions() {
   return useQuery<AdminTransaction[]>({
     queryKey: queryKeys.transactions(),
-    queryFn: () => api("/admin/transactions"),
+    queryFn: () => clientApi("/admin/transactions"),
   })
 }

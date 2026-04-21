@@ -6,6 +6,7 @@ export const dashboardPaths = {
   transactions: "/transactions" as Route,
   invoices: "/invoices" as Route,
   instanceDetail: (id: string | number) => `/instances/${id}` as Route,
+  invoiceDetail: (id: string | number) => `/invoices/${id}` as Route,
 } as const
 
 export function isInstanceDetailPath(pathname: string) {

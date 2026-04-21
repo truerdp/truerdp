@@ -1,0 +1,50 @@
+"use client"
+
+import { useQuery } from "@tanstack/react-query"
+import { clientApi } from "@workspace/api"
+
+export interface OrderBillingDetails {
+  firstName: string
+  lastName: string
+  email: string
+  phone: string | null
+  companyName: string | null
+  taxId: string | null
+  addressLine1: string
+  addressLine2: string | null
+  city: string
+  state: string
+  postalCode: string
+  country: string
+}
+
+export interface BillingOrder {
+  orderId: number
+  userId: number
+  kind: "new_purchase" | "renewal"
+  status: "pending_payment" | "processing" | "completed" | "cancelled"
+  createdAt: string
+  updatedAt: string
+  billingDetails: OrderBillingDetails | null
+  plan: {
+    id: number
+    name: string
+    cpu: number
+    ram: number
+    storage: number
+  }
+  pricing: {
+    id: number
+    durationDays: number
+    price: number
+  }
+}
+
+export function useOrder(orderId: number | null) {
+  return useQuery<BillingOrder>({
+    queryKey: ["order", orderId],
+    queryFn: () => clientApi(`/orders/${orderId}`),
+    enabled: orderId != null,
+    retry: false,
+  })
+}

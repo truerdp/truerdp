@@ -1,7 +1,7 @@
 "use client"
 
 import { useQuery } from "@tanstack/react-query"
-import { api } from "@workspace/api"
+import { clientApi } from "@workspace/api"
 import { queryKeys } from "@/lib/query-keys"
 
 export interface InvoiceSummary {
@@ -14,10 +14,14 @@ export interface InvoiceSummary {
   expiresAt: string | null
   paidAt: string | null
   transaction: {
-    id: number
+    id: number | null
     reference: string | null
-    status: "pending" | "confirmed" | "failed"
-    method: "upi" | "usdt_trc20"
+    status: "pending" | "confirmed" | "failed" | null
+    method: "upi" | "usdt_trc20" | null
+  }
+  order: {
+    id: number
+    status: "pending_payment" | "processing" | "completed" | "cancelled"
   }
   plan: {
     name: string
@@ -29,6 +33,6 @@ export interface InvoiceSummary {
 export function useInvoices() {
   return useQuery<InvoiceSummary[]>({
     queryKey: queryKeys.invoices(),
-    queryFn: () => api("/invoices"),
+    queryFn: () => clientApi("/invoices"),
   })
 }

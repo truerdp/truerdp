@@ -1,5 +1,6 @@
 import "dotenv/config"
 import Fastify from "fastify"
+import cookie from "@fastify/cookie"
 import cors from "@fastify/cors"
 import { userRoutes } from "./routes/user.js"
 import { authRoutes } from "./routes/auth.js"
@@ -8,21 +9,65 @@ import { adminRoutes } from "./routes/admin.js"
 import { instanceRoutes } from "./routes/instance.js"
 import { planRoutes } from "./routes/plan.js"
 import { webhookRoutes } from "./routes/webhook.js"
+import { orderRoutes } from "./routes/order.js"
 
 const server = Fastify({
   logger: true,
 })
 
+const allowedOrigins = new Set(
+  (process.env.CORS_ALLOWED_ORIGINS ?? "")
+    .split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean)
+)
+
+const allowAllOrigins =
+  process.env.NODE_ENV !== "production" && allowedOrigins.size === 0
+
+server.register(cookie)
+
 server.register(cors, {
-  origin: true,
+  origin(origin, callback) {
+    if (!origin) {
+      callback(null, true)
+      return
+    }
+
+    if (allowAllOrigins || allowedOrigins.has(origin)) {
+      callback(null, true)
+      return
+    }
+
+    callback(new Error("Not allowed by CORS"), false)
+  },
   credentials: true,
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"],
+  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
+})
+
+const mutatingMethods = new Set(["POST", "PUT", "PATCH", "DELETE"])
+
+server.addHook("onRequest", async (request, reply) => {
+  if (!mutatingMethods.has(request.method.toUpperCase())) {
+    return
+  }
+
+  const origin = request.headers.origin
+
+  if (!origin || allowAllOrigins) {
+    return
+  }
+
+  if (!allowedOrigins.has(origin)) {
+    return reply.status(403).send({ error: "Forbidden origin" })
+  }
 })
 
 server.register(userRoutes)
 server.register(authRoutes)
 server.register(planRoutes)
+server.register(orderRoutes)
 server.register(transactionRoutes)
 server.register(adminRoutes)
 server.register(instanceRoutes)

@@ -1,77 +1,96 @@
-"use client"
+import type { Metadata } from "next"
 
-import { useMemo } from "react"
-import { useRouter } from "next/navigation"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { CreditCardIcon, ServerStack01Icon } from "@hugeicons/core-free-icons"
-import { Button } from "@workspace/ui/components/button"
+import { serverApi } from "@workspace/api"
+import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+} from "@workspace/ui/components/alert"
 import { Badge } from "@workspace/ui/components/badge"
-import { Skeleton } from "@workspace/ui/components/skeleton"
-import { usePlans } from "@/hooks/use-plans"
-import { getAuthToken } from "@/lib/auth"
-import { formatAmount } from "@/lib/format"
-import { webPaths } from "@/lib/paths"
 
-function PlanCardSkeleton() {
-  return (
-    <div className="rounded-xl border p-5">
-      <Skeleton className="h-5 w-32" />
-      <Skeleton className="mt-3 h-4 w-full" />
-      <Skeleton className="mt-6 h-20 w-full" />
-    </div>
-  )
+import {
+  HomeAutoCheckout,
+  PlanCheckoutButton,
+} from "@/components/home-checkout-actions"
+import { formatAmount } from "@/lib/format"
+
+export const dynamic = "force-dynamic"
+
+export const metadata: Metadata = {
+  title: "TrueRDP Plans",
+  description:
+    "Browse TrueRDP hosting plans, compare pricing, and start checkout instantly.",
 }
 
-export default function Page() {
-  const router = useRouter()
-  const { data, isLoading, error } = usePlans()
+interface PlanPricingOption {
+  id: number
+  durationDays: number
+  price: number
+}
 
-  const plans = data ?? []
+interface Plan {
+  id: number
+  name: string
+  cpu: number
+  ram: number
+  storage: number
+  planType: string
+  planLocation: string
+  pricingOptions: PlanPricingOption[]
+}
 
-  const planCountLabel = useMemo(() => {
-    if (isLoading) return "Loading plans"
-    if (plans.length === 0) return "No active plans"
-    return `${plans.length} active plan${plans.length > 1 ? "s" : ""}`
-  }, [isLoading, plans.length])
+async function getPlans() {
+  try {
+    const plans = await serverApi<Plan[]>("/plans", {
+      cache: "no-store",
+    })
 
-  const plansByType = useMemo(() => {
-    return plans.reduce<Record<string, typeof plans>>((acc, plan) => {
-      const key = plan.planType
-      if (!acc[key]) {
-        acc[key] = []
-      }
-      acc[key].push(plan)
-      return acc
-    }, {})
-  }, [plans])
+    return { plans, error: null }
+  } catch (error) {
+    return {
+      plans: [] as Plan[],
+      error: error instanceof Error ? error.message : "Unable to load plans",
+    }
+  }
+}
 
-  const plansByLocation = useMemo(() => {
-    return plans.reduce<Record<string, typeof plans>>((acc, plan) => {
-      const key = plan.planLocation
-      if (!acc[key]) {
-        acc[key] = []
-      }
-      acc[key].push(plan)
-      return acc
-    }, {})
-  }, [plans])
+export default async function Page() {
+  const { plans, error } = await getPlans()
 
-  function startCheckout(planPricingId: number) {
-    const checkoutPath = `${webPaths.checkout}?planPricingId=${planPricingId}`
+  const planCountLabel =
+    plans.length === 0
+      ? "No active plans"
+      : `${plans.length} active plan${plans.length > 1 ? "s" : ""}`
 
-    if (!getAuthToken()) {
-      router.push(
-        `${webPaths.login}?redirect=${encodeURIComponent(checkoutPath)}`
-      )
-      return
+  const plansByType = plans.reduce<Record<string, Plan[]>>((acc, plan) => {
+    const key = plan.planType
+
+    if (!acc[key]) {
+      acc[key] = []
     }
 
-    router.push(checkoutPath)
-  }
+    acc[key].push(plan)
+    return acc
+  }, {})
+
+  const plansByLocation = plans.reduce<Record<string, Plan[]>>((acc, plan) => {
+    const key = plan.planLocation
+
+    if (!acc[key]) {
+      acc[key] = []
+    }
+
+    acc[key].push(plan)
+    return acc
+  }, {})
 
   return (
     <main className="mx-auto w-full max-w-6xl px-6 py-10">
-      <section className="rounded-2xl border bg-gradient-to-b from-muted/50 to-background p-8">
+      <HomeAutoCheckout />
+
+      <section className="rounded-2xl border bg-linear-to-b from-muted/50 to-background p-8">
         <Badge variant="secondary" className="mb-3">
           <HugeiconsIcon icon={ServerStack01Icon} size={14} strokeWidth={2} />
           Instant setup workflow
@@ -89,23 +108,20 @@ export default function Page() {
         </div>
       </section>
 
+      {error ? (
+        <Alert variant="destructive" className="mt-8">
+          <HugeiconsIcon icon={CreditCardIcon} strokeWidth={2} />
+          <AlertTitle>Unable to load plans</AlertTitle>
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      ) : null}
+
       <section className="mt-8 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {isLoading &&
-          Array.from({ length: 3 }).map((_, index) => (
-            <PlanCardSkeleton key={index} />
-          ))}
-
-        {!isLoading && error && (
-          <div className="rounded-xl border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive">
-            {(error as Error).message}
-          </div>
-        )}
-
-        {!isLoading && !error && plans.length === 0 && (
+        {plans.length === 0 && !error ? (
           <div className="rounded-xl border p-4 text-sm text-muted-foreground">
             No active plans are available right now.
           </div>
-        )}
+        ) : null}
 
         {plans.map((plan) => (
           <article key={plan.id} className="rounded-xl border p-5">
@@ -128,15 +144,7 @@ export default function Page() {
                       {formatAmount(option.price)} total
                     </p>
                   </div>
-                  <Button size="sm" onClick={() => startCheckout(option.id)}>
-                    <HugeiconsIcon
-                      icon={CreditCardIcon}
-                      size={16}
-                      strokeWidth={2}
-                      data-icon="inline-start"
-                    />
-                    Select
-                  </Button>
+                  <PlanCheckoutButton planPricingId={option.id} />
                 </div>
               ))}
             </div>
@@ -144,7 +152,7 @@ export default function Page() {
         ))}
       </section>
 
-      {!isLoading && !error && plans.length > 0 ? (
+      {!error && plans.length > 0 ? (
         <section className="mt-10 grid gap-6 lg:grid-cols-2">
           <div className="rounded-xl border bg-muted/20 p-5">
             <h2 className="text-lg font-semibold">Plans by Type</h2>

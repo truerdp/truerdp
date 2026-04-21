@@ -5,6 +5,7 @@ export const adminPaths = {
   instances: "/instances" as Route,
   plans: "/plans" as Route,
   servers: "/servers" as Route,
+  invoices: "/invoices" as Route,
   transactions: "/transactions" as Route,
   expiredInstances: "/instances/expired" as Route,
 } as const

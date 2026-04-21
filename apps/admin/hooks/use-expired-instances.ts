@@ -1,7 +1,7 @@
 "use client"
 
 import { useQuery } from "@tanstack/react-query"
-import { api } from "@workspace/api"
+import { clientApi } from "@workspace/api"
 import { queryKeys } from "@/lib/query-keys"
 
 export interface ExpiredInstance {
@@ -17,6 +17,6 @@ export interface ExpiredInstance {
 export function useExpiredInstances() {
   return useQuery<ExpiredInstance[]>({
     queryKey: queryKeys.expiredInstances(),
-    queryFn: () => api("/admin/instances/expired"),
+    queryFn: () => clientApi("/admin/instances/expired"),
   })
 }

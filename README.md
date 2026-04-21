@@ -16,7 +16,8 @@ Current implementation highlights:
 - `apps/backend` exposes authentication, billing, instance, and admin APIs
 - billing follows `user -> order -> invoice -> transaction -> instance`
 - `apps/dashboard` includes an authenticated dashboard with instance listing, instance details, renewal flow, and invoice-backed transaction history
-- `apps/web` and `apps/admin` are still scaffold-level shells and have not yet been brought up to product parity with the dashboard/backend flow
+- `apps/web` now includes a server-rendered marketing homepage for SEO, with server-side plan fetching and metadata; checkout interactions remain client-side
+- `apps/admin` includes functional operations screens (instances, plans, invoices, transactions, servers) and is still evolving toward full product parity
 
 ## Repository Layout
 

@@ -1,7 +1,7 @@
 "use client"
 
 import { useQuery } from "@tanstack/react-query"
-import { api } from "@workspace/api"
+import { clientApi } from "@workspace/api"
 import { queryKeys } from "@/lib/query-keys"
 
 export interface InstanceTransaction {
@@ -14,6 +14,6 @@ export interface InstanceTransaction {
 export function useInstanceTransactions(id: string | number) {
   return useQuery<InstanceTransaction[]>({
     queryKey: queryKeys.instanceTransactions(id),
-    queryFn: () => api(`/instances/${id}/transactions`),
+    queryFn: () => clientApi(`/instances/${id}/transactions`),
   })
 }

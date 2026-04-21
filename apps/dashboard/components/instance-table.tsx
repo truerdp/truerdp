@@ -24,6 +24,7 @@ export interface Instance {
     | "expired"
     | "termination_pending"
     | "terminated"
+    | "failed"
   ipAddress: string | null
   expiryDate: string | null
 }
@@ -45,6 +46,7 @@ function getStatusVariant(
       return "secondary"
     case "termination_pending":
     case "terminated":
+    case "failed":
       return "destructive"
     default:
       return "secondary"
@@ -67,10 +69,29 @@ function isExpired(dateString: string | null): boolean {
   return !Number.isNaN(date.getTime()) && date < new Date()
 }
 
+function isExpiringSoon(
+  dateString: string | null,
+  now: Date,
+  threeDaysFromNow: Date
+): boolean {
+  if (!dateString) return false
+
+  const date = new Date(dateString)
+
+  if (Number.isNaN(date.getTime())) {
+    return false
+  }
+
+  return date >= now && date <= threeDaysFromNow
+}
+
 export default function InstanceTable({ instances }: InstanceTableProps) {
   if (instances.length === 0) {
     return <InstancesEmptyState />
   }
+
+  const now = new Date()
+  const threeDaysFromNow = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000)
 
   return (
     <Table>
@@ -85,38 +106,58 @@ export default function InstanceTable({ instances }: InstanceTableProps) {
       </TableHeader>
 
       <TableBody>
-        {instances.map((instance) => (
-          <TableRow key={instance.id}>
-            <TableCell className="font-mono text-sm">{instance.id}</TableCell>
-            <TableCell>
-              <Badge variant={getStatusVariant(instance.status)}>
-                {formatStatus(instance.status)}
-              </Badge>
-            </TableCell>
-            <TableCell className="font-mono">
-              {instance.ipAddress ?? "-"}
-            </TableCell>
-            <TableCell
-              className={
-                isExpired(instance.expiryDate) ? "text-destructive" : undefined
-              }
-            >
-              {formatExpiryDate(instance.expiryDate)}
-            </TableCell>
-            <TableCell>
-              <Link
-                href={dashboardPaths.instanceDetail(instance.id)}
-                className={buttonVariants({
-                  variant: "default",
-                  size: "sm",
-                })}
-                aria-label={`View instance ${instance.id}`}
+        {instances.map((instance) => {
+          const rowIsExpiringSoon = isExpiringSoon(
+            instance.expiryDate,
+            now,
+            threeDaysFromNow
+          )
+
+          return (
+            <TableRow key={instance.id}>
+              <TableCell className="font-mono text-sm">{instance.id}</TableCell>
+              <TableCell>
+                <Badge variant={getStatusVariant(instance.status)}>
+                  {formatStatus(instance.status)}
+                </Badge>
+              </TableCell>
+              <TableCell className="font-mono">
+                {instance.ipAddress ?? "-"}
+              </TableCell>
+              <TableCell
+                className={
+                  isExpired(instance.expiryDate)
+                    ? "text-destructive"
+                    : undefined
+                }
               >
-                View
-              </Link>
-            </TableCell>
-          </TableRow>
-        ))}
+                <div className="flex items-center gap-2">
+                  <span>{formatExpiryDate(instance.expiryDate)}</span>
+                  {rowIsExpiringSoon ? (
+                    <Badge
+                      variant="secondary"
+                      className="bg-amber-50 text-amber-900"
+                    >
+                      Expiring soon
+                    </Badge>
+                  ) : null}
+                </div>
+              </TableCell>
+              <TableCell>
+                <Link
+                  href={dashboardPaths.instanceDetail(instance.id)}
+                  className={buttonVariants({
+                    variant: "default",
+                    size: "sm",
+                  })}
+                  aria-label={`View instance ${instance.id}`}
+                >
+                  View
+                </Link>
+              </TableCell>
+            </TableRow>
+          )
+        })}
       </TableBody>
     </Table>
   )

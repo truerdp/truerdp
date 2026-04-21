@@ -1,7 +1,7 @@
 "use client"
 
 import { useMutation, useQueryClient } from "@tanstack/react-query"
-import { api } from "@workspace/api"
+import { clientApi } from "@workspace/api"
 import { toast } from "sonner"
 import { queryKeys } from "@/lib/query-keys"
 
@@ -42,9 +42,9 @@ export function useCreatePlan() {
 
   return useMutation<PlanMutationResponse, Error, UpsertPlanInput>({
     mutationFn: (input) =>
-      api("/admin/plans", {
+      clientApi("/admin/plans", {
         method: "POST",
-        body: JSON.stringify(input),
+        body: input,
       }),
     onSuccess: async () => {
       toast.success("Plan created successfully")
@@ -71,9 +71,9 @@ export function useUpdatePlan() {
     }
   >({
     mutationFn: ({ planId, data }) =>
-      api(`/admin/plans/${planId}`, {
+      clientApi(`/admin/plans/${planId}`, {
         method: "PUT",
-        body: JSON.stringify(data),
+        body: data,
       }),
     onSuccess: async () => {
       toast.success("Plan updated successfully")
@@ -100,9 +100,9 @@ export function useTogglePlanStatus() {
     }
   >({
     mutationFn: ({ planId, isActive }) =>
-      api(`/admin/plans/${planId}/status`, {
+      clientApi(`/admin/plans/${planId}/status`, {
         method: "PATCH",
-        body: JSON.stringify({ isActive }),
+        body: { isActive },
       }),
     onSuccess: async (_data, variables) => {
       toast.success(

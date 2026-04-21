@@ -1,7 +1,7 @@
 "use client"
 
 import { useMutation, useQueryClient } from "@tanstack/react-query"
-import { api } from "@workspace/api"
+import { clientApi } from "@workspace/api"
 import { toast } from "sonner"
 import { queryKeys } from "@/lib/query-keys"
 
@@ -24,9 +24,9 @@ export function useProvisionInstance() {
     { instanceId: number; data: ProvisionRequest }
   >({
     mutationFn: ({ instanceId, data }) =>
-      api(`/admin/instances/${instanceId}/provision`, {
+      clientApi(`/admin/instances/${instanceId}/provision`, {
         method: "POST",
-        body: JSON.stringify(data),
+        body: data,
       }),
     onSuccess: async () => {
       toast.success("Instance provisioned successfully")

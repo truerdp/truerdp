@@ -1,7 +1,7 @@
 "use client"
 
 import { useMutation, useQueryClient } from "@tanstack/react-query"
-import { api } from "@workspace/api"
+import { clientApi } from "@workspace/api"
 import { toast } from "sonner"
 import { queryKeys } from "@/lib/query-keys"
 
@@ -12,7 +12,14 @@ interface ConfirmTransactionResponse {
     userId: number
     originOrderId: number
     planId: number
-    status: "pending" | "active"
+    status:
+      | "pending"
+      | "provisioning"
+      | "active"
+      | "expired"
+      | "termination_pending"
+      | "terminated"
+      | "failed"
     startDate: string | null
     expiryDate: string | null
   } | null
@@ -29,7 +36,7 @@ interface ConfirmTransactionResponse {
     status: "confirmed"
     confirmedAt: string
   }
-  kind: "purchase" | "renewal"
+  kind: "new_purchase" | "renewal"
 }
 
 export function useConfirmTransaction() {
@@ -37,7 +44,7 @@ export function useConfirmTransaction() {
 
   return useMutation<ConfirmTransactionResponse, Error, number>({
     mutationFn: (transactionId) =>
-      api(`/admin/transactions/${transactionId}/confirm`, {
+      clientApi(`/admin/transactions/${transactionId}/confirm`, {
         method: "POST",
       }),
     onSuccess: async () => {
@@ -45,6 +52,10 @@ export function useConfirmTransaction() {
 
       await queryClient.invalidateQueries({
         queryKey: queryKeys.transactions(),
+      })
+
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.invoices(),
       })
 
       await queryClient.invalidateQueries({

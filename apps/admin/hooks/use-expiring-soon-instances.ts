@@ -1,7 +1,7 @@
 "use client"
 
 import { useQuery } from "@tanstack/react-query"
-import { api } from "@workspace/api"
+import { clientApi } from "@workspace/api"
 import { queryKeys } from "@/lib/query-keys"
 
 export interface ExpiringSoonInstance {
@@ -17,6 +17,6 @@ export interface ExpiringSoonInstance {
 export function useExpiringSoonInstances() {
   return useQuery<ExpiringSoonInstance[]>({
     queryKey: queryKeys.expiringSoonInstances(),
-    queryFn: () => api("/admin/instances/expiring-soon"),
+    queryFn: () => clientApi("/admin/instances/expiring-soon"),
   })
 }

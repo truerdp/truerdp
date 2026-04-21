@@ -1,7 +1,7 @@
 "use client"
 
 import { useMutation, useQueryClient } from "@tanstack/react-query"
-import { api } from "@workspace/api"
+import { clientApi } from "@workspace/api"
 import { toast } from "sonner"
 import { queryKeys } from "@/lib/query-keys"
 
@@ -20,9 +20,9 @@ export function useExtendInstance() {
 
   return useMutation<ExtendInstanceResponse, Error, ExtendInstanceInput>({
     mutationFn: ({ instanceId, days }) =>
-      api(`/admin/instances/${instanceId}/extend`, {
+      clientApi(`/admin/instances/${instanceId}/extend`, {
         method: "POST",
-        body: JSON.stringify({ days }),
+        body: { days },
       }),
     onSuccess: async () => {
       toast.success("Instance extended successfully")

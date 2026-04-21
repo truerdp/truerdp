@@ -3,10 +3,13 @@
 import { useState } from "react"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
+import { useForm, type SubmitHandler } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import z from "zod"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { ViewIcon, ViewOffIcon } from "@hugeicons/core-free-icons"
 import { toast } from "sonner"
-import { api } from "@workspace/api"
+import { clientApi } from "@workspace/api"
 import { cn } from "@workspace/ui/lib/utils"
 import { Button } from "@workspace/ui/components/button"
 import {
@@ -31,12 +34,19 @@ import {
   InputGroupInput,
 } from "@workspace/ui/components/input-group"
 import { Spinner } from "@workspace/ui/components/spinner"
-import { setAuthToken } from "@/lib/auth"
+import { resolvePostAuthRedirect } from "@/lib/auth"
 import { webPaths } from "@/lib/paths"
 
-interface LoginResponse {
-  token: string
-}
+const loginSchema = z.object({
+  email: z
+    .string()
+    .trim()
+    .min(1, "Email is required")
+    .email("Enter a valid email address"),
+  password: z.string().min(1, "Password is required"),
+})
+
+type LoginFormValues = z.infer<typeof loginSchema>
 
 export function LoginForm({
   className,
@@ -44,42 +54,46 @@ export function LoginForm({
 }: React.ComponentProps<"div">) {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const [error, setError] = useState<string | null>(null)
-  const [isSubmitting, setIsSubmitting] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
+  const {
+    register,
+    handleSubmit,
+    setError,
+    formState: { errors, isSubmitting },
+  } = useForm<LoginFormValues>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: {
+      email: "",
+      password: "",
+    },
+  })
+  const requestedRedirect = searchParams.get("redirect")
+  const signupHref = requestedRedirect
+    ? `${webPaths.signup}?redirect=${encodeURIComponent(requestedRedirect)}`
+    : webPaths.signup
 
-  async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    setError(null)
-
-    const formData = new FormData(event.currentTarget)
-    const email = String(formData.get("email") ?? "").trim()
-    const password = String(formData.get("password") ?? "")
-
-    if (!email || !password) {
-      setError("Email and password are required")
-      return
-    }
+  const onSubmit: SubmitHandler<LoginFormValues> = async (values) => {
+    const email = values.email.trim()
+    const password = values.password
 
     try {
-      setIsSubmitting(true)
-
-      const response = await api<LoginResponse>("/auth/login", {
+      await clientApi("/auth/login", {
         method: "POST",
-        body: JSON.stringify({ email, password }),
+        body: { email, password },
       })
-
-      setAuthToken(response.token)
       toast.success("Logged in successfully")
 
-      const redirectTarget = searchParams.get("redirect") || webPaths.home
-      router.push(redirectTarget)
+      const redirectTarget = resolvePostAuthRedirect(requestedRedirect)
+
+      if (redirectTarget.startsWith("/")) {
+        router.push(redirectTarget)
+      } else {
+        window.location.assign(redirectTarget)
+      }
     } catch (submitError) {
       const message =
         submitError instanceof Error ? submitError.message : "Login failed"
-      setError(message)
-    } finally {
-      setIsSubmitting(false)
+      setError("root", { message })
     }
   }
 
@@ -93,53 +107,64 @@ export function LoginForm({
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={onSubmit}>
+          <form onSubmit={handleSubmit(onSubmit)}>
             <FieldGroup>
-              <Field>
+              <Field data-invalid={!!errors.email}>
                 <FieldLabel htmlFor="email">Email</FieldLabel>
                 <Input
                   id="email"
-                  name="email"
                   type="email"
                   placeholder="m@example.com"
-                  required
+                  disabled={isSubmitting}
+                  aria-invalid={!!errors.email}
+                  {...register("email")}
                 />
+                {errors.email ? (
+                  <FieldError>{errors.email.message}</FieldError>
+                ) : null}
               </Field>
-              <Field>
+              <Field data-invalid={!!errors.password}>
                 <FieldLabel htmlFor="password">Password</FieldLabel>
                 <InputGroup>
                   <InputGroupInput
                     id="password"
-                    name="password"
                     type={showPassword ? "text" : "password"}
-                    required
+                    disabled={isSubmitting}
+                    aria-invalid={!!errors.password}
+                    {...register("password")}
                   />
                   <InputGroupAddon align="inline-end">
                     <InputGroupButton
+                      type="button"
                       size="icon-xs"
                       aria-label={
                         showPassword ? "Hide password" : "Show password"
                       }
+                      disabled={isSubmitting}
                       onClick={() => setShowPassword((prev) => !prev)}
                     >
                       <HugeiconsIcon
                         icon={showPassword ? ViewOffIcon : ViewIcon}
                         strokeWidth={2}
-                        size={16}
                       />
                     </InputGroupButton>
                   </InputGroupAddon>
                 </InputGroup>
+                {errors.password ? (
+                  <FieldError>{errors.password.message}</FieldError>
+                ) : null}
               </Field>
               <Field>
                 <Button type="submit" disabled={isSubmitting}>
                   {isSubmitting && <Spinner data-icon="inline-start" />}
                   Login
                 </Button>
-                {error ? <FieldError>{error}</FieldError> : null}
+                {errors.root?.message ? (
+                  <FieldError>{errors.root.message}</FieldError>
+                ) : null}
                 <FieldDescription className="text-center">
                   Don&apos;t have an account?{" "}
-                  <Link href={webPaths.signup} className="underline">
+                  <Link href={signupHref} className="underline">
                     Sign up
                   </Link>
                 </FieldDescription>

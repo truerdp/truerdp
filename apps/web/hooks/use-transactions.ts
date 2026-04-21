@@ -1,8 +1,7 @@
 "use client"
 
 import { useQuery } from "@tanstack/react-query"
-import { api } from "@workspace/api"
-import { getAuthToken } from "@/lib/auth"
+import { clientApi } from "@workspace/api"
 
 export interface Transaction {
   id: number
@@ -12,6 +11,10 @@ export interface Transaction {
   createdAt: string
   confirmedAt: string | null
   reference: string
+  order: {
+    id: number
+    status: "pending_payment" | "processing" | "completed" | "cancelled"
+  }
   invoice: {
     id: number
     invoiceNumber: string
@@ -35,12 +38,11 @@ export interface Transaction {
 }
 
 export function useTransactions() {
-  const token = getAuthToken()
-
   return useQuery<Transaction[]>({
     queryKey: ["transactions"],
-    queryFn: () => api("/transactions"),
-    enabled: Boolean(token),
+    queryFn: () => clientApi("/transactions"),
+    staleTime: 0,
+    refetchOnMount: "always",
     retry: false,
   })
 }

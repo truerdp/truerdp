@@ -152,6 +152,21 @@ export const planPricing = pgTable(
 
 /* ================= ORDERS ================= */
 
+export type OrderBillingDetails = {
+  firstName: string
+  lastName: string
+  email: string
+  phone: string | null
+  companyName: string | null
+  taxId: string | null
+  addressLine1: string
+  addressLine2: string | null
+  city: string
+  state: string
+  postalCode: string
+  country: string
+}
+
 export const orders = pgTable(
   "orders",
   {
@@ -169,12 +184,15 @@ export const orders = pgTable(
       .notNull()
       .references(() => planPricing.id),
 
+    renewalInstanceId: integer("renewal_instance_id"),
+
     kind: purchaseKindEnum("kind").default("new_purchase").notNull(),
 
     // Snapshot of the product the user purchased at checkout time.
     planName: text("plan_name").notNull(),
     planPrice: integer("plan_price").notNull(),
     durationDays: integer("duration_days").notNull(),
+    billingDetails: jsonb("billing_details").$type<OrderBillingDetails>(),
 
     status: orderStatusEnum("status").default("pending_payment").notNull(),
 
@@ -189,6 +207,9 @@ export const orders = pgTable(
     planIdIdx: index("orders_plan_id_idx").on(table.planId),
     planPricingIdIdx: index("orders_plan_pricing_id_idx").on(
       table.planPricingId
+    ),
+    renewalInstanceIdIdx: index("orders_renewal_instance_id_idx").on(
+      table.renewalInstanceId
     ),
     kindIdx: index("orders_kind_idx").on(table.kind),
     statusIdx: index("orders_status_idx").on(table.status),

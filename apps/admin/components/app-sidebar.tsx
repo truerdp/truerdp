@@ -53,6 +53,11 @@ const navMain = [
     icon: <HugeiconsIcon icon={Package02Icon} strokeWidth={2} />,
   },
   {
+    title: "Invoices",
+    url: adminPaths.invoices,
+    icon: <HugeiconsIcon icon={CreditCardIcon} strokeWidth={2} />,
+  },
+  {
     title: "Transactions",
     url: adminPaths.transactions,
     icon: <HugeiconsIcon icon={CreditCardIcon} strokeWidth={2} />,
@@ -100,6 +105,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 segments[0] === "instances" &&
                 segments.length === 1) ||
               (item.url === adminPaths.plans && segments[0] === "plans") ||
+              (item.url === adminPaths.invoices &&
+                segments[0] === "invoices") ||
               (item.url === adminPaths.transactions &&
                 segments[0] === "transactions") ||
               (item.url === adminPaths.expiredInstances &&

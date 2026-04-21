@@ -64,6 +64,20 @@
       "when": 1776326400004,
       "tag": "0008_instance_extensions_audit",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1776326400005,
+      "tag": "0009_order_renewal_instance_link",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1776326400006,
+      "tag": "0010_order_billing_details",
+      "breakpoints": true
     }
   ]
 }

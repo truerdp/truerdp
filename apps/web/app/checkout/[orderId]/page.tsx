@@ -1,10 +1,10 @@
 "use client"
 
-import { Suspense, useMemo, useState } from "react"
 import Link from "next/link"
-import { useRouter, useSearchParams } from "next/navigation"
+import { useEffect, useMemo, useState } from "react"
+import { useParams, useRouter } from "next/navigation"
 import { toast } from "sonner"
-import { api } from "@workspace/api"
+import { clientApi } from "@workspace/api"
 import { HugeiconsIcon } from "@hugeicons/react"
 import {
   ArrowLeft02Icon,
@@ -39,9 +39,9 @@ import {
   ToggleGroup,
   ToggleGroupItem,
 } from "@workspace/ui/components/toggle-group"
-import { getAuthToken } from "@/lib/auth"
 import { formatAmount } from "@/lib/format"
-import { usePlans } from "@/hooks/use-plans"
+import { useOrder } from "@/hooks/use-order"
+import { useProfile } from "@/hooks/use-profile"
 import { useTransactions } from "@/hooks/use-transactions"
 import { webPaths } from "@/lib/paths"
 
@@ -51,40 +51,42 @@ interface CreateTransactionResponse {
   id: number
 }
 
-function CheckoutPageContent() {
+export default function CheckoutOrderPage() {
+  const params = useParams<{ orderId: string }>()
   const router = useRouter()
-  const searchParams = useSearchParams()
-  const { data, isLoading, error } = usePlans()
-  const { data: transactions } = useTransactions()
   const [method, setMethod] = useState<PaymentMethod>("upi")
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const planPricingId = Number(searchParams.get("planPricingId") ?? "")
-  const hasValidPlanPricingId =
-    Number.isInteger(planPricingId) && planPricingId > 0
+  const orderId = Number(params.orderId ?? "")
+  const hasValidOrderId = Number.isInteger(orderId) && orderId > 0
 
-  const selectedPricing = useMemo(() => {
-    if (!data || !hasValidPlanPricingId) {
-      return null
+  const {
+    data: order,
+    isLoading,
+    error,
+  } = useOrder(hasValidOrderId ? orderId : null)
+  const {
+    data: profile,
+    isLoading: isProfileLoading,
+    isError: isProfileError,
+  } = useProfile()
+  const { data: transactions } = useTransactions()
+
+  useEffect(() => {
+    if (!hasValidOrderId) {
+      return
     }
 
-    for (const plan of data) {
-      const option = plan.pricingOptions.find(
-        (pricing) => pricing.id === planPricingId
+    if (!isProfileLoading && isProfileError) {
+      const redirectPath = webPaths.checkoutOrder(orderId)
+      router.push(
+        `${webPaths.login}?redirect=${encodeURIComponent(redirectPath)}`
       )
-      if (option) {
-        return {
-          plan,
-          pricing: option,
-        }
-      }
     }
-
-    return null
-  }, [data, hasValidPlanPricingId, planPricingId])
+  }, [hasValidOrderId, isProfileError, isProfileLoading, orderId, router])
 
   const existingPendingTransaction = useMemo(() => {
-    if (!selectedPricing || !transactions) {
+    if (!transactions || !hasValidOrderId) {
       return null
     }
 
@@ -95,7 +97,7 @@ function CheckoutPageContent() {
         const expiresAt = new Date(transaction.invoice.expiresAt).getTime()
 
         return (
-          transaction.pricing.id === selectedPricing.pricing.id &&
+          transaction.order.id === orderId &&
           transaction.status === "pending" &&
           transaction.invoice.status === "unpaid" &&
           !Number.isNaN(expiresAt) &&
@@ -103,29 +105,31 @@ function CheckoutPageContent() {
         )
       }) ?? null
     )
-  }, [selectedPricing, transactions])
+  }, [hasValidOrderId, orderId, transactions])
 
   async function onCreateTransaction() {
-    if (!selectedPricing) {
+    if (!order || order.status !== "pending_payment") {
       return
     }
 
-    if (!getAuthToken()) {
-      const redirect = `${webPaths.checkout}?planPricingId=${selectedPricing.pricing.id}`
-      router.push(`${webPaths.login}?redirect=${encodeURIComponent(redirect)}`)
+    if (!profile) {
+      const redirectPath = webPaths.checkoutOrder(order.orderId)
+      router.push(
+        `${webPaths.login}?redirect=${encodeURIComponent(redirectPath)}`
+      )
       return
     }
 
     try {
       setIsSubmitting(true)
-      const transaction = await api<CreateTransactionResponse>(
+      const transaction = await clientApi<CreateTransactionResponse>(
         "/transactions",
         {
           method: "POST",
-          body: JSON.stringify({
-            planPricingId: selectedPricing.pricing.id,
+          body: {
+            orderId: order.orderId,
             method,
-          }),
+          },
         }
       )
 
@@ -134,7 +138,9 @@ function CheckoutPageContent() {
           ? "Continuing with your existing unpaid invoice"
           : "Transaction created"
       )
-      router.push(`${webPaths.checkoutSuccess}?transactionId=${transaction.id}`)
+      router.push(
+        `${webPaths.checkoutSuccess}?orderId=${order.orderId}&transactionId=${transaction.id}`
+      )
     } catch (submitError) {
       const message =
         submitError instanceof Error
@@ -146,14 +152,14 @@ function CheckoutPageContent() {
     }
   }
 
-  if (!hasValidPlanPricingId) {
+  if (!hasValidOrderId) {
     return (
       <main className="mx-auto w-full max-w-3xl px-6 py-12">
         <Empty className="border">
           <EmptyHeader>
-            <EmptyTitle>Missing plan selection</EmptyTitle>
+            <EmptyTitle>Missing order reference</EmptyTitle>
             <EmptyDescription>
-              Choose a plan and pricing option before starting checkout.
+              Checkout requires a valid order id. Please select a plan first.
             </EmptyDescription>
           </EmptyHeader>
           <Link href={webPaths.home}>
@@ -174,14 +180,14 @@ function CheckoutPageContent() {
   return (
     <main className="mx-auto w-full max-w-3xl px-6 py-12">
       <div className="mb-4">
-        <Link href={webPaths.home}>
+        <Link href={webPaths.checkoutReviewOrder(orderId)}>
           <Button variant="ghost" size="sm">
             <HugeiconsIcon
               icon={ArrowLeft02Icon}
               strokeWidth={2}
               data-icon="inline-start"
             />
-            Change plan
+            Back to invoice review
           </Button>
         </Link>
       </div>
@@ -202,18 +208,17 @@ function CheckoutPageContent() {
       {!isLoading && error ? (
         <Alert variant="destructive">
           <HugeiconsIcon icon={CreditCardIcon} strokeWidth={2} />
-          <AlertTitle>Unable to load plan details</AlertTitle>
+          <AlertTitle>Unable to load order details</AlertTitle>
           <AlertDescription>{(error as Error).message}</AlertDescription>
         </Alert>
       ) : null}
 
-      {!isLoading && !error && !selectedPricing ? (
+      {!isLoading && !error && !order ? (
         <Empty className="border">
           <EmptyHeader>
-            <EmptyTitle>Plan option not found</EmptyTitle>
+            <EmptyTitle>Order not found</EmptyTitle>
             <EmptyDescription>
-              The selected pricing option is not active anymore. Please choose
-              another one.
+              This order is unavailable or does not belong to your account.
             </EmptyDescription>
           </EmptyHeader>
           <Link href={webPaths.home}>
@@ -222,56 +227,76 @@ function CheckoutPageContent() {
         </Empty>
       ) : null}
 
-      {!isLoading && !error && selectedPricing ? (
+      {!isLoading && !error && order ? (
         <Card>
           <CardHeader>
-            <CardTitle>Checkout</CardTitle>
+            <CardTitle>Payment</CardTitle>
             <CardDescription>
-              Create an invoice and pending transaction for admin confirmation.
+              Choose payment method to create or reuse your payment attempt.
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-6">
             <div className="flex flex-wrap items-center gap-2">
-              <Badge variant="secondary">{selectedPricing.plan.name}</Badge>
-              <Badge variant="outline">
-                {selectedPricing.pricing.durationDays} days
-              </Badge>
+              <Badge variant="secondary">{order.plan.name}</Badge>
+              <Badge variant="outline">{order.pricing.durationDays} days</Badge>
+              <Badge variant="outline">Order #{order.orderId}</Badge>
             </div>
 
-            {existingPendingTransaction && (
+            {order.status !== "pending_payment" ? (
+              <Alert variant="destructive">
+                <HugeiconsIcon icon={CreditCardIcon} strokeWidth={2} />
+                <AlertTitle>Order cannot be paid</AlertTitle>
+                <AlertDescription>
+                  This order is currently in {order.status} state and cannot
+                  create a new transaction.
+                </AlertDescription>
+              </Alert>
+            ) : null}
+
+            {existingPendingTransaction ? (
               <Alert>
                 <HugeiconsIcon icon={CreditCardIcon} strokeWidth={2} />
                 <AlertTitle>Existing unpaid invoice found</AlertTitle>
                 <AlertDescription>
                   Invoice {existingPendingTransaction.invoice.invoiceNumber} is
-                  still open for this plan until{" "}
+                  still open until{" "}
                   {new Date(
                     existingPendingTransaction.invoice.expiresAt
                   ).toLocaleString()}
-                  . Continuing will reuse that invoice instead of creating a new
-                  one.
+                  . Continuing will reuse that invoice.
                 </AlertDescription>
               </Alert>
-            )}
+            ) : null}
+
+            {!order.billingDetails ? (
+              <Alert variant="destructive">
+                <HugeiconsIcon icon={CreditCardIcon} strokeWidth={2} />
+                <AlertTitle>Billing details required</AlertTitle>
+                <AlertDescription>
+                  Please go back to invoice review and complete billing details
+                  before creating a transaction.
+                </AlertDescription>
+              </Alert>
+            ) : null}
 
             <div className="rounded-xl border p-4">
               <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">Plan</span>
-                <span className="font-medium">{selectedPricing.plan.name}</span>
+                <span className="font-medium">{order.plan.name}</span>
               </div>
               <Separator className="my-3" />
               <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">Compute</span>
                 <span>
-                  {selectedPricing.plan.cpu} vCPU / {selectedPricing.plan.ram}{" "}
-                  GB RAM / {selectedPricing.plan.storage} GB
+                  {order.plan.cpu} vCPU / {order.plan.ram} GB RAM /{" "}
+                  {order.plan.storage} GB
                 </span>
               </div>
               <Separator className="my-3" />
               <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">Total</span>
                 <span className="text-lg font-semibold">
-                  {formatAmount(selectedPricing.pricing.price)}
+                  {formatAmount(order.pricing.price)}
                 </span>
               </div>
             </div>
@@ -302,7 +327,14 @@ function CheckoutPageContent() {
             </Alert>
           </CardContent>
           <CardFooter>
-            <Button onClick={onCreateTransaction} disabled={isSubmitting}>
+            <Button
+              onClick={onCreateTransaction}
+              disabled={
+                isSubmitting ||
+                order.status !== "pending_payment" ||
+                !order.billingDetails
+              }
+            >
               {isSubmitting ? <Spinner data-icon="inline-start" /> : null}
               {existingPendingTransaction
                 ? "Continue with unpaid invoice"
@@ -312,30 +344,5 @@ function CheckoutPageContent() {
         </Card>
       ) : null}
     </main>
-  )
-}
-
-function CheckoutPageFallback() {
-  return (
-    <main className="mx-auto w-full max-w-3xl px-6 py-12">
-      <Card>
-        <CardHeader>
-          <Skeleton className="h-6 w-44" />
-          <Skeleton className="h-4 w-64" />
-        </CardHeader>
-        <CardContent className="flex flex-col gap-3">
-          <Skeleton className="h-18 w-full" />
-          <Skeleton className="h-18 w-full" />
-        </CardContent>
-      </Card>
-    </main>
-  )
-}
-
-export default function CheckoutPage() {
-  return (
-    <Suspense fallback={<CheckoutPageFallback />}>
-      <CheckoutPageContent />
-    </Suspense>
   )
 }

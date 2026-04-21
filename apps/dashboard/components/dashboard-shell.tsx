@@ -55,6 +55,22 @@ function getBreadcrumbState(segments: string[]) {
     }
   }
 
+  if (segments[0] === "invoices") {
+    if (segments.length > 1) {
+      return {
+        currentLabel: `Invoice #${segments[1]}`,
+        parentLabel: "Invoices",
+        parentHref: dashboardPaths.invoices,
+      }
+    }
+
+    return {
+      currentLabel: "Invoices",
+      parentLabel: null,
+      parentHref: dashboardPaths.overview,
+    }
+  }
+
   return {
     currentLabel: "Dashboard",
     parentLabel: null,

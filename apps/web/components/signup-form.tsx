@@ -2,9 +2,11 @@
 
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
-import { useState } from "react"
+import { useForm, type SubmitHandler } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import z from "zod"
 import { toast } from "sonner"
-import { api } from "@workspace/api"
+import { clientApi } from "@workspace/api"
 import { Button } from "@workspace/ui/components/button"
 import {
   Card,
@@ -22,79 +24,92 @@ import {
 } from "@workspace/ui/components/field"
 import { Input } from "@workspace/ui/components/input"
 import { Spinner } from "@workspace/ui/components/spinner"
-import { setAuthToken } from "@/lib/auth"
+import { resolvePostAuthRedirect } from "@/lib/auth"
 import { webPaths } from "@/lib/paths"
 
-interface LoginResponse {
-  token: string
-}
+const signupSchema = z
+  .object({
+    name: z.string().trim().min(1, "Full name is required"),
+    email: z
+      .string()
+      .trim()
+      .min(1, "Email is required")
+      .email("Enter a valid email address"),
+    password: z.string().min(6, "Password must be at least 6 characters"),
+    confirmPassword: z.string().min(1, "Please confirm your password"),
+  })
+  .superRefine((value, context) => {
+    if (value.password !== value.confirmPassword) {
+      context.addIssue({
+        code: "custom",
+        path: ["confirmPassword"],
+        message: "Passwords do not match",
+      })
+    }
+  })
+
+type SignupFormValues = z.infer<typeof signupSchema>
 
 export function SignupForm({ ...props }: React.ComponentProps<typeof Card>) {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const [error, setError] = useState<string | null>(null)
-  const [isSubmitting, setIsSubmitting] = useState(false)
+  const {
+    register,
+    handleSubmit,
+    setError,
+    formState: { errors, isSubmitting },
+  } = useForm<SignupFormValues>({
+    resolver: zodResolver(signupSchema),
+    defaultValues: {
+      name: "",
+      email: "",
+      password: "",
+      confirmPassword: "",
+    },
+  })
+  const requestedRedirect = searchParams.get("redirect")
+  const loginHref = requestedRedirect
+    ? `${webPaths.login}?redirect=${encodeURIComponent(requestedRedirect)}`
+    : webPaths.login
 
-  async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    setError(null)
-
-    const formData = new FormData(event.currentTarget)
-    const fullName = String(formData.get("name") ?? "").trim()
-    const email = String(formData.get("email") ?? "").trim()
-    const password = String(formData.get("password") ?? "")
-    const confirmPassword = String(formData.get("confirm-password") ?? "")
-
-    if (!fullName || !email || !password || !confirmPassword) {
-      setError("All fields are required")
-      return
-    }
-
-    if (password.length < 6) {
-      setError("Password must be at least 6 characters")
-      return
-    }
-
-    if (password !== confirmPassword) {
-      setError("Passwords do not match")
-      return
-    }
-
+  const onSubmit: SubmitHandler<SignupFormValues> = async (values) => {
+    const fullName = values.name.trim()
+    const email = values.email.trim()
+    const password = values.password
     const nameParts = fullName.split(/\s+/).filter(Boolean)
     const firstName = nameParts[0] || fullName
     const lastName = nameParts.slice(1).join(" ") || "User"
 
     try {
-      setIsSubmitting(true)
-
-      await api("/users", {
+      await clientApi("/users", {
         method: "POST",
-        body: JSON.stringify({
+        body: {
           email,
           password,
           firstName,
           lastName,
-        }),
+        },
       })
 
-      const loginResponse = await api<LoginResponse>("/auth/login", {
+      await clientApi("/auth/login", {
         method: "POST",
-        body: JSON.stringify({ email, password }),
+        body: { email, password },
       })
-
-      setAuthToken(loginResponse.token)
       toast.success("Account created")
 
-      const redirectTarget = searchParams.get("redirect") || webPaths.home
-      router.push(redirectTarget)
+      const redirectTarget = resolvePostAuthRedirect(requestedRedirect)
+
+      if (redirectTarget.startsWith("/")) {
+        router.push(redirectTarget)
+      } else {
+        window.location.assign(redirectTarget)
+      }
     } catch (submitError) {
       const message =
         submitError instanceof Error
           ? submitError.message
           : "Unable to create account"
-      setError(message)
-    } finally {
-      setIsSubmitting(false)
+      setError("root", { message })
     }
   }
 
@@ -107,49 +122,70 @@ export function SignupForm({ ...props }: React.ComponentProps<typeof Card>) {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <form onSubmit={onSubmit}>
+        <form onSubmit={handleSubmit(onSubmit)}>
           <FieldGroup>
-            <Field>
+            <Field data-invalid={!!errors.name}>
               <FieldLabel htmlFor="name">Full Name</FieldLabel>
               <Input
                 id="name"
-                name="name"
                 type="text"
                 placeholder="John Doe"
-                required
+                disabled={isSubmitting}
+                aria-invalid={!!errors.name}
+                {...register("name")}
               />
+              {errors.name ? (
+                <FieldError>{errors.name.message}</FieldError>
+              ) : null}
             </Field>
-            <Field>
+            <Field data-invalid={!!errors.email}>
               <FieldLabel htmlFor="email">Email</FieldLabel>
               <Input
                 id="email"
-                name="email"
                 type="email"
                 placeholder="m@example.com"
-                required
+                disabled={isSubmitting}
+                aria-invalid={!!errors.email}
+                {...register("email")}
               />
+              {errors.email ? (
+                <FieldError>{errors.email.message}</FieldError>
+              ) : null}
               <FieldDescription>
                 We&apos;ll use this to contact you. We will not share your email
                 with anyone else.
               </FieldDescription>
             </Field>
-            <Field>
+            <Field data-invalid={!!errors.password}>
               <FieldLabel htmlFor="password">Password</FieldLabel>
-              <Input id="password" name="password" type="password" required />
+              <Input
+                id="password"
+                type="password"
+                disabled={isSubmitting}
+                aria-invalid={!!errors.password}
+                {...register("password")}
+              />
+              {errors.password ? (
+                <FieldError>{errors.password.message}</FieldError>
+              ) : null}
               <FieldDescription>
                 Must be at least 6 characters long.
               </FieldDescription>
             </Field>
-            <Field>
+            <Field data-invalid={!!errors.confirmPassword}>
               <FieldLabel htmlFor="confirm-password">
                 Confirm Password
               </FieldLabel>
               <Input
                 id="confirm-password"
-                name="confirm-password"
                 type="password"
-                required
+                disabled={isSubmitting}
+                aria-invalid={!!errors.confirmPassword}
+                {...register("confirmPassword")}
               />
+              {errors.confirmPassword ? (
+                <FieldError>{errors.confirmPassword.message}</FieldError>
+              ) : null}
               <FieldDescription>Please confirm your password.</FieldDescription>
             </Field>
             <FieldGroup>
@@ -158,10 +194,12 @@ export function SignupForm({ ...props }: React.ComponentProps<typeof Card>) {
                   {isSubmitting && <Spinner data-icon="inline-start" />}
                   Create Account
                 </Button>
-                {error ? <FieldError>{error}</FieldError> : null}
+                {errors.root?.message ? (
+                  <FieldError>{errors.root.message}</FieldError>
+                ) : null}
                 <FieldDescription className="px-6 text-center">
                   Already have an account?{" "}
-                  <Link href={webPaths.login} className="underline">
+                  <Link href={loginHref} className="underline">
                     Sign in
                   </Link>
                 </FieldDescription>

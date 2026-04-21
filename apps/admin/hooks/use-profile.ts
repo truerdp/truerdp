@@ -1,7 +1,7 @@
 "use client"
 
 import { useQuery } from "@tanstack/react-query"
-import { api } from "@workspace/api"
+import { clientApi } from "@workspace/api"
 import { queryKeys } from "@/lib/query-keys"
 
 export interface Profile {
@@ -15,7 +15,8 @@ export interface Profile {
 export function useProfile() {
   return useQuery<Profile>({
     queryKey: queryKeys.profile(),
-    queryFn: () => api("/profile"),
+    queryFn: () => clientApi("/profile"),
     staleTime: 5 * 60 * 1000,
+    retry: false,
   })
 }

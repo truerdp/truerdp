@@ -1,7 +1,7 @@
 "use client"
 
 import { useMutation, useQueryClient } from "@tanstack/react-query"
-import { api } from "@workspace/api"
+import { clientApi } from "@workspace/api"
 import { toast } from "sonner"
 import { queryKeys } from "@/lib/query-keys"
 
@@ -14,7 +14,7 @@ export function useTerminateInstance() {
 
   return useMutation<TerminateInstanceResponse, Error, number>({
     mutationFn: (instanceId) =>
-      api(`/admin/instances/${instanceId}/terminate`, {
+      clientApi(`/admin/instances/${instanceId}/terminate`, {
         method: "POST",
       }),
     onSuccess: async (_data, instanceId) => {

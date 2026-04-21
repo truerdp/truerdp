@@ -1,8 +1,11 @@
 "use client"
 
+import Link from "next/link"
 import { format } from "date-fns"
 import { useInvoices, type InvoiceSummary } from "@/hooks/use-invoices"
+import { buildWebCheckoutReviewUrl } from "@/lib/auth"
 import { formatAmount } from "@/lib/format"
+import { dashboardPaths } from "@/lib/paths"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { CreditCardIcon } from "@hugeicons/core-free-icons"
 import {
@@ -13,6 +16,7 @@ import {
   EmptyTitle,
 } from "@workspace/ui/components/empty"
 import { Badge } from "@workspace/ui/components/badge"
+import { Button } from "@workspace/ui/components/button"
 import { Skeleton } from "@workspace/ui/components/skeleton"
 import {
   Table,
@@ -24,6 +28,10 @@ import {
 } from "@workspace/ui/components/table"
 
 function formatMethod(method: InvoiceSummary["transaction"]["method"]) {
+  if (!method) {
+    return "-"
+  }
+
   return method === "upi" ? "UPI" : "USDT (TRC20)"
 }
 
@@ -55,6 +63,23 @@ function getInvoiceStatusVariant(
   return "outline"
 }
 
+function isInvoicePayable(invoice: InvoiceSummary) {
+  if (invoice.status !== "unpaid") {
+    return false
+  }
+
+  if (invoice.order.status !== "pending_payment") {
+    return false
+  }
+
+  if (!invoice.expiresAt) {
+    return true
+  }
+
+  const expiresAt = new Date(invoice.expiresAt).getTime()
+  return !Number.isNaN(expiresAt) && expiresAt >= Date.now()
+}
+
 function InvoicesSkeleton() {
   return (
     <Table>
@@ -67,6 +92,7 @@ function InvoicesSkeleton() {
           <TableHead>Method</TableHead>
           <TableHead>Created</TableHead>
           <TableHead>Paid</TableHead>
+          <TableHead>Action</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -92,6 +118,9 @@ function InvoicesSkeleton() {
             </TableCell>
             <TableCell>
               <Skeleton className="h-4 w-32" />
+            </TableCell>
+            <TableCell>
+              <Skeleton className="h-8 w-20" />
             </TableCell>
           </TableRow>
         ))}
@@ -178,6 +207,7 @@ export default function InvoicesPage() {
               <TableHead>Method</TableHead>
               <TableHead>Created</TableHead>
               <TableHead>Paid</TableHead>
+              <TableHead>Action</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -185,9 +215,12 @@ export default function InvoicesPage() {
               <TableRow key={invoice.id}>
                 <TableCell>
                   <div className="flex flex-col">
-                    <span className="font-mono text-sm">
+                    <Link
+                      href={dashboardPaths.invoiceDetail(invoice.id)}
+                      className="font-mono text-sm underline-offset-2 hover:underline"
+                    >
                       {invoice.invoiceNumber}
-                    </span>
+                    </Link>
                     <span className="text-xs text-muted-foreground">
                       TX {invoice.transaction.reference || "-"}
                     </span>
@@ -225,6 +258,27 @@ export default function InvoicesPage() {
                 </TableCell>
                 <TableCell className="text-sm text-muted-foreground">
                   {formatDateTime(invoice.paidAt)}
+                </TableCell>
+                <TableCell>
+                  <div className="flex items-center gap-2">
+                    <Link href={dashboardPaths.invoiceDetail(invoice.id)}>
+                      <Button size="sm" variant="outline">
+                        View
+                      </Button>
+                    </Link>
+                    {isInvoicePayable(invoice) ? (
+                      <Button
+                        size="sm"
+                        onClick={() =>
+                          window.location.assign(
+                            buildWebCheckoutReviewUrl(invoice.order.id)
+                          )
+                        }
+                      >
+                        Pay now
+                      </Button>
+                    ) : null}
+                  </div>
                 </TableCell>
               </TableRow>
             ))}

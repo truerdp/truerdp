@@ -6,16 +6,14 @@ import { verifyAuth } from "../middleware/auth.js"
 import { instances, resources, servers } from "../schema.js"
 import {
   BillingError,
-  createBillingTransaction,
+  createBillingOrder,
   getDefaultPlanPricingForPlan,
   getPlanPricingById,
   listInstanceTransactions,
-  supportedPaymentMethodSchema,
 } from "../services/billing.js"
 import { decryptCredential } from "../services/resource-credentials.js"
 
 const renewInstanceSchema = z.object({
-  method: supportedPaymentMethodSchema.optional(),
   planPricingId: z.number().int().positive().optional(),
 })
 
@@ -242,16 +240,15 @@ export async function instanceRoutes(server: FastifyInstance) {
           })
         }
 
-        const transaction = await createBillingTransaction({
+        const order = await createBillingOrder({
           userId,
           planPricingId: selectedPricing.id,
-          method: body.method ?? "upi",
           instanceId: instance.id,
         })
 
         return {
-          message: "Renewal initiated",
-          transaction,
+          message: "Renewal order created",
+          orderId: order.orderId,
         }
       } catch (err: any) {
         server.log.error(err)

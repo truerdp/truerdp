@@ -123,6 +123,20 @@ function getStatusBadgeVariant(status: "pending" | "confirmed" | "failed") {
   return "destructive"
 }
 
+function getUserDisplayName(user: {
+  firstName: string
+  lastName: string
+  email: string
+}) {
+  const fullName = `${user.firstName} ${user.lastName}`.trim()
+
+  if (fullName) {
+    return fullName
+  }
+
+  return user.email
+}
+
 export default function AdminTransactionsPage() {
   const { data, isLoading, isError, error } = useTransactions()
   const confirmMutation = useConfirmTransaction()
@@ -138,7 +152,7 @@ export default function AdminTransactionsPage() {
       const response = await confirmMutation.mutateAsync(transactionId)
 
       // If this is a new order (not a renewal) and instance was created, provision it
-      if (response.kind === "purchase" && response.instance?.id) {
+      if (response.kind === "new_purchase" && response.instance?.id) {
         setSelectedInstanceId(response.instance.id)
         setProvisionDialogOpen(true)
       }
@@ -201,8 +215,15 @@ export default function AdminTransactionsPage() {
                       </span>
                     </div>
                   </TableCell>
-                  <TableCell className="font-mono text-sm">
-                    {transaction.userId}
+                  <TableCell>
+                    <div className="flex flex-col gap-0.5">
+                      <span className="text-sm font-medium">
+                        {getUserDisplayName(transaction.user)}
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        {transaction.user.email}
+                      </span>
+                    </div>
                   </TableCell>
                   <TableCell>
                     <div className="flex flex-col gap-1">

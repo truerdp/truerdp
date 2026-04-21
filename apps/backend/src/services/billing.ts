@@ -11,6 +11,8 @@ import {
   resources,
   servers,
   transactions,
+  type OrderBillingDetails,
+  users,
 } from "../schema.js"
 import { calculatePrice } from "./pricing.js"
 
@@ -21,6 +23,7 @@ export const supportedPaymentMethodSchema = z.enum(["upi", "usdt_trc20"])
 export type SupportedPaymentMethod = z.infer<
   typeof supportedPaymentMethodSchema
 >
+export type BillingDetailsInput = OrderBillingDetails
 
 type TransactionSummaryRow = Awaited<
   ReturnType<ReturnType<typeof buildTransactionSummaryQuery>["orderBy"]>
@@ -118,67 +121,56 @@ function formatBillingTransactionResponse(record: BillingTransactionRecord) {
 
 async function expireStaleBillingAttempts(input: {
   userId: number
-  planPricingId: number
-  instanceId?: number
+  orderId: number
   now: Date
 }) {
-  const staleAttempts = await db
+  const staleInvoices = await db
     .select({
-      transactionId: transactions.id,
       invoiceId: invoices.id,
-      orderId: orders.id,
     })
-    .from(transactions)
-    .innerJoin(invoices, eq(transactions.invoiceId, invoices.id))
+    .from(invoices)
     .innerJoin(orders, eq(invoices.orderId, orders.id))
     .where(
       and(
-        eq(transactions.userId, input.userId),
-        eq(transactions.status, "pending"),
+        eq(orders.userId, input.userId),
+        eq(orders.id, input.orderId),
         eq(invoices.status, "unpaid"),
-        eq(orders.planPricingId, input.planPricingId),
-        lt(invoices.expiresAt, input.now),
-        input.instanceId != null
-          ? eq(transactions.instanceId, input.instanceId)
-          : isNull(transactions.instanceId)
+        lt(invoices.expiresAt, input.now)
       )
     )
 
-  if (staleAttempts.length === 0) {
+  if (staleInvoices.length === 0) {
     return
   }
 
+  const staleInvoiceIds = staleInvoices.map((invoice) => invoice.invoiceId)
+
   await db.transaction(async (tx) => {
-    for (const attempt of staleAttempts) {
-      await tx
-        .update(transactions)
-        .set({
-          status: "failed",
-          failureReason: "Invoice expired",
-        })
-        .where(eq(transactions.id, attempt.transactionId))
+    await tx
+      .update(invoices)
+      .set({
+        status: "expired",
+      })
+      .where(inArray(invoices.id, staleInvoiceIds))
 
-      await tx
-        .update(invoices)
-        .set({
-          status: "expired",
-        })
-        .where(eq(invoices.id, attempt.invoiceId))
-
-      await tx
-        .update(orders)
-        .set({
-          status: "cancelled",
-        })
-        .where(eq(orders.id, attempt.orderId))
-    }
+    await tx
+      .update(transactions)
+      .set({
+        status: "failed",
+        failureReason: "Invoice expired",
+      })
+      .where(
+        and(
+          inArray(transactions.invoiceId, staleInvoiceIds),
+          eq(transactions.status, "pending")
+        )
+      )
   })
 }
 
 async function findReusableBillingTransaction(input: {
   userId: number
-  planPricingId: number
-  instanceId?: number
+  orderId: number
   now: Date
 }) {
   const reusableAttempts = await db
@@ -220,10 +212,12 @@ async function findReusableBillingTransaction(input: {
         userId: orders.userId,
         planId: orders.planId,
         planPricingId: orders.planPricingId,
+        renewalInstanceId: orders.renewalInstanceId,
         kind: orders.kind,
         planName: orders.planName,
         planPrice: orders.planPrice,
         durationDays: orders.durationDays,
+        billingDetails: orders.billingDetails,
         status: orders.status,
         createdAt: orders.createdAt,
         updatedAt: orders.updatedAt,
@@ -246,17 +240,31 @@ async function findReusableBillingTransaction(input: {
         eq(transactions.status, "pending"),
         eq(invoices.status, "unpaid"),
         eq(orders.status, "pending_payment"),
-        eq(orders.planPricingId, input.planPricingId),
-        gte(invoices.expiresAt, input.now),
-        input.instanceId != null
-          ? eq(transactions.instanceId, input.instanceId)
-          : isNull(transactions.instanceId)
+        eq(orders.id, input.orderId),
+        gte(invoices.expiresAt, input.now)
       )
     )
     .orderBy(desc(transactions.createdAt))
     .limit(1)
 
   return reusableAttempts[0] ?? null
+}
+
+async function findReusableInvoice(input: { orderId: number; now: Date }) {
+  const invoiceResult = await db
+    .select()
+    .from(invoices)
+    .where(
+      and(
+        eq(invoices.orderId, input.orderId),
+        eq(invoices.status, "unpaid"),
+        gte(invoices.expiresAt, input.now)
+      )
+    )
+    .orderBy(desc(invoices.createdAt))
+    .limit(1)
+
+  return invoiceResult[0] ?? null
 }
 
 function buildTransactionSummaryQuery() {
@@ -302,11 +310,18 @@ function buildTransactionSummaryQuery() {
         ram: plans.ram,
         storage: plans.storage,
       },
+      user: {
+        id: users.id,
+        firstName: users.firstName,
+        lastName: users.lastName,
+        email: users.email,
+      },
     })
     .from(transactions)
     .innerJoin(invoices, eq(transactions.invoiceId, invoices.id))
     .innerJoin(orders, eq(invoices.orderId, orders.id))
     .leftJoin(plans, eq(orders.planId, plans.id))
+    .innerJoin(users, eq(transactions.userId, users.id))
 }
 
 async function loadResourceMap(rows: TransactionSummaryRow[]) {
@@ -350,6 +365,12 @@ async function mapTransactionSummaries(rows: TransactionSummaryRow[]) {
     return {
       id: row.transaction.id,
       userId: row.transaction.userId,
+      user: {
+        id: row.user.id,
+        firstName: row.user.firstName,
+        lastName: row.user.lastName,
+        email: row.user.email,
+      },
       amount: row.transaction.amount,
       method: row.transaction.method,
       status: row.transaction.status,
@@ -457,10 +478,127 @@ export async function findPendingTransactionForInstance(
   return pendingTransactions[0] ?? null
 }
 
-export async function createBillingTransaction(input: {
+type BillingOrderRecord = {
+  order: typeof orders.$inferSelect
+  plan: {
+    id: number
+    name: string
+    cpu: number
+    ram: number
+    storage: number
+  }
+}
+
+function formatBillingOrderResponse(record: BillingOrderRecord) {
+  return {
+    orderId: record.order.id,
+    userId: record.order.userId,
+    kind: record.order.kind,
+    status: record.order.status,
+    createdAt: record.order.createdAt,
+    updatedAt: record.order.updatedAt,
+    billingDetails: record.order.billingDetails,
+    plan: {
+      id: record.plan.id,
+      name: record.order.planName,
+      cpu: record.plan.cpu,
+      ram: record.plan.ram,
+      storage: record.plan.storage,
+    },
+    pricing: {
+      id: record.order.planPricingId,
+      durationDays: record.order.durationDays,
+      price: record.order.planPrice,
+    },
+  }
+}
+
+async function getBillingOrderById(orderId: number) {
+  const orderResult = await db
+    .select({
+      order: {
+        id: orders.id,
+        userId: orders.userId,
+        planId: orders.planId,
+        planPricingId: orders.planPricingId,
+        renewalInstanceId: orders.renewalInstanceId,
+        kind: orders.kind,
+        planName: orders.planName,
+        planPrice: orders.planPrice,
+        durationDays: orders.durationDays,
+        billingDetails: orders.billingDetails,
+        status: orders.status,
+        createdAt: orders.createdAt,
+        updatedAt: orders.updatedAt,
+      },
+      plan: {
+        id: plans.id,
+        name: plans.name,
+        cpu: plans.cpu,
+        ram: plans.ram,
+        storage: plans.storage,
+      },
+    })
+    .from(orders)
+    .innerJoin(plans, eq(orders.planId, plans.id))
+    .where(eq(orders.id, orderId))
+    .limit(1)
+
+  return orderResult[0] ?? null
+}
+
+export async function getBillingOrderForUser(userId: number, orderId: number) {
+  const record = await getBillingOrderById(orderId)
+
+  if (!record) {
+    throw new BillingError(404, "Order not found")
+  }
+
+  if (record.order.userId !== userId) {
+    throw new BillingError(403, "Forbidden")
+  }
+
+  return formatBillingOrderResponse(record)
+}
+
+export async function updateBillingDetailsForUser(input: {
+  userId: number
+  orderId: number
+  billingDetails: BillingDetailsInput
+}) {
+  const record = await getBillingOrderById(input.orderId)
+
+  if (!record) {
+    throw new BillingError(404, "Order not found")
+  }
+
+  if (record.order.userId !== input.userId) {
+    throw new BillingError(403, "Forbidden")
+  }
+
+  if (record.order.status !== "pending_payment") {
+    throw new BillingError(400, "Billing details can only be updated pre-payment")
+  }
+
+  await db
+    .update(orders)
+    .set({
+      billingDetails: input.billingDetails,
+    })
+    .where(eq(orders.id, input.orderId))
+
+  const updated = await getBillingOrderById(input.orderId)
+
+  if (!updated) {
+    throw new BillingError(404, "Order not found")
+  }
+
+  return formatBillingOrderResponse(updated)
+}
+
+export async function createBillingOrder(input: {
   userId: number
   planPricingId: number
-  method: SupportedPaymentMethod
   instanceId?: number
 }) {
   const pricingSelection = await getPlanPricingById(input.planPricingId)
@@ -473,36 +611,49 @@ export async function createBillingTransaction(input: {
     throw new BillingError(400, "Selected plan is inactive")
   }
 
-  const totalAmount = await calculatePrice(input.userId, input.planPricingId)
-  const discount = Math.max(0, pricingSelection.price - totalAmount)
   const orderKind = input.instanceId ? "renewal" : "new_purchase"
-  const now = new Date()
 
-  await expireStaleBillingAttempts({
-    userId: input.userId,
-    planPricingId: pricingSelection.id,
-    instanceId: input.instanceId,
-    now,
-  })
+  if (input.instanceId != null) {
+    const instanceResult = await db
+      .select()
+      .from(instances)
+      .where(eq(instances.id, input.instanceId))
+      .limit(1)
 
-  const reusableTransaction = await findReusableBillingTransaction({
-    userId: input.userId,
-    planPricingId: pricingSelection.id,
-    instanceId: input.instanceId,
-    now,
-  })
+    const instance = instanceResult[0]
 
-  if (reusableTransaction) {
-    return formatBillingTransactionResponse(reusableTransaction)
+    if (!instance) {
+      throw new BillingError(404, "Instance not found")
+    }
+
+    if (instance.userId !== input.userId) {
+      throw new BillingError(403, "Forbidden")
+    }
+
+    if (instance.planId !== pricingSelection.planId) {
+      throw new BillingError(400, "Renewal must use the instance plan")
+    }
+
+    const isExpired =
+      instance.expiryDate != null && instance.expiryDate < new Date()
+
+    if (!["active", "expired"].includes(instance.status) && !isExpired) {
+      throw new BillingError(400, "Instance is not eligible for renewal")
+    }
   }
 
-  const created = await db.transaction(async (tx) => {
+  const totalAmount = await calculatePrice(input.userId, pricingSelection.id)
+  const discount = Math.max(0, pricingSelection.price - totalAmount)
+  const now = new Date()
+
+  const createdOrder = await db.transaction(async (tx) => {
     const insertedOrders = await tx
       .insert(orders)
       .values({
         userId: input.userId,
         planId: pricingSelection.plan.id,
         planPricingId: pricingSelection.id,
+        renewalInstanceId: input.instanceId ?? null,
         kind: orderKind,
         planName: pricingSelection.plan.name,
         planPrice: pricingSelection.price,
@@ -513,27 +664,120 @@ export async function createBillingTransaction(input: {
 
     const order = requireInsertedRecord(insertedOrders[0], "order")
 
-    const insertedInvoices = await tx
-      .insert(invoices)
-      .values({
-        orderId: order.id,
-        invoiceNumber: createInvoiceNumber(),
-        subtotal: pricingSelection.price,
-        discount,
-        totalAmount,
-        status: "unpaid",
-        expiresAt: createInvoiceExpiry(now),
-      })
-      .returning()
+    await tx.insert(invoices).values({
+      orderId: order.id,
+      invoiceNumber: createInvoiceNumber(),
+      subtotal: order.planPrice,
+      discount,
+      totalAmount,
+      status: "unpaid",
+      expiresAt: createInvoiceExpiry(now),
+    })
 
-    const invoice = requireInsertedRecord(insertedInvoices[0], "invoice")
+    return order
+  })
+
+  return formatBillingOrderResponse({
+    order: createdOrder,
+    plan: {
+      id: pricingSelection.plan.id,
+      name: pricingSelection.plan.name,
+      cpu: pricingSelection.plan.cpu,
+      ram: pricingSelection.plan.ram,
+      storage: pricingSelection.plan.storage,
+    },
+  })
+}
+
+export async function createBillingTransaction(input: {
+  userId: number
+  orderId: number
+  method: SupportedPaymentMethod
+}) {
+  const orderResult = await getBillingOrderById(input.orderId)
+
+  if (!orderResult) {
+    throw new BillingError(404, "Order not found")
+  }
+
+  if (orderResult.order.userId !== input.userId) {
+    throw new BillingError(403, "Forbidden")
+  }
+
+  if (orderResult.order.status !== "pending_payment") {
+    throw new BillingError(400, "Order is not pending payment")
+  }
+
+  if (!orderResult.order.billingDetails) {
+    throw new BillingError(400, "Billing details are required before payment")
+  }
+
+  const pricingSelection = await getPlanPricingById(
+    orderResult.order.planPricingId
+  )
+
+  if (!pricingSelection || !pricingSelection.isActive) {
+    throw new BillingError(400, "Order pricing is no longer active")
+  }
+
+  if (!pricingSelection.plan.isActive) {
+    throw new BillingError(400, "Selected plan is inactive")
+  }
+
+  const totalAmount = await calculatePrice(
+    input.userId,
+    orderResult.order.planPricingId
+  )
+  const discount = Math.max(0, orderResult.order.planPrice - totalAmount)
+  const now = new Date()
+
+  await expireStaleBillingAttempts({
+    userId: input.userId,
+    orderId: orderResult.order.id,
+    now,
+  })
+
+  const reusableTransaction = await findReusableBillingTransaction({
+    userId: input.userId,
+    orderId: orderResult.order.id,
+    now,
+  })
+
+  if (reusableTransaction) {
+    return formatBillingTransactionResponse(reusableTransaction)
+  }
+
+  const reusableInvoice = await findReusableInvoice({
+    orderId: orderResult.order.id,
+    now,
+  })
+
+  const created = await db.transaction(async (tx) => {
+    let invoice = reusableInvoice
+
+    if (!invoice) {
+      const insertedInvoices = await tx
+        .insert(invoices)
+        .values({
+          orderId: orderResult.order.id,
+          invoiceNumber: createInvoiceNumber(),
+          subtotal: orderResult.order.planPrice,
+          discount,
+          totalAmount,
+          status: "unpaid",
+          expiresAt: createInvoiceExpiry(now),
+        })
+        .returning()
+
+      invoice = requireInsertedRecord(insertedInvoices[0], "invoice")
+    }
 
     const insertedTransactions = await tx
       .insert(transactions)
       .values({
         userId: input.userId,
         invoiceId: invoice.id,
-        instanceId: input.instanceId ?? null,
+        instanceId: orderResult.order.renewalInstanceId,
         amount: invoice.totalAmount,
         method: input.method,
         status: "pending",
@@ -549,7 +793,7 @@ export async function createBillingTransaction(input: {
     return {
       transaction,
       invoice,
-      order,
+      order: orderResult.order,
     }
   })
 
@@ -558,11 +802,11 @@ export async function createBillingTransaction(input: {
     invoice: created.invoice,
     order: created.order,
     plan: {
-      id: pricingSelection.plan.id,
+      id: orderResult.plan.id,
       name: created.order.planName,
-      cpu: pricingSelection.plan.cpu,
-      ram: pricingSelection.plan.ram,
-      storage: pricingSelection.plan.storage,
+      cpu: orderResult.plan.cpu,
+      ram: orderResult.plan.ram,
+      storage: orderResult.plan.storage,
     },
   })
 }
@@ -576,11 +820,48 @@ export async function listUserTransactions(userId: number) {
 }
 
 export async function listUserInvoices(userId: number) {
-  const rows = await buildTransactionSummaryQuery()
-    .where(eq(transactions.userId, userId))
+  const rows = await db
+    .select({
+      invoice: {
+        id: invoices.id,
+        invoiceNumber: invoices.invoiceNumber,
+        status: invoices.status,
+        totalAmount: invoices.totalAmount,
+        currency: invoices.currency,
+        expiresAt: invoices.expiresAt,
+        paidAt: invoices.paidAt,
+        createdAt: invoices.createdAt,
+      },
+      order: {
+        id: orders.id,
+        status: orders.status,
+        planName: orders.planName,
+        durationDays: orders.durationDays,
+        kind: orders.kind,
+      },
+      transaction: {
+        id: transactions.id,
+        reference: transactions.reference,
+        status: transactions.status,
+        method: transactions.method,
+        createdAt: transactions.createdAt,
+      },
+    })
+    .from(invoices)
+    .innerJoin(orders, eq(invoices.orderId, orders.id))
+    .leftJoin(transactions, eq(transactions.invoiceId, invoices.id))
+    .where(eq(orders.userId, userId))
     .orderBy(desc(invoices.createdAt), desc(transactions.createdAt))
 
-  return rows.map((row) => ({
+  const latestByInvoice = new Map<number, (typeof rows)[number]>()
+
+  for (const row of rows) {
+    if (!latestByInvoice.has(row.invoice.id)) {
+      latestByInvoice.set(row.invoice.id, row)
+    }
+  }
+
+  return Array.from(latestByInvoice.values()).map((row) => ({
     id: row.invoice.id,
     invoiceNumber: row.invoice.invoiceNumber,
     status: row.invoice.status,
@@ -590,10 +871,98 @@ export async function listUserInvoices(userId: number) {
     paidAt: row.invoice.paidAt,
     createdAt: row.invoice.createdAt,
     transaction: {
-      id: row.transaction.id,
-      reference: row.transaction.reference,
-      status: row.transaction.status,
-      method: row.transaction.method,
+      id: row.transaction?.id ?? null,
+      reference: row.transaction?.reference ?? null,
+      status: row.transaction?.status ?? null,
+      method: row.transaction?.method ?? null,
+    },
+    order: {
+      id: row.order.id,
+      status: row.order.status,
+    },
+    plan: {
+      name: row.order.planName,
+      durationDays: row.order.durationDays,
+      kind: row.order.kind,
+    },
+  }))
+}
+
+export async function listAdminInvoices() {
+  const rows = await db
+    .select({
+      invoice: {
+        id: invoices.id,
+        invoiceNumber: invoices.invoiceNumber,
+        status: invoices.status,
+        totalAmount: invoices.totalAmount,
+        currency: invoices.currency,
+        expiresAt: invoices.expiresAt,
+        paidAt: invoices.paidAt,
+        createdAt: invoices.createdAt,
+      },
+      order: {
+        id: orders.id,
+        userId: orders.userId,
+        status: orders.status,
+        planName: orders.planName,
+        durationDays: orders.durationDays,
+        kind: orders.kind,
+      },
+      user: {
+        id: users.id,
+        firstName: users.firstName,
+        lastName: users.lastName,
+        email: users.email,
+      },
+      transaction: {
+        id: transactions.id,
+        reference: transactions.reference,
+        status: transactions.status,
+        method: transactions.method,
+        createdAt: transactions.createdAt,
+      },
+    })
+    .from(invoices)
+    .innerJoin(orders, eq(invoices.orderId, orders.id))
+    .innerJoin(users, eq(orders.userId, users.id))
+    .leftJoin(transactions, eq(transactions.invoiceId, invoices.id))
+    .orderBy(desc(invoices.createdAt), desc(transactions.createdAt))
+
+  const latestByInvoice = new Map<number, (typeof rows)[number]>()
+
+  for (const row of rows) {
+    if (!latestByInvoice.has(row.invoice.id)) {
+      latestByInvoice.set(row.invoice.id, row)
+    }
+  }
+
+  return Array.from(latestByInvoice.values()).map((row) => ({
+    id: row.invoice.id,
+    invoiceNumber: row.invoice.invoiceNumber,
+    status: row.invoice.status,
+    totalAmount: row.invoice.totalAmount,
+    currency: row.invoice.currency,
+    expiresAt: row.invoice.expiresAt,
+    paidAt: row.invoice.paidAt,
+    createdAt: row.invoice.createdAt,
+    transaction: {
+      id: row.transaction?.id ?? null,
+      reference: row.transaction?.reference ?? null,
+      status: row.transaction?.status ?? null,
+      method: row.transaction?.method ?? null,
+      createdAt: row.transaction?.createdAt ?? null,
+    },
+    order: {
+      id: row.order.id,
+      userId: row.order.userId,
+      status: row.order.status,
+    },
+    user: {
+      id: row.user.id,
+      firstName: row.user.firstName,
+      lastName: row.user.lastName,
+      email: row.user.email,
     },
     plan: {
       name: row.order.planName,

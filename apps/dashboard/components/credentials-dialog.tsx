@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { useMutation } from "@tanstack/react-query"
-import { api } from "@workspace/api"
+import { clientApi } from "@workspace/api"
 import {
   Dialog,
   DialogContent,
@@ -67,9 +67,9 @@ export default function CredentialsDialog({
 
   const credentialsMutation = useMutation<InstanceCredentials, Error>({
     mutationFn: async () => {
-      const res = await api(`/instances/${instanceId}/credentials`, {
+      const res = await clientApi(`/instances/${instanceId}/credentials`, {
         method: "POST",
-        body: JSON.stringify({ instanceId }),
+        body: { instanceId },
       })
 
       return res as InstanceCredentials

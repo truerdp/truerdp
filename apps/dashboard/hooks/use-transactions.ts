@@ -1,7 +1,7 @@
 "use client"
 
 import { useQuery } from "@tanstack/react-query"
-import { api } from "@workspace/api"
+import { clientApi } from "@workspace/api"
 import { queryKeys } from "@/lib/query-keys"
 
 export interface Transaction {
@@ -29,6 +29,6 @@ export interface Transaction {
 export function useTransactions() {
   return useQuery<Transaction[]>({
     queryKey: queryKeys.transactions(),
-    queryFn: () => api("/transactions"),
+    queryFn: () => clientApi("/transactions"),
   })
 }

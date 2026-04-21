@@ -1,17 +1,9 @@
-export function getAuthToken() {
-  if (typeof window === "undefined") {
-    return null
-  }
+import { clientApi } from "@workspace/api"
 
-  return localStorage.getItem("token")
-}
-
-export function clearAuthToken() {
-  if (typeof window === "undefined") {
-    return
-  }
-
-  localStorage.removeItem("token")
+export async function logout() {
+  await clientApi("/auth/logout", {
+    method: "POST",
+  })
 }
 
 export function buildWebLoginUrl(redirectTarget: string) {
@@ -19,4 +11,14 @@ export function buildWebLoginUrl(redirectTarget: string) {
   const loginUrl = new URL("/login", webBaseUrl)
   loginUrl.searchParams.set("redirect", redirectTarget)
   return loginUrl.toString()
+}
+
+export function buildWebCheckoutUrl(orderId: number) {
+  const webBaseUrl = process.env.NEXT_PUBLIC_WEB_URL ?? "http://localhost:3000"
+  return new URL(`/checkout/${orderId}`, webBaseUrl).toString()
+}
+
+export function buildWebCheckoutReviewUrl(orderId: number) {
+  const webBaseUrl = process.env.NEXT_PUBLIC_WEB_URL ?? "http://localhost:3000"
+  return new URL(`/checkout/${orderId}/review`, webBaseUrl).toString()
 }
