@@ -17,7 +17,7 @@ export interface AdminInvoiceSummary {
     id: number | null
     reference: string | null
     status: "pending" | "confirmed" | "failed" | null
-    method: "upi" | "usdt_trc20" | null
+    method: "upi" | "usdt_trc20" | "dodo_checkout" | null
     createdAt: string | null
   }
   order: {

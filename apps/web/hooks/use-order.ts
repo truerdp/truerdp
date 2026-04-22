@@ -7,7 +7,7 @@ export interface OrderBillingDetails {
   firstName: string
   lastName: string
   email: string
-  phone: string | null
+  phone: string
   companyName: string | null
   taxId: string | null
   addressLine1: string
@@ -36,7 +36,7 @@ export interface BillingOrder {
   pricing: {
     id: number
     durationDays: number
-    price: number
+    priceUsdCents: number
   }
 }
 

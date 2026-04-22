@@ -8,7 +8,7 @@ export interface PendingTransaction {
   id: number
   userId: number
   amount: number
-  method: "upi" | "usdt_trc20"
+  method: "upi" | "usdt_trc20" | "dodo_checkout"
   status: "pending" | "confirmed" | "failed"
   createdAt: string
   reference: string
@@ -32,7 +32,7 @@ export interface PendingTransaction {
   pricing: {
     id: number
     durationDays: number
-    price: number
+    priceUsdCents: number
   }
   instance: {
     id: number

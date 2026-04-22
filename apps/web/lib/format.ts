@@ -1,3 +1,8 @@
-export function formatAmount(amount: number) {
-  return `$${amount.toLocaleString()}`
+export function formatAmount(amountUsdCents: number) {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(amountUsdCents / 100)
 }

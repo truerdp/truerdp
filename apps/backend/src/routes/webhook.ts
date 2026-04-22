@@ -2,6 +2,7 @@ import { FastifyInstance } from "fastify"
 import z from "zod"
 import { ingestPaymentWebhook } from "../services/payment-webhooks.js"
 import { verifyRazorpaySignature } from "../services/webhook-adapters/razorpay.js"
+import { verifyAndUnwrapDodoWebhook } from "../services/dodo-payments.js"
 
 const webhookParamsSchema = z.object({
   provider: z.string().trim().min(1),
@@ -11,6 +12,8 @@ export async function webhookRoutes(server: FastifyInstance) {
   server.post("/webhooks/payments/:provider", async (request: any, reply) => {
     try {
       const { provider } = webhookParamsSchema.parse(request.params)
+
+      let payloadToIngest: unknown = request.body
 
       // Verify signature based on provider
       if (provider === "razorpay") {
@@ -34,11 +37,30 @@ export async function webhookRoutes(server: FastifyInstance) {
             })
           }
         }
+      } else if (provider === "dodo") {
+        // Dodo Payments webhook verification requires exact raw body bytes
+        const rawBodyBuf: Buffer | undefined = request.rawBody
+        const rawBody =
+          typeof rawBodyBuf === "string"
+            ? rawBodyBuf
+            : Buffer.isBuffer(rawBodyBuf)
+              ? rawBodyBuf.toString("utf8")
+              : JSON.stringify(request.body)
+
+        try {
+          payloadToIngest = verifyAndUnwrapDodoWebhook(
+            rawBody,
+            request.headers as Record<string, string | string[] | undefined>
+          )
+        } catch (e: any) {
+          request.log.error(e)
+          return reply.status(401).send({ error: "Invalid Dodo signature" })
+        }
       }
 
       const result = await ingestPaymentWebhook({
         provider,
-        payload: request.body,
+        payload: payloadToIngest,
       })
 
       return reply.status(202).send({

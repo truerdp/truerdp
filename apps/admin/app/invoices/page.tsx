@@ -43,7 +43,7 @@ type TransactionStatusFilter =
   | "pending"
   | "confirmed"
   | "failed"
-type MethodFilter = "all" | "none" | "upi" | "usdt_trc20"
+type MethodFilter = "all" | "none" | "upi" | "usdt_trc20" | "dodo_checkout"
 type KindFilter = "all" | "new_purchase" | "renewal"
 
 function formatDateTime(value: string | null | undefined) {
@@ -65,10 +65,11 @@ function formatAmount(amount: number, currency: string) {
     return new Intl.NumberFormat("en-US", {
       style: "currency",
       currency: currency.toUpperCase(),
-      maximumFractionDigits: 0,
-    }).format(amount)
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(amount / 100)
   } catch {
-    return `${amount.toLocaleString()} ${currency.toUpperCase()}`
+    return `${(amount / 100).toLocaleString()} ${currency.toUpperCase()}`
   }
 }
 
@@ -77,7 +78,16 @@ function formatMethod(method: AdminInvoiceSummary["transaction"]["method"]) {
     return "-"
   }
 
-  return method === "upi" ? "UPI" : "USDT (TRC20)"
+  switch (method) {
+    case "upi":
+      return "UPI"
+    case "usdt_trc20":
+      return "USDT (TRC20)"
+    case "dodo_checkout":
+      return "Dodo Checkout"
+    default:
+      return String(method).toUpperCase()
+  }
 }
 
 function getInvoiceStatusBadgeVariant(
@@ -345,6 +355,7 @@ export default function AdminInvoicesPage() {
                 <SelectItem value="all">All methods</SelectItem>
                 <SelectItem value="none">No method</SelectItem>
                 <SelectItem value="upi">UPI</SelectItem>
+                <SelectItem value="dodo_checkout">Dodo Checkout</SelectItem>
                 <SelectItem value="usdt_trc20">USDT (TRC20)</SelectItem>
               </SelectContent>
             </Select>

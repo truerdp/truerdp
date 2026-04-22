@@ -22,6 +22,7 @@ import {
   listAdminTransactions,
   listPendingTransactions,
 } from "../services/billing.js"
+import { syncDodoProductForPlanPricing } from "../services/dodo-payments.js"
 import { encryptCredential } from "../services/resource-credentials.js"
 import { listAdminPlansWithPricing } from "../services/plan.js"
 import {
@@ -43,7 +44,7 @@ const extendInstanceSchema = z.object({
 const planPricingInputSchema = z.object({
   id: z.number().int().positive().optional(),
   durationDays: z.number().int().positive(),
-  price: z.number().int().nonnegative(),
+  priceUsdCents: z.number().int().nonnegative(),
   isActive: z.boolean().default(true),
 })
 
@@ -186,14 +187,52 @@ export async function adminRoutes(server: FastifyInstance) {
             throw new Error("Failed to create plan")
           }
 
-          await tx.insert(planPricing).values(
-            body.pricingOptions.map((option) => ({
-              planId: plan.id,
-              durationDays: option.durationDays,
-              price: option.price,
-              isActive: option.isActive,
-            }))
-          )
+          await tx
+            .insert(planPricing)
+            .values(
+              body.pricingOptions.map((option) => ({
+                planId: plan.id,
+                durationDays: option.durationDays,
+                priceUsdCents: option.priceUsdCents,
+                isActive: option.isActive,
+              }))
+            )
+            .returning({
+              id: planPricing.id,
+              durationDays: planPricing.durationDays,
+              priceUsdCents: planPricing.priceUsdCents,
+              dodoProductId: planPricing.dodoProductId,
+            })
+
+          const insertedPricing = await tx
+            .select({
+              id: planPricing.id,
+              durationDays: planPricing.durationDays,
+              priceUsdCents: planPricing.priceUsdCents,
+              dodoProductId: planPricing.dodoProductId,
+            })
+            .from(planPricing)
+            .where(eq(planPricing.planId, plan.id))
+
+          for (const pricing of insertedPricing) {
+            const syncResult = await syncDodoProductForPlanPricing({
+              planPricingId: pricing.id,
+              planName: body.name,
+              durationDays: pricing.durationDays,
+              priceUsdCents: pricing.priceUsdCents,
+              existingDodoProductId: pricing.dodoProductId,
+            })
+
+            await tx
+              .update(planPricing)
+              .set({
+                dodoProductId: syncResult.dodoProductId,
+                dodoSyncStatus: "synced",
+                dodoSyncError: null,
+                dodoSyncedAt: syncResult.syncedAt,
+              })
+              .where(eq(planPricing.id, pricing.id))
+          }
 
           return plan
         })
@@ -277,6 +316,7 @@ export async function adminRoutes(server: FastifyInstance) {
             .select({
               id: planPricing.id,
               durationDays: planPricing.durationDays,
+              dodoProductId: planPricing.dodoProductId,
             })
             .from(planPricing)
             .where(eq(planPricing.planId, planId))
@@ -286,6 +326,12 @@ export async function adminRoutes(server: FastifyInstance) {
             existingPricing.map((x) => [x.durationDays, x])
           )
           const touchedPricingIds: number[] = []
+          const syncTargets: Array<{
+            id: number
+            durationDays: number
+            priceUsdCents: number
+            dodoProductId: string | null
+          }> = []
 
           for (const option of body.pricingOptions) {
             if (option.id != null) {
@@ -301,12 +347,18 @@ export async function adminRoutes(server: FastifyInstance) {
                 .update(planPricing)
                 .set({
                   durationDays: option.durationDays,
-                  price: option.price,
+                  priceUsdCents: option.priceUsdCents,
                   isActive: option.isActive,
                 })
                 .where(eq(planPricing.id, option.id))
 
               touchedPricingIds.push(option.id)
+              syncTargets.push({
+                id: option.id,
+                durationDays: option.durationDays,
+                priceUsdCents: option.priceUsdCents,
+                dodoProductId: matchedById.dodoProductId,
+              })
               continue
             }
 
@@ -318,12 +370,18 @@ export async function adminRoutes(server: FastifyInstance) {
               await tx
                 .update(planPricing)
                 .set({
-                  price: option.price,
+                  priceUsdCents: option.priceUsdCents,
                   isActive: option.isActive,
                 })
                 .where(eq(planPricing.id, matchedByDuration.id))
 
               touchedPricingIds.push(matchedByDuration.id)
+              syncTargets.push({
+                id: matchedByDuration.id,
+                durationDays: option.durationDays,
+                priceUsdCents: option.priceUsdCents,
+                dodoProductId: matchedByDuration.dodoProductId,
+              })
               continue
             }
 
@@ -332,7 +390,7 @@ export async function adminRoutes(server: FastifyInstance) {
               .values({
                 planId,
                 durationDays: option.durationDays,
-                price: option.price,
+                priceUsdCents: option.priceUsdCents,
                 isActive: option.isActive,
               })
               .returning({
@@ -344,6 +402,12 @@ export async function adminRoutes(server: FastifyInstance) {
             }
 
             touchedPricingIds.push(insertedPricing.id)
+            syncTargets.push({
+              id: insertedPricing.id,
+              durationDays: option.durationDays,
+              priceUsdCents: option.priceUsdCents,
+              dodoProductId: null,
+            })
           }
 
           const toDisable = existingPricing
@@ -360,6 +424,26 @@ export async function adminRoutes(server: FastifyInstance) {
                   inArray(planPricing.id, toDisable)
                 )
               )
+          }
+
+          for (const pricing of syncTargets) {
+            const syncResult = await syncDodoProductForPlanPricing({
+              planPricingId: pricing.id,
+              planName: body.name,
+              durationDays: pricing.durationDays,
+              priceUsdCents: pricing.priceUsdCents,
+              existingDodoProductId: pricing.dodoProductId,
+            })
+
+            await tx
+              .update(planPricing)
+              .set({
+                dodoProductId: syncResult.dodoProductId,
+                dodoSyncStatus: "synced",
+                dodoSyncError: null,
+                dodoSyncedAt: syncResult.syncedAt,
+              })
+              .where(eq(planPricing.id, pricing.id))
           }
         })
 

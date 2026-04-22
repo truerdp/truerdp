@@ -31,15 +31,13 @@ const optionalBillingFieldSchema = z
     return trimmed.length === 0 ? null : trimmed
   })
 
+const requiredBillingFieldSchema = z.string().trim().min(1, "Phone is required")
+
 const billingDetailsSchema = z.object({
   firstName: z.string().trim().min(1, "First name is required"),
   lastName: z.string().trim().min(1, "Last name is required"),
-  email: z
-    .string()
-    .trim()
-    .min(1, "Email is required")
-    .email("Invalid email"),
-  phone: optionalBillingFieldSchema,
+  email: z.string().trim().min(1, "Email is required").email("Invalid email"),
+  phone: requiredBillingFieldSchema,
   companyName: optionalBillingFieldSchema,
   taxId: optionalBillingFieldSchema,
   addressLine1: z.string().trim().min(1, "Address line 1 is required"),

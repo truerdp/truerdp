@@ -38,6 +38,10 @@ import {
 } from "@hugeicons/core-free-icons"
 import { HugeiconsIcon } from "@hugeicons/react"
 
+function toPriceUsd(priceUsdCents: number) {
+  return priceUsdCents / 100
+}
+
 const planFormSchema = z
   .object({
     name: z.string().trim().min(1, "Plan name is required"),
@@ -64,7 +68,7 @@ const planFormSchema = z
             .number()
             .int()
             .positive("Duration must be greater than 0"),
-          price: z.number().int().nonnegative("Price cannot be negative"),
+          priceUsd: z.number().nonnegative("Price cannot be negative"),
           isActive: z.boolean(),
         })
       )
@@ -109,18 +113,22 @@ function getDefaultEditableValues(plan: Plan): PlanFormValues {
     pricingOptions: plan.pricingOptions.map((option) => ({
       pricingId: option.id,
       durationDays: option.durationDays,
-      price: option.price,
+      priceUsd: toPriceUsd(option.priceUsdCents),
       isActive: option.isActive,
     })),
   }
 }
 
-function formatPrice(price: number) {
+function formatUsd(amount: number) {
   return new Intl.NumberFormat("en-US", {
     style: "currency",
     currency: "USD",
     minimumFractionDigits: 2,
-  }).format(price)
+  }).format(amount)
+}
+
+function formatUsdFromCents(priceUsdCents: number) {
+  return formatUsd(priceUsdCents / 100)
 }
 
 interface PlanDetailsProps {
@@ -179,7 +187,7 @@ export function PlanDetails({ planId }: PlanDetailsProps) {
         pricingOptions: values.pricingOptions.map((option) => ({
           id: option.pricingId,
           durationDays: option.durationDays,
-          price: option.price,
+          priceUsdCents: Math.round(option.priceUsd * 100),
           isActive: option.isActive ?? true,
         })),
       },
@@ -313,7 +321,7 @@ export function PlanDetails({ planId }: PlanDetailsProps) {
                   </div>
                   <div className="rounded-lg bg-muted/30 p-3">
                     <span className="text-muted-foreground">Setup Fees:</span>{" "}
-                    {formatPrice(plan.setupFees)}
+                    {formatUsd(plan.setupFees)}
                   </div>
                 </div>
               </div>
@@ -339,7 +347,7 @@ export function PlanDetails({ planId }: PlanDetailsProps) {
                       <div className="flex items-center gap-3">
                         <div className="text-right">
                           <div className="font-semibold">
-                            {formatPrice(pricing.price)}
+                            {formatUsdFromCents(pricing.priceUsdCents)}
                           </div>
                           <div className="text-xs text-muted-foreground">
                             per duration
@@ -637,7 +645,7 @@ export function PlanDetails({ planId }: PlanDetailsProps) {
                   onClick={() => {
                     const newOption: PlanFormValues["pricingOptions"][0] = {
                       durationDays: 30,
-                      price: 500,
+                      priceUsd: toPriceUsd(500),
                       isActive: true,
                     }
                     append(newOption)
@@ -691,7 +699,9 @@ export function PlanDetails({ planId }: PlanDetailsProps) {
                       </Field>
 
                       <Field
-                        data-invalid={!!errors.pricingOptions?.[index]?.price}
+                        data-invalid={
+                          !!errors.pricingOptions?.[index]?.priceUsd
+                        }
                       >
                         <FieldLabel htmlFor={`pricing-price-${index}`}>
                           Price (USD)
@@ -700,15 +710,18 @@ export function PlanDetails({ planId }: PlanDetailsProps) {
                           id={`pricing-price-${index}`}
                           type="number"
                           min={0}
+                          step="0.01"
                           disabled={updatePlan.isPending}
-                          aria-invalid={!!errors.pricingOptions?.[index]?.price}
-                          {...register(`pricingOptions.${index}.price`, {
+                          aria-invalid={
+                            !!errors.pricingOptions?.[index]?.priceUsd
+                          }
+                          {...register(`pricingOptions.${index}.priceUsd`, {
                             valueAsNumber: true,
                           })}
                         />
-                        {errors.pricingOptions?.[index]?.price && (
+                        {errors.pricingOptions?.[index]?.priceUsd && (
                           <FieldError>
-                            {errors.pricingOptions[index]?.price?.message}
+                            {errors.pricingOptions[index]?.priceUsd?.message}
                           </FieldError>
                         )}
                       </Field>

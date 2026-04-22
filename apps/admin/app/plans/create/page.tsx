@@ -28,7 +28,7 @@ export default function CreatePlanPage() {
       isActive: true,
       pricingOptions: values.pricingOptions.map((option) => ({
         durationDays: option.durationDays,
-        price: option.price,
+        priceUsdCents: Math.round(option.priceUsd * 100),
         isActive: option.isActive ?? true,
       })),
     })

@@ -30,6 +30,10 @@ import {
 import { ArrowLeft, Add01Icon } from "@hugeicons/core-free-icons"
 import { HugeiconsIcon } from "@hugeicons/react"
 
+function toPriceUsd(priceUsdCents: number) {
+  return priceUsdCents / 100
+}
+
 const planFormSchema = z
   .object({
     name: z.string().trim().min(1, "Plan name is required"),
@@ -55,7 +59,7 @@ const planFormSchema = z
             .number()
             .int()
             .positive("Duration must be greater than 0"),
-          price: z.number().int().nonnegative("Price cannot be negative"),
+          priceUsd: z.number().nonnegative("Price cannot be negative"),
           isActive: z.boolean(),
         })
       )
@@ -105,7 +109,7 @@ const defaultFormValues: PlanFormValues = {
   pricingOptions: [
     {
       durationDays: 30,
-      price: 500,
+      priceUsd: toPriceUsd(500),
       pricingId: undefined,
       isActive: true,
     },
@@ -439,7 +443,7 @@ export function PlanForm({
             onClick={() =>
               append({
                 durationDays: 30,
-                price: 0,
+                priceUsd: 0,
                 pricingId: undefined,
                 isActive: true,
               })
@@ -487,7 +491,9 @@ export function PlanForm({
                   )}
                 </Field>
 
-                <Field data-invalid={!!errors.pricingOptions?.[index]?.price}>
+                <Field
+                  data-invalid={!!errors.pricingOptions?.[index]?.priceUsd}
+                >
                   <FieldLabel htmlFor={`pricing-price-${index}`}>
                     Price (USD)
                   </FieldLabel>
@@ -495,15 +501,16 @@ export function PlanForm({
                     id={`pricing-price-${index}`}
                     type="number"
                     min={0}
+                    step="0.01"
                     disabled={isPending}
-                    aria-invalid={!!errors.pricingOptions?.[index]?.price}
-                    {...register(`pricingOptions.${index}.price`, {
+                    aria-invalid={!!errors.pricingOptions?.[index]?.priceUsd}
+                    {...register(`pricingOptions.${index}.priceUsd`, {
                       valueAsNumber: true,
                     })}
                   />
-                  {errors.pricingOptions?.[index]?.price && (
+                  {errors.pricingOptions?.[index]?.priceUsd && (
                     <FieldError>
-                      {errors.pricingOptions[index]?.price?.message}
+                      {errors.pricingOptions[index]?.priceUsd?.message}
                     </FieldError>
                   )}
                 </Field>

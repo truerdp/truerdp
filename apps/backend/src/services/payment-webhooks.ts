@@ -27,6 +27,8 @@ export type NormalizedPaymentEvent = {
   provider: string
   eventType: "payment.succeeded" | "payment.failed"
   externalReference: string | null
+  transactionIdFromMetadata?: number | null
+  invoiceIdFromMetadata?: number | null
   amount: number | null
   currency: string | null
   occurredAt: Date | null
@@ -75,23 +77,143 @@ function normalizeGenericWebhook(
 
   const rawEventType = String(
     rawPayload.type ?? rawPayload.eventType ?? rawPayload.event ?? ""
-  ).toLowerCase()
+  )
+    .toLowerCase()
+    .trim()
 
-  const eventType: "payment.succeeded" | "payment.failed" =
-    rawEventType.includes("success") || rawEventType.includes("paid")
-      ? "payment.succeeded"
-      : "payment.failed"
+  const rawStatus = String(
+    (rawPayload as Record<string, unknown>).status ??
+      (data as Record<string, unknown> | null)?.status ??
+      ""
+  )
+    .toLowerCase()
+    .trim()
 
-  const externalReference =
+  const isSuccess =
+    rawEventType === "payment.succeeded" ||
+    rawEventType.endsWith(".succeeded") ||
+    rawEventType.includes("succeed") ||
+    rawEventType.includes("success") ||
+    rawEventType.includes("paid") ||
+    rawEventType.includes("captured") ||
+    rawEventType.includes("completed") ||
+    rawEventType.includes("authorized") ||
+    rawStatus === "succeeded" ||
+    rawStatus === "success" ||
+    rawStatus === "paid"
+
+  const isFailure =
+    rawEventType.includes("fail") ||
+    rawEventType.includes("failed") ||
+    rawEventType.includes("declin") ||
+    rawEventType.includes("cancel") ||
+    rawEventType.includes("error") ||
+    rawEventType.includes("refunded") ||
+    rawStatus === "failed" ||
+    rawStatus === "cancelled" ||
+    rawStatus === "declined"
+
+  let eventType: "payment.succeeded" | "payment.failed"
+  let computedFailureReason: string | null =
     String(
-      rawPayload.reference ??
-        rawPayload.transactionReference ??
-        rawPayload.tx_ref ??
-        data?.reference ??
-        data?.transactionReference ??
-        data?.tx_ref ??
+      (rawPayload as Record<string, unknown>).failureReason ??
+        (data as Record<string, unknown> | null)?.failureReason ??
         ""
     ).trim() || null
+
+  if (isSuccess) {
+    eventType = "payment.succeeded"
+  } else if (isFailure) {
+    eventType = "payment.failed"
+  } else {
+    // Non-terminal/unknown state like "payment.processing" → ignore later
+    eventType = "payment.failed"
+    computedFailureReason = "__non_terminal__"
+  }
+
+  // Resolve external reference from multiple common locations (flat, data.*, and nested metadata)
+  function readStringAtPath(obj: unknown, path: string[]): string | null {
+    let cur: unknown = obj
+    for (const key of path) {
+      if (!cur || typeof cur !== "object" || Array.isArray(cur)) return null
+      const rec = cur as Record<string, unknown>
+      cur = rec[key]
+    }
+    if (typeof cur === "string") {
+      const s = cur.trim()
+      return s.length > 0 ? s : null
+    }
+    return null
+  }
+
+  const candidatePaths: string[][] = [
+    ["reference"],
+    ["transactionReference"],
+    ["tx_ref"],
+    ["data", "reference"],
+    ["data", "transactionReference"],
+    ["data", "tx_ref"],
+    ["metadata", "reference"],
+    ["data", "metadata", "reference"],
+    ["data", "payment", "metadata", "reference"],
+    ["data", "invoice", "metadata", "reference"],
+    // Fallbacks to alternate keys often used for reconciliation
+    ["metadata", "transaction_id"],
+    ["data", "metadata", "transaction_id"],
+    ["data", "payment", "metadata", "transaction_id"],
+    ["data", "invoice", "metadata", "transaction_id"],
+    ["metadata", "reference_id"],
+    ["metadata", "referenceId"],
+    ["data", "metadata", "reference_id"],
+    ["data", "metadata", "referenceId"],
+  ]
+
+  let externalReference: string | null = null
+  for (const path of candidatePaths) {
+    const v = readStringAtPath(rawPayload, path)
+    if (v) {
+      externalReference = v
+      break
+    }
+  }
+
+  function readNumberAtPath(obj: unknown, path: string[]): number | null {
+    const s = readStringAtPath(obj, path)
+    if (!s) return null
+    const n = Number.parseInt(s, 10)
+    return Number.isFinite(n) ? n : null
+  }
+
+  const txIdPaths: string[][] = [
+    ["metadata", "transaction_id"],
+    ["data", "metadata", "transaction_id"],
+    ["data", "payment", "metadata", "transaction_id"],
+    ["data", "invoice", "metadata", "transaction_id"],
+  ]
+  const invIdPaths: string[][] = [
+    ["metadata", "invoice_id"],
+    ["data", "metadata", "invoice_id"],
+    ["data", "payment", "metadata", "invoice_id"],
+    ["data", "invoice", "metadata", "invoice_id"],
+  ]
+
+  let transactionIdFromMetadata: number | null = null
+  for (const p of txIdPaths) {
+    const n = readNumberAtPath(rawPayload, p)
+    if (n != null) {
+      transactionIdFromMetadata = n
+      break
+    }
+  }
+
+  let invoiceIdFromMetadata: number | null = null
+  for (const p of invIdPaths) {
+    const n = readNumberAtPath(rawPayload, p)
+    if (n != null) {
+      invoiceIdFromMetadata = n
+      break
+    }
+  }
 
   const amountSource =
     rawPayload.amount ??
@@ -124,13 +246,13 @@ function normalizeGenericWebhook(
     provider,
     eventType,
     externalReference,
+    transactionIdFromMetadata,
+    invoiceIdFromMetadata,
     amount,
     currency,
     occurredAt:
       occurredAt && !Number.isNaN(occurredAt.getTime()) ? occurredAt : null,
-    failureReason:
-      String(rawPayload.failureReason ?? data?.failureReason ?? "").trim() ||
-      null,
+    failureReason: computedFailureReason,
   }
 }
 
@@ -166,27 +288,57 @@ function normalizeWebhookPayload(
   if (provider === "razorpay") {
     const razorpayInfo = normalizeRazorpayEvent(payloadObj)
 
-    const eventId =
-      String(payloadObj.id ?? (payloadObj as any).event_id ?? "").trim() || null
-
-    if (!eventId) {
-      throw new Error("Unable to determine Razorpay event id")
+    const rec = payloadObj as Record<string, unknown>
+    const toStringOrNull = (v: unknown): string | null => {
+      if (
+        typeof v === "string" ||
+        typeof v === "number" ||
+        typeof v === "boolean"
+      ) {
+        const s = String(v).trim()
+        return s.length > 0 ? s : null
+      }
+      return null
     }
 
-    const paymentData =
-      (payloadObj as any).payload?.payment ?? (payloadObj as any).payment ?? {}
-    const paymentDataObj =
-      typeof paymentData === "object" && paymentData !== null ? paymentData : {}
+    const eventIdStr =
+      toStringOrNull(rec.id) ?? toStringOrNull(rec["event_id" as string])
+    if (!eventIdStr) {
+      throw new Error("Unable to determine Razorpay event id")
+    }
+    const eventId = eventIdStr
 
+    const isObj = (v: unknown): v is Record<string, unknown> =>
+      typeof v === "object" && v !== null && !Array.isArray(v)
+
+    const payloadField = rec["payload" as string]
+    const paymentField = isObj(payloadField)
+      ? payloadField["payment" as string]
+      : rec["payment" as string]
+    const paymentDataObj: Record<string, unknown> = isObj(paymentField)
+      ? (paymentField as Record<string, unknown>)
+      : {}
+
+    const amtRaw = paymentDataObj["amount"]
     const amount =
-      typeof (paymentDataObj as any).amount === "number"
-        ? Math.floor((paymentDataObj as any).amount)
+      typeof amtRaw === "number" && Number.isFinite(amtRaw)
+        ? Math.floor(amtRaw)
         : null
+
+    const currencyRaw = paymentDataObj["currency"]
     const currency =
-      String((paymentDataObj as any).currency ?? "").trim() || "INR"
+      typeof currencyRaw === "string" && currencyRaw.trim()
+        ? currencyRaw.trim()
+        : "INR"
+
+    const createdAtRaw = paymentDataObj["created_at"]
     const createdAt =
-      typeof (paymentDataObj as any).created_at === "number"
-        ? new Date((paymentDataObj as any).created_at * 1000)
+      typeof createdAtRaw === "number" ? new Date(createdAtRaw * 1000) : null
+
+    const failureRaw = paymentDataObj["error_description"]
+    const failureReason =
+      typeof failureRaw === "string" && failureRaw.trim()
+        ? failureRaw.trim()
         : null
 
     return {
@@ -198,8 +350,7 @@ function normalizeWebhookPayload(
       currency,
       occurredAt:
         createdAt && !Number.isNaN(createdAt.getTime()) ? createdAt : null,
-      failureReason:
-        String((paymentDataObj as any).error_description ?? "").trim() || null,
+      failureReason,
     }
   }
 
@@ -263,7 +414,11 @@ async function processWebhookEvent(input: {
 }): Promise<"processed" | "ignored"> {
   const { normalized } = input
 
-  if (!normalized.externalReference) {
+  if (
+    !normalized.externalReference &&
+    normalized.transactionIdFromMetadata == null &&
+    normalized.invoiceIdFromMetadata == null
+  ) {
     await updateWebhookEventStatus({
       eventRowId: input.eventRowId,
       status: "ignored",
@@ -272,15 +427,45 @@ async function processWebhookEvent(input: {
     return "ignored"
   }
 
-  const [transaction] = await db
-    .select({
-      id: transactions.id,
-      status: transactions.status,
-      invoiceId: transactions.invoiceId,
-    })
-    .from(transactions)
-    .where(eq(transactions.reference, normalized.externalReference))
-    .limit(1)
+  let transaction = (
+    await db
+      .select({
+        id: transactions.id,
+        status: transactions.status,
+        invoiceId: transactions.invoiceId,
+      })
+      .from(transactions)
+      .where(eq(transactions.reference, normalized.externalReference ?? ""))
+      .limit(1)
+  )[0]
+
+  if (!transaction && normalized.transactionIdFromMetadata != null) {
+    transaction = (
+      await db
+        .select({
+          id: transactions.id,
+          status: transactions.status,
+          invoiceId: transactions.invoiceId,
+        })
+        .from(transactions)
+        .where(eq(transactions.id, normalized.transactionIdFromMetadata))
+        .limit(1)
+    )[0]
+  }
+
+  if (!transaction && normalized.invoiceIdFromMetadata != null) {
+    transaction = (
+      await db
+        .select({
+          id: transactions.id,
+          status: transactions.status,
+          invoiceId: transactions.invoiceId,
+        })
+        .from(transactions)
+        .where(eq(transactions.invoiceId, normalized.invoiceIdFromMetadata))
+        .limit(1)
+    )[0]
+  }
 
   if (!transaction) {
     await updateWebhookEventStatus({
@@ -309,6 +494,15 @@ async function processWebhookEvent(input: {
     })
 
     return "processed"
+  }
+
+  // Ignore non-terminal/unknown events (e.g., "payment.processing")
+  if (normalized.failureReason === "__non_terminal__") {
+    await updateWebhookEventStatus({
+      eventRowId: input.eventRowId,
+      status: "ignored",
+    })
+    return "ignored"
   }
 
   if (transaction.status === "pending") {

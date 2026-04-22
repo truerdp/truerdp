@@ -4,7 +4,7 @@ import Link from "next/link"
 import { useEffect, useMemo, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { useQueryClient } from "@tanstack/react-query"
-import { useForm, useWatch } from "react-hook-form"
+import { Controller, useForm, useWatch } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import z from "zod"
 import { toast } from "sonner"
@@ -44,6 +44,7 @@ import {
   FieldLabel,
 } from "@workspace/ui/components/field"
 import { Input } from "@workspace/ui/components/input"
+import { PhoneInput } from "@workspace/ui/components/phone-input"
 import { Separator } from "@workspace/ui/components/separator"
 import { Skeleton } from "@workspace/ui/components/skeleton"
 import { Spinner } from "@workspace/ui/components/spinner"
@@ -76,7 +77,7 @@ const billingFormSchema = z.object({
     .trim()
     .min(1, "Billing email is required")
     .email("Valid billing email is required"),
-  phone: z.string().trim(),
+  phone: z.string().trim().min(1, "Phone is required"),
   companyName: z.string().trim(),
   taxId: z.string().trim(),
   addressLine1: z.string().trim().min(1, "Address line 1 is required"),
@@ -146,7 +147,7 @@ function buildBillingPayload(values: BillingFormValues): OrderBillingDetails {
     firstName: normalizeRequired(values.firstName),
     lastName: normalizeRequired(values.lastName),
     email: normalizeRequired(values.email).toLowerCase(),
-    phone: normalizeOptional(values.phone),
+    phone: normalizeRequired(values.phone),
     companyName: normalizeOptional(values.companyName),
     taxId: normalizeOptional(values.taxId),
     addressLine1: normalizeRequired(values.addressLine1),
@@ -506,7 +507,9 @@ export default function CheckoutReviewPage() {
                   ) : null}
                 </Field>
                 <Field data-invalid={!!errors.lastName}>
-                  <FieldLabel htmlFor="billing-last-name">Last name *</FieldLabel>
+                  <FieldLabel htmlFor="billing-last-name">
+                    Last name *
+                  </FieldLabel>
                   <Input
                     id="billing-last-name"
                     {...register("lastName")}
@@ -519,7 +522,9 @@ export default function CheckoutReviewPage() {
                   ) : null}
                 </Field>
                 <Field data-invalid={!!errors.email}>
-                  <FieldLabel htmlFor="billing-email">Billing email *</FieldLabel>
+                  <FieldLabel htmlFor="billing-email">
+                    Billing email *
+                  </FieldLabel>
                   <Input
                     id="billing-email"
                     type="email"
@@ -532,14 +537,28 @@ export default function CheckoutReviewPage() {
                     <FieldError>{errors.email.message}</FieldError>
                   ) : null}
                 </Field>
-                <Field>
-                  <FieldLabel htmlFor="billing-phone">Phone</FieldLabel>
-                  <Input
-                    id="billing-phone"
-                    {...register("phone")}
-                    placeholder="Phone (optional)"
-                    disabled={isSavingBilling}
+                <Field data-invalid={!!errors.phone}>
+                  <FieldLabel htmlFor="billing-phone">Phone *</FieldLabel>
+                  <Controller
+                    name="phone"
+                    control={control}
+                    render={({ field }) => (
+                      <PhoneInput
+                        id="billing-phone"
+                        value={field.value}
+                        onChange={(value) => field.onChange(value ?? "")}
+                        onBlur={field.onBlur}
+                        name={field.name}
+                        placeholder="Phone"
+                        disabled={isSavingBilling}
+                        aria-invalid={!!errors.phone}
+                        className="w-full"
+                      />
+                    )}
                   />
+                  {errors.phone ? (
+                    <FieldError>{errors.phone.message}</FieldError>
+                  ) : null}
                 </Field>
                 <Field>
                   <FieldLabel htmlFor="billing-company">Company</FieldLabel>
@@ -599,7 +618,9 @@ export default function CheckoutReviewPage() {
                   ) : null}
                 </Field>
                 <Field data-invalid={!!errors.state}>
-                  <FieldLabel htmlFor="billing-state">State/Region *</FieldLabel>
+                  <FieldLabel htmlFor="billing-state">
+                    State/Region *
+                  </FieldLabel>
                   <Input
                     id="billing-state"
                     {...register("state")}
@@ -681,7 +702,7 @@ export default function CheckoutReviewPage() {
               <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">Total</span>
                 <span className="text-lg font-semibold">
-                  {formatAmount(order.pricing.price)}
+                  {formatAmount(order.pricing.priceUsdCents)}
                 </span>
               </div>
             </div>

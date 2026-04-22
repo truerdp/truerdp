@@ -8,7 +8,7 @@ import { queryKeys } from "@/lib/query-keys"
 export interface PlanPricingInput {
   id?: number
   durationDays: number
-  price: number
+  priceUsdCents: number
   isActive: boolean
 }
 

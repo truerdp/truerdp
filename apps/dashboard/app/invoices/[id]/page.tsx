@@ -293,7 +293,7 @@ export default function InvoiceDetailsPage() {
           <div className="flex items-center justify-between gap-4">
             <span className="text-sm text-muted-foreground">Amount</span>
             <span className="text-base font-semibold">
-              {formatAmount(invoice.totalAmount)} {invoice.currency}
+              {formatAmount(invoice.totalAmount, invoice.currency)}
             </span>
           </div>
           <Separator />

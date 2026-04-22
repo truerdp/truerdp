@@ -46,8 +46,16 @@ function formatDateTime(dateString: string | null | undefined) {
 }
 
 function formatAmount(amount: number, currency: string) {
-  const symbol = currency.toUpperCase() === "USD" ? "$" : ""
-  return `${symbol}${amount.toLocaleString()}`
+  try {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: currency.toUpperCase(),
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(amount / 100)
+  } catch {
+    return `${(amount / 100).toLocaleString()} ${currency.toUpperCase()}`
+  }
 }
 
 function PendingTransactionsSkeleton() {
@@ -258,24 +266,33 @@ export default function AdminTransactionsPage() {
                     {formatDateTime(transaction.createdAt)}
                   </TableCell>
                   <TableCell>
-                    {transaction.status === "pending" && (
-                      <Button
-                        size="sm"
-                        onClick={() => handleConfirmTransaction(transaction.id)}
-                        disabled={confirmMutation.isPending}
-                      >
-                        {confirmMutation.isPending ? (
-                          <Spinner data-icon="inline-start" />
-                        ) : (
-                          <HugeiconsIcon
-                            icon={TaskDone02Icon}
-                            strokeWidth={2}
-                            data-icon="inline-start"
-                          />
-                        )}
-                        Confirm
-                      </Button>
-                    )}
+                    {transaction.status === "pending" &&
+                      transaction.method !== "dodo_checkout" && (
+                        <Button
+                          size="sm"
+                          onClick={() =>
+                            handleConfirmTransaction(transaction.id)
+                          }
+                          disabled={confirmMutation.isPending}
+                        >
+                          {confirmMutation.isPending ? (
+                            <Spinner data-icon="inline-start" />
+                          ) : (
+                            <HugeiconsIcon
+                              icon={TaskDone02Icon}
+                              strokeWidth={2}
+                              data-icon="inline-start"
+                            />
+                          )}
+                          Confirm
+                        </Button>
+                      )}
+                    {transaction.status === "pending" &&
+                      transaction.method === "dodo_checkout" && (
+                        <Badge variant="outline" className="uppercase">
+                          Auto via webhook
+                        </Badge>
+                      )}
                   </TableCell>
                 </TableRow>
               ))}

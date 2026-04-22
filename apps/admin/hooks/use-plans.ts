@@ -7,8 +7,12 @@ import { queryKeys } from "@/lib/query-keys"
 export interface PlanPricingOption {
   id: number
   durationDays: number
-  price: number
+  priceUsdCents: number
   isActive: boolean
+  dodoProductId?: string | null
+  dodoSyncStatus?: "pending" | "synced" | "failed"
+  dodoSyncError?: string | null
+  dodoSyncedAt?: string | null
 }
 
 export interface Plan {

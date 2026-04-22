@@ -67,7 +67,16 @@ function TransactionsTableSkeleton() {
 }
 
 function formatMethod(method: Transaction["method"]) {
-  return method === "upi" ? "UPI" : "USDT (TRC20)"
+  switch (method) {
+    case "upi":
+      return "UPI"
+    case "usdt_trc20":
+      return "USDT (TRC20)"
+    case "dodo_checkout":
+      return "Dodo Checkout"
+    default:
+      return String(method).toUpperCase()
+  }
 }
 
 function formatStatus(status: Transaction["status"]) {

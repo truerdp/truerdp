@@ -45,16 +45,17 @@ import { useProfile } from "@/hooks/use-profile"
 import { useTransactions } from "@/hooks/use-transactions"
 import { webPaths } from "@/lib/paths"
 
-type PaymentMethod = "upi" | "usdt_trc20"
+type PaymentMethod = "dodo_checkout" | "upi" | "usdt_trc20"
 
 interface CreateTransactionResponse {
   id: number
+  gatewayRedirectUrl?: string | null
 }
 
 export default function CheckoutOrderPage() {
   const params = useParams<{ orderId: string }>()
   const router = useRouter()
-  const [method, setMethod] = useState<PaymentMethod>("upi")
+  const [method, setMethod] = useState<PaymentMethod>("dodo_checkout")
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const orderId = Number(params.orderId ?? "")
@@ -71,6 +72,10 @@ export default function CheckoutOrderPage() {
     isError: isProfileError,
   } = useProfile()
   const { data: transactions } = useTransactions()
+
+  const hasBillingDetails = order
+    ? Boolean((order as unknown as { billingDetails?: unknown }).billingDetails)
+    : false
 
   useEffect(() => {
     if (!hasValidOrderId) {
@@ -132,6 +137,12 @@ export default function CheckoutOrderPage() {
           },
         }
       )
+
+      if (transaction.gatewayRedirectUrl) {
+        // Hosted checkout – redirect user to Dodo Payments
+        window.location.assign(transaction.gatewayRedirectUrl)
+        return
+      }
 
       toast.success(
         existingPendingTransaction
@@ -268,7 +279,7 @@ export default function CheckoutOrderPage() {
               </Alert>
             ) : null}
 
-            {!order.billingDetails ? (
+            {!hasBillingDetails ? (
               <Alert variant="destructive">
                 <HugeiconsIcon icon={CreditCardIcon} strokeWidth={2} />
                 <AlertTitle>Billing details required</AlertTitle>
@@ -296,7 +307,7 @@ export default function CheckoutOrderPage() {
               <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">Total</span>
                 <span className="text-lg font-semibold">
-                  {formatAmount(order.pricing.price)}
+                  {formatAmount(order.pricing.priceUsdCents)}
                 </span>
               </div>
             </div>
@@ -306,25 +317,43 @@ export default function CheckoutOrderPage() {
               <ToggleGroup
                 value={[method]}
                 onValueChange={(value) => {
-                  const selected = value[0]
-                  if (selected === "upi" || selected === "usdt_trc20") {
+                  const selected = value[0] as PaymentMethod | undefined
+                  if (
+                    selected === "dodo_checkout" ||
+                    selected === "upi" ||
+                    selected === "usdt_trc20"
+                  ) {
                     setMethod(selected)
                   }
                 }}
               >
+                <ToggleGroupItem value="dodo_checkout">
+                  Dodo Checkout (Recommended)
+                </ToggleGroupItem>
                 <ToggleGroupItem value="upi">UPI</ToggleGroupItem>
                 <ToggleGroupItem value="usdt_trc20">USDT TRC20</ToggleGroupItem>
               </ToggleGroup>
             </div>
 
-            <Alert>
-              <HugeiconsIcon icon={DollarCircleIcon} strokeWidth={2} />
-              <AlertTitle>Manual confirmation flow</AlertTitle>
-              <AlertDescription>
-                No payment gateway is integrated yet. This creates a pending
-                transaction for admin review.
-              </AlertDescription>
-            </Alert>
+            {method === "dodo_checkout" ? (
+              <Alert>
+                <HugeiconsIcon icon={DollarCircleIcon} strokeWidth={2} />
+                <AlertTitle>Secure hosted checkout</AlertTitle>
+                <AlertDescription>
+                  You will be redirected to a secure payment page supporting
+                  cards, wallets, and domestic/international methods. Upon
+                  completion, you will return here automatically.
+                </AlertDescription>
+              </Alert>
+            ) : (
+              <Alert>
+                <HugeiconsIcon icon={DollarCircleIcon} strokeWidth={2} />
+                <AlertTitle>Manual confirmation flow</AlertTitle>
+                <AlertDescription>
+                  Creates a pending transaction for admin review.
+                </AlertDescription>
+              </Alert>
+            )}
           </CardContent>
           <CardFooter>
             <Button
@@ -332,7 +361,7 @@ export default function CheckoutOrderPage() {
               disabled={
                 isSubmitting ||
                 order.status !== "pending_payment" ||
-                !order.billingDetails
+                !hasBillingDetails
               }
             >
               {isSubmitting ? <Spinner data-icon="inline-start" /> : null}

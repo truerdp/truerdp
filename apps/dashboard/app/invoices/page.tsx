@@ -32,7 +32,16 @@ function formatMethod(method: InvoiceSummary["transaction"]["method"]) {
     return "-"
   }
 
-  return method === "upi" ? "UPI" : "USDT (TRC20)"
+  switch (method) {
+    case "upi":
+      return "UPI"
+    case "usdt_trc20":
+      return "USDT (TRC20)"
+    case "dodo_checkout":
+      return "Dodo Checkout"
+    default:
+      return String(method).toUpperCase()
+  }
 }
 
 function formatDateTime(value: string | null) {
@@ -240,7 +249,7 @@ export default function InvoicesPage() {
                   </div>
                 </TableCell>
                 <TableCell className="text-sm">
-                  {formatAmount(invoice.totalAmount)} {invoice.currency}
+                  {formatAmount(invoice.totalAmount, invoice.currency)}
                 </TableCell>
                 <TableCell>
                   <Badge

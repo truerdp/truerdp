@@ -78,6 +78,20 @@
       "when": 1776326400006,
       "tag": "0010_order_billing_details",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1776765000000,
+      "tag": "0011_add_dodo_checkout_payment_method",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1776768600000,
+      "tag": "0012_plan_pricing_dodo_sync_fields",
+      "breakpoints": true
     }
   ]
 }

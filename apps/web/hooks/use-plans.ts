@@ -6,7 +6,7 @@ import { clientApi } from "@workspace/api"
 export interface PlanPricingOption {
   id: number
   durationDays: number
-  price: number
+  priceUsdCents: number
 }
 
 export interface Plan {

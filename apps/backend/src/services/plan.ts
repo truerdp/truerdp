@@ -24,8 +24,12 @@ interface PlanWithPricing {
   pricingOptions: Array<{
     id: number
     durationDays: number
-    price: number
+    priceUsdCents: number
     isActive: boolean
+    dodoProductId: string | null
+    dodoSyncStatus: "pending" | "synced" | "failed"
+    dodoSyncError: string | null
+    dodoSyncedAt: Date | null
   }>
 }
 
@@ -54,8 +58,12 @@ function mapPlanRows(
     pricing: {
       id: number
       durationDays: number
-      price: number
+      priceUsdCents: number
       isActive: boolean
+      dodoProductId: string | null
+      dodoSyncStatus: "pending" | "synced" | "failed"
+      dodoSyncError: string | null
+      dodoSyncedAt: Date | null
     } | null
   }>
 ) {
@@ -95,8 +103,12 @@ function mapPlanRows(
       current.pricingOptions.push({
         id: row.pricing.id,
         durationDays: row.pricing.durationDays,
-        price: row.pricing.price,
+        priceUsdCents: row.pricing.priceUsdCents,
         isActive: row.pricing.isActive,
+        dodoProductId: row.pricing.dodoProductId,
+        dodoSyncStatus: row.pricing.dodoSyncStatus,
+        dodoSyncError: row.pricing.dodoSyncError,
+        dodoSyncedAt: row.pricing.dodoSyncedAt,
       })
     }
   }
@@ -148,8 +160,12 @@ export async function listActivePlansWithPricing() {
       pricing: {
         id: planPricing.id,
         durationDays: planPricing.durationDays,
-        price: planPricing.price,
+        priceUsdCents: planPricing.priceUsdCents,
         isActive: planPricing.isActive,
+        dodoProductId: planPricing.dodoProductId,
+        dodoSyncStatus: planPricing.dodoSyncStatus,
+        dodoSyncError: planPricing.dodoSyncError,
+        dodoSyncedAt: planPricing.dodoSyncedAt,
       },
     })
     .from(plans)
@@ -186,8 +202,12 @@ export async function listAdminPlansWithPricing() {
       pricing: {
         id: planPricing.id,
         durationDays: planPricing.durationDays,
-        price: planPricing.price,
+        priceUsdCents: planPricing.priceUsdCents,
         isActive: planPricing.isActive,
+        dodoProductId: planPricing.dodoProductId,
+        dodoSyncStatus: planPricing.dodoSyncStatus,
+        dodoSyncError: planPricing.dodoSyncError,
+        dodoSyncedAt: planPricing.dodoSyncedAt,
       },
     })
     .from(plans)

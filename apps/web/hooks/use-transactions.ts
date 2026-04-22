@@ -6,7 +6,7 @@ import { clientApi } from "@workspace/api"
 export interface Transaction {
   id: number
   amount: number
-  method: "upi" | "usdt_trc20"
+  method: "dodo_checkout" | "upi" | "usdt_trc20"
   status: "pending" | "confirmed" | "failed"
   createdAt: string
   confirmedAt: string | null
@@ -33,7 +33,7 @@ export interface Transaction {
   pricing: {
     id: number
     durationDays: number
-    price: number
+    priceUsdCents: number
   }
 }
 

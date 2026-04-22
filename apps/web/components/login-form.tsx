@@ -129,6 +129,7 @@ export function LoginForm({
                   <InputGroupInput
                     id="password"
                     type={showPassword ? "text" : "password"}
+                    className="rounded-s-4xl rounded-e-none"
                     disabled={isSubmitting}
                     aria-invalid={!!errors.password}
                     {...register("password")}

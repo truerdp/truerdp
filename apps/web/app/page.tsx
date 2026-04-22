@@ -27,7 +27,7 @@ export const metadata: Metadata = {
 interface PlanPricingOption {
   id: number
   durationDays: number
-  price: number
+  priceUsdCents: number
 }
 
 interface Plan {
@@ -141,7 +141,7 @@ export default async function Page() {
                       {option.durationDays} days
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      {formatAmount(option.price)} total
+                      {formatAmount(option.priceUsdCents)} total
                     </p>
                   </div>
                   <PlanCheckoutButton planPricingId={option.id} />

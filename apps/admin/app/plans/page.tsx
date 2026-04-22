@@ -46,12 +46,12 @@ import { HugeiconsIcon } from "@hugeicons/react"
 type PlanStatusFilter = "all" | "active" | "inactive"
 type PlanSort = "name" | "cpu" | "price"
 
-function formatPrice(price: number) {
+function formatPrice(priceUsdCents: number) {
   return new Intl.NumberFormat("en-US", {
     style: "currency",
     currency: "USD",
     minimumFractionDigits: 2,
-  }).format(price)
+  }).format(priceUsdCents / 100)
 }
 
 function PlansSkeleton() {
@@ -157,7 +157,7 @@ export default function AdminPlansPage() {
           b.pricingOptions.find((option) => option.id === b.defaultPricingId) ??
           b.pricingOptions[0]
 
-        return (aDefault?.price ?? 0) - (bDefault?.price ?? 0)
+        return (aDefault?.priceUsdCents ?? 0) - (bDefault?.priceUsdCents ?? 0)
       }
 
       return a.name.localeCompare(b.name)
@@ -300,7 +300,8 @@ export default function AdminPlansPage() {
                               : "outline"
                           }
                         >
-                          {pricing.durationDays}d - {formatPrice(pricing.price)}
+                          {pricing.durationDays}d -{" "}
+                          {formatPrice(pricing.priceUsdCents)}
                           {!pricing.isActive ? " (inactive)" : ""}
                         </Badge>
                       ))}

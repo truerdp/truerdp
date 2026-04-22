@@ -57,7 +57,11 @@ export const invoiceStatusEnum = pgEnum("invoice_status", [
   "expired",
 ])
 
-export const paymentMethodEnum = pgEnum("payment_method", ["upi", "usdt_trc20"])
+export const paymentMethodEnum = pgEnum("payment_method", [
+  "upi",
+  "usdt_trc20",
+  "dodo_checkout",
+])
 
 export const couponTypeEnum = pgEnum("coupon_type", ["percent", "flat"])
 
@@ -131,7 +135,16 @@ export const planPricing = pgTable(
       .references(() => plans.id),
 
     durationDays: integer("duration_days").notNull(),
-    price: integer("price").notNull(),
+    priceUsdCents: integer("price").notNull(),
+
+    dodoProductId: text("dodo_product_id"),
+    dodoSyncStatus: text("dodo_sync_status", {
+      enum: ["pending", "synced", "failed"],
+    })
+      .default("pending")
+      .notNull(),
+    dodoSyncError: text("dodo_sync_error"),
+    dodoSyncedAt: timestamp("dodo_synced_at"),
 
     isActive: boolean("is_active").default(true).notNull(),
 
@@ -156,7 +169,7 @@ export type OrderBillingDetails = {
   firstName: string
   lastName: string
   email: string
-  phone: string | null
+  phone: string
   companyName: string | null
   taxId: string | null
   addressLine1: string
@@ -190,7 +203,7 @@ export const orders = pgTable(
 
     // Snapshot of the product the user purchased at checkout time.
     planName: text("plan_name").notNull(),
-    planPrice: integer("plan_price").notNull(),
+    planPriceUsdCents: integer("plan_price").notNull(),
     durationDays: integer("duration_days").notNull(),
     billingDetails: jsonb("billing_details").$type<OrderBillingDetails>(),
 

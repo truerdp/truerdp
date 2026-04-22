@@ -10,9 +10,17 @@ import { instanceRoutes } from "./routes/instance.js"
 import { planRoutes } from "./routes/plan.js"
 import { webhookRoutes } from "./routes/webhook.js"
 import { orderRoutes } from "./routes/order.js"
+import fastifyRawBody from "fastify-raw-body"
 
 const server = Fastify({
   logger: true,
+})
+
+// Expose request.rawBody for webhook signature verification (run before body parsing)
+server.register(fastifyRawBody, {
+  field: "rawBody",
+  global: true,
+  runFirst: true,
 })
 
 const allowedOrigins = new Set(

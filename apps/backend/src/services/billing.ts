@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto"
-import { and, asc, desc, eq, gte, inArray, isNull, lt, sql } from "drizzle-orm"
+import { and, asc, desc, eq, gte, inArray, lt, sql } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "../db.js"
 import {
@@ -15,10 +15,15 @@ import {
   users,
 } from "../schema.js"
 import { calculatePrice } from "./pricing.js"
+import { createCheckoutSessionForTransaction } from "./dodo-payments.js"
 
 const PAYMENT_WINDOW_HOURS = 48
 
-export const supportedPaymentMethodSchema = z.enum(["upi", "usdt_trc20"])
+export const supportedPaymentMethodSchema = z.enum([
+  "upi",
+  "usdt_trc20",
+  "dodo_checkout",
+])
 
 export type SupportedPaymentMethod = z.infer<
   typeof supportedPaymentMethodSchema
@@ -74,7 +79,30 @@ type BillingTransactionRecord = {
   }
 }
 
+type LegacyPricedOrderRecord = {
+  planPriceUsdCents?: number | null
+  planPrice?: number | null
+}
+
+function getOrderPlanPriceUsdCents(order: LegacyPricedOrderRecord) {
+  return order.planPriceUsdCents ?? order.planPrice ?? null
+}
+
+function buildOrderPriceInsertValue(planPriceUsdCents: number) {
+  if ("planPriceUsdCents" in orders) {
+    return {
+      planPriceUsdCents,
+    } as Record<string, number>
+  }
+
+  return {
+    planPrice: planPriceUsdCents,
+  } as Record<string, number>
+}
+
 function formatBillingTransactionResponse(record: BillingTransactionRecord) {
+  const planPriceUsdCents = getOrderPlanPriceUsdCents(record.order)
+
   return {
     id: record.transaction.id,
     userId: record.transaction.userId,
@@ -108,7 +136,7 @@ function formatBillingTransactionResponse(record: BillingTransactionRecord) {
     pricing: {
       id: record.order.planPricingId,
       durationDays: record.order.durationDays,
-      price: record.order.planPrice,
+      priceUsdCents: planPriceUsdCents,
     },
     instance: record.transaction.instanceId
       ? {
@@ -215,7 +243,7 @@ async function findReusableBillingTransaction(input: {
         renewalInstanceId: orders.renewalInstanceId,
         kind: orders.kind,
         planName: orders.planName,
-        planPrice: orders.planPrice,
+        planPriceUsdCents: orders.planPriceUsdCents,
         durationDays: orders.durationDays,
         billingDetails: orders.billingDetails,
         status: orders.status,
@@ -300,7 +328,7 @@ function buildTransactionSummaryQuery() {
         planId: orders.planId,
         planPricingId: orders.planPricingId,
         planName: orders.planName,
-        planPrice: orders.planPrice,
+        planPriceUsdCents: orders.planPriceUsdCents,
         durationDays: orders.durationDays,
         status: orders.status,
       },
@@ -386,7 +414,7 @@ async function mapTransactionSummaries(rows: TransactionSummaryRow[]) {
       pricing: {
         id: row.order.planPricingId,
         durationDays: row.order.durationDays,
-        price: row.order.planPrice,
+        priceUsdCents: row.order.planPriceUsdCents,
       },
       invoice: {
         id: row.invoice.id,
@@ -421,7 +449,7 @@ export async function getDefaultPlanPricingForPlan(planId: number) {
       id: planPricing.id,
       planId: planPricing.planId,
       durationDays: planPricing.durationDays,
-      price: planPricing.price,
+      priceUsdCents: planPricing.priceUsdCents,
       isActive: planPricing.isActive,
     })
     .from(planPricing)
@@ -438,7 +466,7 @@ export async function getPlanPricingById(planPricingId: number) {
       id: planPricing.id,
       planId: planPricing.planId,
       durationDays: planPricing.durationDays,
-      price: planPricing.price,
+      priceUsdCents: planPricing.priceUsdCents,
       isActive: planPricing.isActive,
       plan: {
         id: plans.id,
@@ -490,6 +518,8 @@ type BillingOrderRecord = {
 }
 
 function formatBillingOrderResponse(record: BillingOrderRecord) {
+  const planPriceUsdCents = getOrderPlanPriceUsdCents(record.order)
+
   return {
     orderId: record.order.id,
     userId: record.order.userId,
@@ -508,7 +538,7 @@ function formatBillingOrderResponse(record: BillingOrderRecord) {
     pricing: {
       id: record.order.planPricingId,
       durationDays: record.order.durationDays,
-      price: record.order.planPrice,
+      priceUsdCents: planPriceUsdCents,
     },
   }
 }
@@ -524,7 +554,7 @@ async function getBillingOrderById(orderId: number) {
         renewalInstanceId: orders.renewalInstanceId,
         kind: orders.kind,
         planName: orders.planName,
-        planPrice: orders.planPrice,
+        planPriceUsdCents: orders.planPriceUsdCents,
         durationDays: orders.durationDays,
         billingDetails: orders.billingDetails,
         status: orders.status,
@@ -577,7 +607,10 @@ export async function updateBillingDetailsForUser(input: {
   }
 
   if (record.order.status !== "pending_payment") {
-    throw new BillingError(400, "Billing details can only be updated pre-payment")
+    throw new BillingError(
+      400,
+      "Billing details can only be updated pre-payment"
+    )
   }
 
   await db
@@ -642,32 +675,49 @@ export async function createBillingOrder(input: {
     }
   }
 
+  const planPriceUsdCents =
+    pricingSelection.priceUsdCents ??
+    (pricingSelection as { price?: number }).price
+
+  if (!Number.isFinite(planPriceUsdCents)) {
+    throw new BillingError(500, "Plan pricing is missing a valid price")
+  }
+  const planPriceUsdCentsValue = Number(planPriceUsdCents)
+
   const totalAmount = await calculatePrice(input.userId, pricingSelection.id)
-  const discount = Math.max(0, pricingSelection.price - totalAmount)
+  const discount = Math.max(0, planPriceUsdCentsValue - totalAmount)
   const now = new Date()
 
   const createdOrder = await db.transaction(async (tx) => {
+    const orderInsertValues = {
+      userId: input.userId,
+      planId: pricingSelection.plan.id,
+      planPricingId: pricingSelection.id,
+      renewalInstanceId: input.instanceId ?? null,
+      kind: orderKind,
+      planName: pricingSelection.plan.name,
+      ...buildOrderPriceInsertValue(planPriceUsdCentsValue),
+      durationDays: pricingSelection.durationDays,
+      status: "pending_payment",
+    } as typeof orders.$inferInsert
+
     const insertedOrders = await tx
       .insert(orders)
-      .values({
-        userId: input.userId,
-        planId: pricingSelection.plan.id,
-        planPricingId: pricingSelection.id,
-        renewalInstanceId: input.instanceId ?? null,
-        kind: orderKind,
-        planName: pricingSelection.plan.name,
-        planPrice: pricingSelection.price,
-        durationDays: pricingSelection.durationDays,
-        status: "pending_payment",
-      })
+      .values(orderInsertValues)
       .returning()
 
     const order = requireInsertedRecord(insertedOrders[0], "order")
+    const orderPlanPriceUsdCents = getOrderPlanPriceUsdCents(order)
+
+    if (!Number.isFinite(orderPlanPriceUsdCents)) {
+      throw new BillingError(500, "Order insert did not persist plan price")
+    }
+    const orderPlanPriceUsdCentsValue = Number(orderPlanPriceUsdCents)
 
     await tx.insert(invoices).values({
       orderId: order.id,
       invoiceNumber: createInvoiceNumber(),
-      subtotal: order.planPrice,
+      subtotal: orderPlanPriceUsdCentsValue,
       discount,
       totalAmount,
       status: "unpaid",
@@ -724,11 +774,18 @@ export async function createBillingTransaction(input: {
     throw new BillingError(400, "Selected plan is inactive")
   }
 
+  const orderPlanPriceUsdCents = getOrderPlanPriceUsdCents(orderResult.order)
+
+  if (!Number.isFinite(orderPlanPriceUsdCents)) {
+    throw new BillingError(500, "Order is missing a valid plan price snapshot")
+  }
+  const orderPlanPriceUsdCentsValue = Number(orderPlanPriceUsdCents)
+
   const totalAmount = await calculatePrice(
     input.userId,
     orderResult.order.planPricingId
   )
-  const discount = Math.max(0, orderResult.order.planPrice - totalAmount)
+  const discount = Math.max(0, orderPlanPriceUsdCentsValue - totalAmount)
   const now = new Date()
 
   await expireStaleBillingAttempts({
@@ -761,7 +818,7 @@ export async function createBillingTransaction(input: {
         .values({
           orderId: orderResult.order.id,
           invoiceNumber: createInvoiceNumber(),
-          subtotal: orderResult.order.planPrice,
+          subtotal: orderPlanPriceUsdCentsValue,
           discount,
           totalAmount,
           status: "unpaid",
@@ -797,7 +854,69 @@ export async function createBillingTransaction(input: {
     }
   })
 
-  return formatBillingTransactionResponse({
+  let gatewayRedirectUrl: string | null = null
+  if (input.method === "dodo_checkout") {
+    const billing = orderResult.order.billingDetails
+    const name =
+      (billing?.firstName?.trim() || "") +
+      (billing?.lastName ? ` ${billing.lastName.trim()}` : "")
+    const customer =
+      billing && (billing.email || name.trim())
+        ? {
+            email: billing.email,
+            name: name.trim() || undefined,
+            phone_number: billing.phone ?? undefined,
+          }
+        : undefined
+
+    // Ensure we always have a non-null reference for external reconciliation
+    const txnRef = created.transaction.reference ?? createTransactionReference()
+    if (!created.transaction.reference) {
+      await db
+        .update(transactions)
+        .set({ reference: txnRef })
+        .where(eq(transactions.id, created.transaction.id))
+      // reflect the reference on the in-memory object used for response
+      ;(
+        created.transaction as unknown as { reference: string | null }
+      ).reference = txnRef
+    }
+
+    const session = await createCheckoutSessionForTransaction({
+      planPricingId: orderResult.order.planPricingId,
+      amountMinor: created.invoice.totalAmount,
+      currency: created.invoice.currency,
+      orderId: orderResult.order.id,
+      invoiceId: created.invoice.id,
+      transactionId: created.transaction.id,
+      reference: txnRef,
+      customer,
+      billing: billing
+        ? {
+            street: billing.addressLine1,
+            city: billing.city,
+            state: billing.state,
+            zipcode: billing.postalCode,
+            country: billing.country,
+          }
+        : undefined,
+    })
+
+    await db
+      .update(transactions)
+      .set({
+        metadata: {
+          dodo_session_id: session.sessionId,
+          dodo_checkout_url: session.checkoutUrl,
+          dodo_environment: session.environment,
+        } as unknown as typeof transactions.$inferInsert.metadata,
+      })
+      .where(eq(transactions.id, created.transaction.id))
+
+    gatewayRedirectUrl = session.checkoutUrl
+  }
+
+  const response = formatBillingTransactionResponse({
     transaction: created.transaction,
     invoice: created.invoice,
     order: created.order,
@@ -809,6 +928,11 @@ export async function createBillingTransaction(input: {
       storage: orderResult.plan.storage,
     },
   })
+
+  return {
+    ...response,
+    gatewayRedirectUrl,
+  }
 }
 
 export async function listUserTransactions(userId: number) {

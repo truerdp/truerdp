@@ -9,11 +9,11 @@ const DEFAULT_PLAN_NAME = "Starter RDP"
 const DEFAULT_PLAN_PRICING = [
   {
     durationDays: 30,
-    price: 500,
+    priceUsdCents: 500,
   },
   {
     durationDays: 90,
-    price: 1299,
+    priceUsdCents: 1299,
   },
 ] as const
 
@@ -125,14 +125,14 @@ async function upsertPlanPricing(planId: number) {
       const [pricing] = await db
         .update(planPricing)
         .set({
-          price: option.price,
+          priceUsdCents: option.priceUsdCents,
           isActive: true,
         })
         .where(eq(planPricing.id, existingPricing[0].id))
         .returning({
           id: planPricing.id,
           durationDays: planPricing.durationDays,
-          price: planPricing.price,
+          priceUsdCents: planPricing.priceUsdCents,
         })
 
       pricingOptions.push(requireSeedRecord(pricing, "plan pricing"))
@@ -144,13 +144,13 @@ async function upsertPlanPricing(planId: number) {
       .values({
         planId,
         durationDays: option.durationDays,
-        price: option.price,
+        priceUsdCents: option.priceUsdCents,
         isActive: true,
       })
       .returning({
         id: planPricing.id,
         durationDays: planPricing.durationDays,
-        price: planPricing.price,
+        priceUsdCents: planPricing.priceUsdCents,
       })
 
     pricingOptions.push(requireSeedRecord(pricing, "plan pricing"))

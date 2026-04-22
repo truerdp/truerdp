@@ -15,5 +15,5 @@ export async function calculatePrice(_userId: number, planPricingId: number) {
     throw new Error("Invalid plan pricing")
   }
 
-  return pricing.price
+  return pricing.priceUsdCents
 }
