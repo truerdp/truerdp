@@ -21,6 +21,7 @@ import {
   Alert02Icon,
   CreditCardIcon,
   Package02Icon,
+  UserAdd01Icon,
 } from "@hugeicons/core-free-icons"
 import { adminPaths } from "@/lib/paths"
 import { useProfile } from "@/hooks/use-profile"
@@ -41,6 +42,11 @@ const navMain = [
     title: "Instances",
     url: adminPaths.instances,
     icon: <HugeiconsIcon icon={ComputerTerminalIcon} strokeWidth={2} />,
+  },
+  {
+    title: "Users",
+    url: adminPaths.users,
+    icon: <HugeiconsIcon icon={UserAdd01Icon} strokeWidth={2} />,
   },
   {
     title: "Plans",
@@ -104,6 +110,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               (item.url === adminPaths.instances &&
                 segments[0] === "instances" &&
                 segments.length === 1) ||
+              (item.url === adminPaths.users && segments[0] === "users") ||
               (item.url === adminPaths.plans && segments[0] === "plans") ||
               (item.url === adminPaths.invoices &&
                 segments[0] === "invoices") ||

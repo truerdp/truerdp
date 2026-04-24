@@ -22,6 +22,7 @@ import {
   listAdminTransactions,
   listPendingTransactions,
 } from "../services/billing.js"
+import { getAdminUser360, listAdminUsers } from "../services/admin-user.js"
 import { syncDodoProductForPlanPricing } from "../services/dodo-payments.js"
 import { encryptCredential } from "../services/resource-credentials.js"
 import { listAdminPlansWithPricing } from "../services/plan.js"
@@ -107,6 +108,22 @@ const serverInputSchema = z.object({
 
 const serverStatusUpdateSchema = z.object({
   status: z.enum(["available", "assigned", "cleaning", "retired"]),
+})
+
+const adminListPaginationQuerySchema = z.object({
+  page: z.coerce.number().int().min(1).default(1),
+  pageSize: z.coerce.number().int().min(1).max(100).default(20),
+})
+
+const adminInvoiceListQuerySchema = z.object({
+  page: z.coerce.number().int().min(1).default(1),
+  pageSize: z.coerce.number().int().min(1).max(100).default(20),
+  search: z.string().trim().optional(),
+  invoiceStatus: z.enum(["unpaid", "paid", "expired"]).optional(),
+  transactionStatus: z
+    .enum(["none", "pending", "confirmed", "failed"])
+    .optional(),
+  method: z.enum(["none", "upi", "usdt_trc20", "dodo_checkout"]).optional(),
 })
 
 function requireAdmin(user: any, reply: any) {
@@ -792,6 +809,56 @@ export async function adminRoutes(server: FastifyInstance) {
   )
 
   server.get(
+    "/admin/users",
+    { preHandler: verifyAuth },
+    async (request: any, reply) => {
+      try {
+        if (!requireAdmin(request.user, reply)) {
+          return
+        }
+
+        return await listAdminUsers()
+      } catch (err: any) {
+        server.log.error(err)
+        return reply.status(500).send({
+          error: "Internal server error",
+        })
+      }
+    }
+  )
+
+  server.get(
+    "/admin/users/:id",
+    { preHandler: verifyAuth },
+    async (request: any, reply) => {
+      try {
+        const userId = Number(request.params.id)
+
+        if (!requireAdmin(request.user, reply)) {
+          return
+        }
+
+        if (Number.isNaN(userId)) {
+          return reply.status(400).send({ error: "Invalid user id" })
+        }
+
+        const user360 = await getAdminUser360(userId)
+
+        if (!user360) {
+          return reply.status(404).send({ error: "User not found" })
+        }
+
+        return user360
+      } catch (err: any) {
+        server.log.error(err)
+        return reply.status(500).send({
+          error: "Internal server error",
+        })
+      }
+    }
+  )
+
+  server.get(
     "/admin/invoices",
     { preHandler: verifyAuth },
     async (request: any, reply) => {
@@ -800,7 +867,9 @@ export async function adminRoutes(server: FastifyInstance) {
           return
         }
 
-        return await listAdminInvoices()
+        const query = adminInvoiceListQuerySchema.parse(request.query ?? {})
+
+        return await listAdminInvoices(query)
       } catch (err: any) {
         server.log.error(err)
         return reply.status(500).send({
@@ -819,7 +888,9 @@ export async function adminRoutes(server: FastifyInstance) {
           return
         }
 
-        return await listAdminTransactions()
+        const query = adminListPaginationQuerySchema.parse(request.query ?? {})
+
+        return await listAdminTransactions(query)
       } catch (err: any) {
         server.log.error(err)
         return reply.status(500).send({
@@ -976,6 +1047,17 @@ export async function adminRoutes(server: FastifyInstance) {
           return
         }
 
+        const query = adminListPaginationQuerySchema.parse(request.query ?? {})
+
+        const countResult = await db
+          .select({ totalCount: sql<number>`count(*)::int` })
+          .from(instances)
+
+        const totalCount = countResult[0]?.totalCount ?? 0
+        const totalPages = Math.ceil(totalCount / query.pageSize)
+        const page = totalPages > 0 ? Math.min(query.page, totalPages) : 1
+        const offset = (page - 1) * query.pageSize
+
         const result = await db
           .select({
             id: instances.id,
@@ -1010,8 +1092,18 @@ export async function adminRoutes(server: FastifyInstance) {
           .leftJoin(resources, eq(resources.instanceId, instances.id))
           .leftJoin(servers, eq(resources.serverId, servers.id))
           .orderBy(desc(instances.createdAt))
+          .limit(query.pageSize)
+          .offset(offset)
 
-        return result
+        return {
+          items: result,
+          pagination: {
+            page,
+            pageSize: query.pageSize,
+            totalCount,
+            totalPages,
+          },
+        }
       } catch (err: any) {
         server.log.error(err)
         return reply.status(500).send({

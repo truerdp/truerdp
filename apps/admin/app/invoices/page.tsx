@@ -1,13 +1,15 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useState } from "react"
 import { format } from "date-fns"
 import { HugeiconsIcon } from "@hugeicons/react"
 import {
   Alert02Icon,
   Cancel01Icon,
   CreditCardIcon,
+  FilterIcon,
 } from "@hugeicons/core-free-icons"
+import { AdminUserLink } from "@/components/admin-user-link"
 import { Badge } from "@workspace/ui/components/badge"
 import { Button } from "@workspace/ui/components/button"
 import {
@@ -25,6 +27,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@workspace/ui/components/select"
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@workspace/ui/components/sheet"
 import { Skeleton } from "@workspace/ui/components/skeleton"
 import {
   Table,
@@ -35,6 +46,7 @@ import {
   TableRow,
 } from "@workspace/ui/components/table"
 import { useInvoices, type AdminInvoiceSummary } from "@/hooks/use-invoices"
+import { AdminPaginationControls } from "@/components/admin-pagination-controls"
 
 type InvoiceStatusFilter = "all" | "unpaid" | "paid" | "expired"
 type TransactionStatusFilter =
@@ -44,7 +56,6 @@ type TransactionStatusFilter =
   | "confirmed"
   | "failed"
 type MethodFilter = "all" | "none" | "upi" | "usdt_trc20" | "dodo_checkout"
-type KindFilter = "all" | "new_purchase" | "renewal"
 
 function formatDateTime(value: string | null | undefined) {
   if (!value) {
@@ -206,85 +217,59 @@ function InvoicesEmpty() {
 }
 
 export default function AdminInvoicesPage() {
-  const { data, isLoading, isError, error } = useInvoices()
-  const invoices = data ?? []
+  const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(20)
   const [searchValue, setSearchValue] = useState("")
   const [invoiceStatusFilter, setInvoiceStatusFilter] =
     useState<InvoiceStatusFilter>("all")
   const [transactionStatusFilter, setTransactionStatusFilter] =
     useState<TransactionStatusFilter>("all")
   const [methodFilter, setMethodFilter] = useState<MethodFilter>("all")
-  const [kindFilter, setKindFilter] = useState<KindFilter>("all")
+
+  const { data, isLoading, isError, error } = useInvoices({
+    page,
+    pageSize,
+    search: searchValue,
+    invoiceStatus:
+      invoiceStatusFilter === "all" ? undefined : invoiceStatusFilter,
+    transactionStatus:
+      transactionStatusFilter === "all" ? undefined : transactionStatusFilter,
+    method: methodFilter === "all" ? undefined : methodFilter,
+  })
+
+  const invoices = data?.items ?? []
+  const pagination = data?.pagination
+  const totalCount = pagination?.totalCount ?? 0
+  const pageStart =
+    totalCount === 0 || !pagination
+      ? 0
+      : (pagination.page - 1) * pagination.pageSize + 1
+  const pageEnd =
+    totalCount === 0 || !pagination
+      ? 0
+      : Math.min(pageStart + invoices.length - 1, totalCount)
 
   const hasActiveFilters =
     searchValue.trim().length > 0 ||
     invoiceStatusFilter !== "all" ||
     transactionStatusFilter !== "all" ||
-    methodFilter !== "all" ||
-    kindFilter !== "all"
+    methodFilter !== "all"
 
-  const filteredInvoices = useMemo(() => {
-    const normalizedQuery = searchValue.trim().toLowerCase()
-
-    return invoices.filter((invoice) => {
-      const invoiceStatusMatches =
-        invoiceStatusFilter === "all" || invoice.status === invoiceStatusFilter
-
-      const transactionStatus = invoice.transaction.status ?? "none"
-      const transactionStatusMatches =
-        transactionStatusFilter === "all" ||
-        transactionStatus === transactionStatusFilter
-
-      const method = invoice.transaction.method ?? "none"
-      const methodMatches = methodFilter === "all" || method === methodFilter
-
-      const kindMatches =
-        kindFilter === "all" || invoice.plan.kind === kindFilter
-
-      const searchableText = [
-        invoice.invoiceNumber,
-        invoice.transaction.reference ?? "",
-        invoice.plan.name,
-        String(invoice.id),
-        String(invoice.order.id),
-        String(invoice.order.userId),
-        invoice.user.firstName,
-        invoice.user.lastName,
-        invoice.user.email,
-      ]
-        .join(" ")
-        .toLowerCase()
-
-      const queryMatches =
-        normalizedQuery.length === 0 || searchableText.includes(normalizedQuery)
-
-      return (
-        invoiceStatusMatches &&
-        transactionStatusMatches &&
-        methodMatches &&
-        kindMatches &&
-        queryMatches
-      )
-    })
-  }, [
-    invoices,
-    searchValue,
-    invoiceStatusFilter,
-    transactionStatusFilter,
-    methodFilter,
-    kindFilter,
-  ])
+  const activeFacetCount =
+    Number(invoiceStatusFilter !== "all") +
+    Number(transactionStatusFilter !== "all") +
+    Number(methodFilter !== "all")
 
   const resetFilters = () => {
+    setPage(1)
     setSearchValue("")
     setInvoiceStatusFilter("all")
     setTransactionStatusFilter("all")
     setMethodFilter("all")
-    setKindFilter("all")
   }
 
   return (
-    <section className="space-y-4">
+    <section className="min-w-0 space-y-4">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Invoices</h1>
         <p className="text-sm text-muted-foreground">
@@ -292,91 +277,129 @@ export default function AdminInvoicesPage() {
         </p>
       </div>
 
-      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-        <div className="w-full md:max-w-sm">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div className="w-full sm:max-w-sm">
           <Input
             value={searchValue}
-            onChange={(event) => setSearchValue(event.target.value)}
+            onChange={(event) => {
+              setPage(1)
+              setSearchValue(event.target.value)
+            }}
             placeholder="Search invoice, tx ref, user, plan"
           />
         </div>
-        <div className="flex flex-wrap items-end gap-3">
-          <div className="space-y-1">
-            <p className="text-xs text-muted-foreground">Invoice status</p>
-            <Select
-              value={invoiceStatusFilter}
-              onValueChange={(value) =>
-                setInvoiceStatusFilter(value as InvoiceStatusFilter)
-              }
-            >
-              <SelectTrigger className="w-[140px]">
-                <SelectValue placeholder="Invoice status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All invoices</SelectItem>
-                <SelectItem value="unpaid">Unpaid</SelectItem>
-                <SelectItem value="paid">Paid</SelectItem>
-                <SelectItem value="expired">Expired</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+        <div className="flex items-center gap-2 self-end sm:self-auto">
+          <Sheet>
+            <SheetTrigger render={<Button type="button" variant="outline" />}>
+              <HugeiconsIcon
+                icon={FilterIcon}
+                strokeWidth={2}
+                className="size-4"
+                data-icon="inline-start"
+              />
+              Filters
+              {activeFacetCount > 0 ? ` (${activeFacetCount})` : ""}
+            </SheetTrigger>
+            <SheetContent className="sm:max-w-md">
+              <SheetHeader>
+                <SheetTitle>Invoice Filters</SheetTitle>
+                <SheetDescription>
+                  Narrow down invoices by payment and transaction attributes.
+                </SheetDescription>
+              </SheetHeader>
 
-          <div className="space-y-1">
-            <p className="text-xs text-muted-foreground">Transaction status</p>
-            <Select
-              value={transactionStatusFilter}
-              onValueChange={(value) =>
-                setTransactionStatusFilter(value as TransactionStatusFilter)
-              }
-            >
-              <SelectTrigger className="w-[160px]">
-                <SelectValue placeholder="Transaction status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All transactions</SelectItem>
-                <SelectItem value="none">No transaction</SelectItem>
-                <SelectItem value="pending">Pending</SelectItem>
-                <SelectItem value="confirmed">Confirmed</SelectItem>
-                <SelectItem value="failed">Failed</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+              <div className="flex flex-1 flex-col gap-4 overflow-y-auto px-6 pb-6">
+                <div className="flex min-w-0 flex-col gap-1.5">
+                  <p className="text-xs text-muted-foreground">
+                    Invoice status
+                  </p>
+                  <Select
+                    value={invoiceStatusFilter}
+                    onValueChange={(value) => {
+                      setPage(1)
+                      setInvoiceStatusFilter(value as InvoiceStatusFilter)
+                    }}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Invoice status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All invoices</SelectItem>
+                      <SelectItem value="unpaid">Unpaid</SelectItem>
+                      <SelectItem value="paid">Paid</SelectItem>
+                      <SelectItem value="expired">Expired</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
 
-          <div className="space-y-1">
-            <p className="text-xs text-muted-foreground">Method</p>
-            <Select
-              value={methodFilter}
-              onValueChange={(value) => setMethodFilter(value as MethodFilter)}
-            >
-              <SelectTrigger className="w-[140px]">
-                <SelectValue placeholder="Method" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All methods</SelectItem>
-                <SelectItem value="none">No method</SelectItem>
-                <SelectItem value="upi">UPI</SelectItem>
-                <SelectItem value="dodo_checkout">Dodo Checkout</SelectItem>
-                <SelectItem value="usdt_trc20">USDT (TRC20)</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+                <div className="flex min-w-0 flex-col gap-1.5">
+                  <p className="text-xs text-muted-foreground">
+                    Transaction status
+                  </p>
+                  <Select
+                    value={transactionStatusFilter}
+                    onValueChange={(value) => {
+                      setPage(1)
+                      setTransactionStatusFilter(
+                        value as TransactionStatusFilter
+                      )
+                    }}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Transaction status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All transactions</SelectItem>
+                      <SelectItem value="none">No transaction</SelectItem>
+                      <SelectItem value="pending">Pending</SelectItem>
+                      <SelectItem value="confirmed">Confirmed</SelectItem>
+                      <SelectItem value="failed">Failed</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
 
-          <div className="space-y-1">
-            <p className="text-xs text-muted-foreground">Type</p>
-            <Select
-              value={kindFilter}
-              onValueChange={(value) => setKindFilter(value as KindFilter)}
-            >
-              <SelectTrigger className="w-[130px]">
-                <SelectValue placeholder="Type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All types</SelectItem>
-                <SelectItem value="new_purchase">New purchase</SelectItem>
-                <SelectItem value="renewal">Renewal</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+                <div className="flex min-w-0 flex-col gap-1.5">
+                  <p className="text-xs text-muted-foreground">Method</p>
+                  <Select
+                    value={methodFilter}
+                    onValueChange={(value) => {
+                      setPage(1)
+                      setMethodFilter(value as MethodFilter)
+                    }}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Method" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All methods</SelectItem>
+                      <SelectItem value="none">No method</SelectItem>
+                      <SelectItem value="upi">UPI</SelectItem>
+                      <SelectItem value="dodo_checkout">
+                        Dodo Checkout
+                      </SelectItem>
+                      <SelectItem value="usdt_trc20">USDT (TRC20)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <SheetFooter>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={resetFilters}
+                  disabled={!hasActiveFilters}
+                >
+                  <HugeiconsIcon
+                    icon={Cancel01Icon}
+                    strokeWidth={2}
+                    data-icon="inline-start"
+                  />
+                  Clear all
+                </Button>
+              </SheetFooter>
+            </SheetContent>
+          </Sheet>
 
           <Button
             type="button"
@@ -407,11 +430,11 @@ export default function AdminInvoicesPage() {
           />
           <span>{error.message || "Failed to load invoices."}</span>
         </div>
-      ) : invoices.length === 0 ? (
+      ) : totalCount === 0 && !hasActiveFilters ? (
         <div className="rounded-lg border">
           <InvoicesEmpty />
         </div>
-      ) : filteredInvoices.length === 0 ? (
+      ) : totalCount === 0 ? (
         <div className="rounded-lg border">
           <Empty>
             <EmptyHeader>
@@ -426,91 +449,108 @@ export default function AdminInvoicesPage() {
           </Empty>
         </div>
       ) : (
-        <div className="rounded-lg border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Invoice</TableHead>
-                <TableHead>User</TableHead>
-                <TableHead>Plan</TableHead>
-                <TableHead>Amount</TableHead>
-                <TableHead>Invoice Status</TableHead>
-                <TableHead>Transaction</TableHead>
-                <TableHead>Method</TableHead>
-                <TableHead>Created</TableHead>
-                <TableHead>Paid</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredInvoices.map((invoice) => (
-                <TableRow key={invoice.id}>
-                  <TableCell>
-                    <div className="flex flex-col">
-                      <span className="font-mono text-sm">
-                        {invoice.invoiceNumber}
-                      </span>
-                      <span className="text-xs text-muted-foreground">
-                        TX {invoice.transaction.reference || "-"}
-                      </span>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex flex-col gap-0.5">
-                      <span className="text-sm font-medium">
-                        {getUserDisplayName(invoice.user)}
-                      </span>
-                      <span className="text-xs text-muted-foreground">
-                        {invoice.user.email}
-                      </span>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex flex-col gap-0.5">
-                      <span className="text-sm font-medium">
-                        {invoice.plan.name}
-                      </span>
-                      <span className="text-xs text-muted-foreground">
-                        {invoice.plan.durationDays} days ·{" "}
-                        {invoice.plan.kind === "renewal"
-                          ? "Renewal"
-                          : "New purchase"}
-                      </span>
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-sm">
-                    {formatAmount(invoice.totalAmount, invoice.currency)}
-                  </TableCell>
-                  <TableCell>
-                    <Badge
-                      variant={getInvoiceStatusBadgeVariant(invoice.status)}
-                      className="uppercase"
-                    >
-                      {invoice.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Badge
-                      variant={getTransactionStatusBadgeVariant(
-                        invoice.transaction.status
-                      )}
-                      className="uppercase"
-                    >
-                      {invoice.transaction.status ?? "none"}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-sm">
-                    {formatMethod(invoice.transaction.method)}
-                  </TableCell>
-                  <TableCell className="text-sm text-muted-foreground">
-                    {formatDateTime(invoice.createdAt)}
-                  </TableCell>
-                  <TableCell className="text-sm text-muted-foreground">
-                    {formatDateTime(invoice.paidAt)}
-                  </TableCell>
+        <div className="space-y-3">
+          <div className="rounded-lg border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Invoice</TableHead>
+                  <TableHead>User</TableHead>
+                  <TableHead>Plan</TableHead>
+                  <TableHead>Amount</TableHead>
+                  <TableHead>Invoice Status</TableHead>
+                  <TableHead>Transaction</TableHead>
+                  <TableHead>Method</TableHead>
+                  <TableHead>Created</TableHead>
+                  <TableHead>Paid</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {invoices.map((invoice) => (
+                  <TableRow key={invoice.id}>
+                    <TableCell>
+                      <div className="flex flex-col">
+                        <span className="font-mono text-sm">
+                          {invoice.invoiceNumber}
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          TX {invoice.transaction.reference || "-"}
+                        </span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <AdminUserLink
+                        userId={invoice.user.id}
+                        primary={getUserDisplayName(invoice.user)}
+                        secondary={invoice.user.email}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex flex-col gap-0.5">
+                        <span className="text-sm font-medium">
+                          {invoice.plan.name}
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          {invoice.plan.durationDays} days ·{" "}
+                          {invoice.plan.kind === "renewal"
+                            ? "Renewal"
+                            : "New purchase"}
+                        </span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-sm">
+                      {formatAmount(invoice.totalAmount, invoice.currency)}
+                    </TableCell>
+                    <TableCell>
+                      <Badge
+                        variant={getInvoiceStatusBadgeVariant(invoice.status)}
+                        className="uppercase"
+                      >
+                        {invoice.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge
+                        variant={getTransactionStatusBadgeVariant(
+                          invoice.transaction.status
+                        )}
+                        className="uppercase"
+                      >
+                        {invoice.transaction.status ?? "none"}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-sm">
+                      {formatMethod(invoice.transaction.method)}
+                    </TableCell>
+                    <TableCell className="whitespace-normal text-muted-foreground">
+                      {formatDateTime(invoice.createdAt)}
+                    </TableCell>
+                    <TableCell className="whitespace-normal text-muted-foreground">
+                      {formatDateTime(invoice.paidAt)}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+
+          <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
+            {pagination ? (
+              <AdminPaginationControls
+                page={pagination.page}
+                totalPages={pagination.totalPages}
+                pageSize={pagination.pageSize}
+                totalCount={pagination.totalCount}
+                pageStart={pageStart}
+                pageEnd={pageEnd}
+                onPageChange={setPage}
+                onPageSizeChange={(value) => {
+                  setPage(1)
+                  setPageSize(value)
+                }}
+              />
+            ) : null}
+          </div>
         </div>
       )}
     </section>

@@ -139,7 +139,7 @@ export default function Page() {
   const expiredInstances = expiredData ?? []
 
   return (
-    <section className="space-y-6">
+    <section className="min-w-0 space-y-6">
       <div className="space-y-1">
         <h1 className="text-2xl font-bold tracking-tight">Admin Dashboard</h1>
         <p className="text-sm text-muted-foreground">
@@ -147,7 +147,7 @@ export default function Page() {
         </p>
       </div>
 
-      <section className="space-y-3">
+      <section className="min-w-0 space-y-3">
         <h2 className="text-lg font-semibold">Expiring Soon</h2>
         {isExpiringSoonLoading ? (
           <div className="rounded-lg border">
@@ -212,7 +212,7 @@ export default function Page() {
         )}
       </section>
 
-      <section className="space-y-3">
+      <section className="min-w-0 space-y-3">
         <h2 className="text-lg font-semibold">Expired Instances</h2>
         {isExpiredLoading ? (
           <div className="rounded-lg border">

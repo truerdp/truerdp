@@ -9,7 +9,8 @@ const isServer = typeof window === "undefined"
 function getBaseUrl() {
   return isServer
     ? (process.env.INTERNAL_API_URL ?? process.env.NEXT_PUBLIC_API_URL ?? "")
-    : (process.env.NEXT_PUBLIC_API_URL ?? "")
+    : (process.env.NEXT_PUBLIC_API_URL ??
+        (process.env.NODE_ENV === "development" ? "http://localhost:3003" : ""))
 }
 
 export function clientApi<T = unknown>(

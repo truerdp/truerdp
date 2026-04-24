@@ -3,6 +3,7 @@
 import { format } from "date-fns"
 import { AlertCircle, Check } from "@hugeicons/core-free-icons"
 import { HugeiconsIcon } from "@hugeicons/react"
+import { AdminUserLink } from "@/components/admin-user-link"
 import { Badge } from "@workspace/ui/components/badge"
 import {
   Card,
@@ -123,7 +124,7 @@ export function InstanceDetails({ instanceId }: InstanceDetailsProps) {
           {/* User Info */}
           <div>
             <h3 className="mb-3 text-sm font-medium">User Information</h3>
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid gap-4 sm:grid-cols-3">
               <div>
                 <p className="text-xs text-muted-foreground">Email</p>
                 <p className="mt-1 font-mono text-sm">{user?.email || "-"}</p>
@@ -133,6 +134,19 @@ export function InstanceDetails({ instanceId }: InstanceDetailsProps) {
                 <p className="mt-1 text-sm">
                   {user ? `${user.firstName} ${user.lastName}` : "-"}
                 </p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">User 360</p>
+                <div className="mt-1">
+                  {user ? (
+                    <AdminUserLink
+                      userId={user.id}
+                      primary={`Open User #${user.id}`}
+                    />
+                  ) : (
+                    <p className="text-sm">-</p>
+                  )}
+                </div>
               </div>
             </div>
           </div>

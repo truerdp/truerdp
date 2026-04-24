@@ -168,7 +168,7 @@ export default function ServersPage() {
   }
 
   return (
-    <section className="space-y-6">
+    <section className="min-w-0 space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div className="space-y-1">
           <h1 className="text-2xl font-bold tracking-tight">Servers</h1>
@@ -186,7 +186,7 @@ export default function ServersPage() {
         </Button>
       </div>
 
-      <div className="grid gap-3 md:grid-cols-4">
+      <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
         <StatusSummaryCard
           label="Total"
           value={summary.total}

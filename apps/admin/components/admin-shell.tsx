@@ -55,6 +55,14 @@ function getBreadcrumbState(segments: string[]) {
     }
   }
 
+  if (segments[0] === "users" && segments.length === 1) {
+    return {
+      currentLabel: "Users",
+      parentLabel: null,
+      parentHref: adminPaths.overview,
+    }
+  }
+
   if (segments[0] === "transactions") {
     return {
       currentLabel: "Transactions",
@@ -103,6 +111,14 @@ function getBreadcrumbState(segments: string[]) {
     }
   }
 
+  if (segments[0] === "users" && segments.length > 1) {
+    return {
+      currentLabel: "User 360",
+      parentLabel: "Users",
+      parentHref: adminPaths.users,
+    }
+  }
+
   return {
     currentLabel: "Admin",
     parentLabel: null,
@@ -118,7 +134,7 @@ export default function AdminShell({ children }: { children: ReactNode }) {
     <AuthGuard>
       <SidebarProvider>
         <AppSidebar />
-        <SidebarInset>
+        <SidebarInset className="min-w-0 overflow-x-hidden">
           <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
             <SidebarTrigger className="-ml-1" />
             <Separator
@@ -149,7 +165,9 @@ export default function AdminShell({ children }: { children: ReactNode }) {
               </BreadcrumbList>
             </Breadcrumb>
           </header>
-          <div className="flex flex-1 flex-col p-6">{children}</div>
+          <div className="flex min-w-0 flex-1 flex-col overflow-x-hidden p-6">
+            {children}
+          </div>
         </SidebarInset>
       </SidebarProvider>
     </AuthGuard>

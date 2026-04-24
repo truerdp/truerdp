@@ -165,7 +165,7 @@ export default function AdminPlansPage() {
   }, [plans, searchValue, sortBy, statusFilter])
 
   return (
-    <section className="space-y-4">
+    <section className="min-w-0 space-y-4">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Plans</h1>
@@ -308,7 +308,7 @@ export default function AdminPlansPage() {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                       <Link href={`/plans/${plan.id}` as any}>
                         <Button size="sm" variant="outline">
                           <HugeiconsIcon

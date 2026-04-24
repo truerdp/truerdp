@@ -1,6 +1,7 @@
 "use client"
 
 import { format } from "date-fns"
+import { AdminUserLink } from "@/components/admin-user-link"
 import ExtendInstanceDialog from "@/components/extend-instance-dialog"
 import { ExpiredStatusBadge } from "@/components/instance-status-badge"
 import TerminateInstanceDialog from "@/components/terminate-instance-dialog"
@@ -111,7 +112,7 @@ export default function ExpiredInstancesPage() {
   const expiredInstances = data ?? []
 
   return (
-    <section className="space-y-4">
+    <section className="min-w-0 space-y-4">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Expired Instances</h1>
         <p className="text-sm text-muted-foreground">
@@ -155,8 +156,11 @@ export default function ExpiredInstancesPage() {
                   <TableCell className="font-mono text-sm">
                     #{instance.id}
                   </TableCell>
-                  <TableCell className="font-mono text-sm">
-                    {instance.userId}
+                  <TableCell>
+                    <AdminUserLink
+                      userId={instance.userId}
+                      primary={`User #${instance.userId}`}
+                    />
                   </TableCell>
                   <TableCell className="font-mono text-sm">
                     {instance.planId}
@@ -173,7 +177,7 @@ export default function ExpiredInstancesPage() {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                       <ExtendInstanceDialog
                         instanceId={instance.id}
                         expiryDate={instance.expiryDate}

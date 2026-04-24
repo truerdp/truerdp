@@ -7,8 +7,10 @@
     "dev": "turbo dev",
     "dev:frontend": "turbo dev --filter=web --filter=dashboard --filter=admin",
     "docker:create": "docker compose up -d --build",
-    "dev:docker": "docker compose up -d && pnpm run dev:frontend",
+    "dev:docker": "docker compose up -d --force-recreate backend db && pnpm run dev:frontend",
+    "dev:backend:restart": "docker compose up -d --force-recreate backend",
     "dev:stop": "docker compose down && lsof -ti :3000,3001,3002,3003 | xargs kill 2>/dev/null || true",
+    "ngrok:backend": "ngrok http 3003",
     "lint": "turbo lint",
     "format": "turbo format",
     "typecheck": "turbo typecheck"

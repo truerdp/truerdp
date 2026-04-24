@@ -13,11 +13,19 @@ Detailed product, domain, lifecycle, backend, and operations notes are maintaine
 
 Current implementation highlights:
 
-- `apps/backend` exposes authentication, billing, instance, and admin APIs
-- billing follows `user -> order -> invoice -> transaction -> instance`
-- `apps/dashboard` includes an authenticated dashboard with instance listing, instance details, renewal flow, and invoice-backed transaction history
-- `apps/web` now includes a server-rendered marketing homepage for SEO, with server-side plan fetching and metadata; checkout interactions remain client-side
-- `apps/admin` includes functional operations screens (instances, plans, invoices, transactions, servers) and is still evolving toward full product parity
+- `apps/backend` exposes authentication, catalog, billing, instance, order, webhook, and admin APIs
+- billing follows `user -> order -> invoice -> transaction -> instance`, with renewal orders reusing the same lifecycle primitives
+- `apps/dashboard` includes authenticated user views for instances, instance details, renewals, invoices, and transaction history
+- `apps/web` includes the public marketing homepage, signup/login screens, plan browsing, checkout review, and checkout success pages
+- `apps/admin` includes operational screens for users, plans, instances, expired instances, servers, invoices, and transactions
+
+Current business behavior in the codebase:
+
+- new purchases create an order, invoice, and pending transaction before provisioning starts
+- payment confirmation can arrive from the admin panel or from payment webhooks
+- provisioning is manual and assigns an available server to an instance, then activates the instance and stores credentials on the resource binding
+- renewals extend the existing instance instead of creating a new server allocation
+- termination releases the resource, moves the server into cleaning, and marks the instance terminated
 
 ## Repository Layout
 
@@ -67,6 +75,18 @@ Workspace members are defined in `pnpm-workspace.yaml`:
 - `apps/*`
 - `packages/*`
 
+Key runtime folders:
+
+- `apps/web/app`: public site, auth, and checkout routes
+- `apps/dashboard/app`: authenticated customer dashboard routes
+- `apps/admin/app`: admin operations routes
+- `apps/backend/src/routes`: HTTP route modules for auth, users, plans, orders, transactions, instances, admin, and webhooks
+- `apps/backend/src/services`: billing, provisioning, allocation, plan, payment webhook, and provider integration logic
+- `apps/backend/src/schema.ts`: Drizzle schema and enums for users, plans, pricing, orders, invoices, transactions, instances, servers, and resources
+- `packages/api`: shared API client wrappers
+- `packages/ui`: shared UI components and primitives
+- `packages/eslint-config` and `packages/typescript-config`: workspace-wide tooling standards
+
 ## Quick Start
 
 1. Install dependencies:
@@ -113,11 +133,18 @@ pnpm run dev:docker
 Equivalent expanded form:
 
 ```bash
-docker compose up -d
+docker compose up -d --force-recreate backend db
 pnpm run dev:frontend
 ```
 
 `pnpm dev` starts backend too, so avoid running it together with `docker compose up -d` unless you intentionally stop one backend instance.
+
+If you change backend routes or server-only code and want to refresh only the
+Docker backend without touching the frontends, use:
+
+```bash
+pnpm run dev:backend:restart
+```
 
 ### VS Code split-terminal startup
 
@@ -136,6 +163,36 @@ Local URLs:
 - Dashboard: `http://localhost:3001`
 - Admin: `http://localhost:3002`
 - Backend: `http://localhost:3003`
+
+## Business Flows
+
+The current codebase implements a manual billing-to-provisioning lifecycle.
+
+### Public customer flow
+
+- visitors land on `apps/web` to browse plans and reach auth or checkout entry points
+- signup and login create an authenticated session backed by a cookie or bearer token
+- the web checkout flow creates the commercial order and captures billing details before payment confirmation
+
+### Purchase and billing flow
+
+- `/orders` creates the order record for a selected plan pricing option
+- `/transactions` creates the payment attempt tied to the order and invoice
+- `/invoices` exposes invoice state for the signed-in user
+- payment confirmation can come from the admin UI or from `/webhooks/payments/:provider`
+
+### Provisioning flow
+
+- once payment is confirmed, the order moves into provisioning-related handling
+- an admin operator picks an available server from `/admin/servers`
+- provisioning creates a resource binding between instance and server, stores credentials on the resource, and marks the instance active
+- the instance details visible in dashboard and admin come from the instance/resource/server join path in the backend
+
+### Renewal and termination flow
+
+- renewals are created from an existing instance and extend the current service period instead of allocating a new server
+- expired instances surface in admin so operators can extend or terminate them
+- termination releases the resource, moves the server to cleaning, and marks the instance terminated
 
 ## Environment Variables
 
@@ -156,6 +213,7 @@ Root commands:
 pnpm dev
 pnpm run dev:frontend
 pnpm run dev:docker
+pnpm run dev:backend:restart
 pnpm run dev:stop
 pnpm build
 pnpm lint
@@ -183,6 +241,8 @@ pnpm --filter backend db:studio
 ```
 
 For billing and transaction work, make sure the backend migrations are current before retrying a failed checkout flow. The transaction path depends on the latest `orders`, `invoices`, and `transactions` schema.
+
+If you are updating payment or provisioning behavior, also review `BUSINESS_FLOW.md` and `architecture.md` because they describe the current lifecycle and runtime boundaries in more detail.
 
 ## Local DB Reset
 

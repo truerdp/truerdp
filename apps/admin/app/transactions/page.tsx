@@ -8,6 +8,7 @@ import {
   CreditCardIcon,
   TaskDone02Icon,
 } from "@hugeicons/core-free-icons"
+import { AdminUserLink } from "@/components/admin-user-link"
 import { Button } from "@workspace/ui/components/button"
 import {
   Empty,
@@ -30,6 +31,7 @@ import { Badge } from "@workspace/ui/components/badge"
 import { useTransactions } from "@/hooks/use-transactions"
 import { useConfirmTransaction } from "@/hooks/use-confirm-transaction"
 import { ProvisionInstanceDialog } from "@/components/provision-instance-dialog"
+import { AdminPaginationControls } from "@/components/admin-pagination-controls"
 
 function formatDateTime(dateString: string | null | undefined) {
   if (!dateString) {
@@ -146,14 +148,29 @@ function getUserDisplayName(user: {
 }
 
 export default function AdminTransactionsPage() {
-  const { data, isLoading, isError, error } = useTransactions()
+  const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(20)
+  const { data, isLoading, isError, error } = useTransactions({
+    page,
+    pageSize,
+  })
   const confirmMutation = useConfirmTransaction()
   const [provisionDialogOpen, setProvisionDialogOpen] = useState(false)
   const [selectedInstanceId, setSelectedInstanceId] = useState<number | null>(
     null
   )
 
-  const transactions = data ?? []
+  const transactions = Array.isArray(data?.items) ? data.items : []
+  const pagination = data?.pagination
+  const totalCount = pagination?.totalCount ?? 0
+  const pageStart =
+    totalCount === 0 || !pagination
+      ? 0
+      : (pagination.page - 1) * pagination.pageSize + 1
+  const pageEnd =
+    totalCount === 0 || !pagination
+      ? 0
+      : Math.min(pageStart + transactions.length - 1, totalCount)
 
   const handleConfirmTransaction = async (transactionId: number) => {
     try {
@@ -164,13 +181,13 @@ export default function AdminTransactionsPage() {
         setSelectedInstanceId(response.instance.id)
         setProvisionDialogOpen(true)
       }
-    } catch (err) {
+    } catch {
       // Error toast is handled in the mutation hook
     }
   }
 
   return (
-    <section className="space-y-4">
+    <section className="min-w-0 space-y-4">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Transactions</h1>
         <p className="text-sm text-muted-foreground">
@@ -191,113 +208,130 @@ export default function AdminTransactionsPage() {
           />
           <span>{error.message || "Failed to load transactions."}</span>
         </div>
-      ) : transactions.length === 0 ? (
+      ) : totalCount === 0 ? (
         <div className="rounded-lg border">
           <TransactionsEmpty />
         </div>
       ) : (
-        <div className="rounded-lg border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Transaction</TableHead>
-                <TableHead>User</TableHead>
-                <TableHead>Plan</TableHead>
-                <TableHead>Amount</TableHead>
-                <TableHead>Method</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Created</TableHead>
-                <TableHead>Action</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {transactions.map((transaction) => (
-                <TableRow key={transaction.id}>
-                  <TableCell>
-                    <div className="flex flex-col">
-                      <span className="font-mono text-sm">
-                        #{transaction.id}
-                      </span>
-                      <span className="text-xs text-muted-foreground">
-                        {transaction.reference}
-                      </span>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex flex-col gap-0.5">
-                      <span className="text-sm font-medium">
-                        {getUserDisplayName(transaction.user)}
-                      </span>
-                      <span className="text-xs text-muted-foreground">
-                        {transaction.user.email}
-                      </span>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex flex-col gap-1">
-                      <span className="text-sm font-medium">
-                        {transaction.plan.name}
-                      </span>
-                      <span className="text-xs text-muted-foreground">
-                        {transaction.pricing.durationDays} days
-                      </span>
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-sm">
-                    {formatAmount(
-                      transaction.amount,
-                      transaction.invoice.currency
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="outline" className="uppercase">
-                      {transaction.method}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Badge
-                      variant={getStatusBadgeVariant(transaction.status)}
-                      className="uppercase"
-                    >
-                      {transaction.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-sm text-muted-foreground">
-                    {formatDateTime(transaction.createdAt)}
-                  </TableCell>
-                  <TableCell>
-                    {transaction.status === "pending" &&
-                      transaction.method !== "dodo_checkout" && (
-                        <Button
-                          size="sm"
-                          onClick={() =>
-                            handleConfirmTransaction(transaction.id)
-                          }
-                          disabled={confirmMutation.isPending}
-                        >
-                          {confirmMutation.isPending ? (
-                            <Spinner data-icon="inline-start" />
-                          ) : (
-                            <HugeiconsIcon
-                              icon={TaskDone02Icon}
-                              strokeWidth={2}
-                              data-icon="inline-start"
-                            />
-                          )}
-                          Confirm
-                        </Button>
-                      )}
-                    {transaction.status === "pending" &&
-                      transaction.method === "dodo_checkout" && (
-                        <Badge variant="outline" className="uppercase">
-                          Auto via webhook
-                        </Badge>
-                      )}
-                  </TableCell>
+        <div className="space-y-3">
+          <div className="rounded-lg border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Transaction</TableHead>
+                  <TableHead>User</TableHead>
+                  <TableHead>Plan</TableHead>
+                  <TableHead>Amount</TableHead>
+                  <TableHead>Method</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Created</TableHead>
+                  <TableHead>Action</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {transactions.map((transaction) => (
+                  <TableRow key={transaction.id}>
+                    <TableCell>
+                      <div className="flex flex-col">
+                        <span className="font-mono text-sm">
+                          #{transaction.id}
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          {transaction.reference}
+                        </span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <AdminUserLink
+                        userId={transaction.user.id}
+                        primary={getUserDisplayName(transaction.user)}
+                        secondary={transaction.user.email}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex flex-col gap-1">
+                        <span className="text-sm font-medium">
+                          {transaction.plan.name}
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          {transaction.pricing.durationDays} days
+                        </span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-sm">
+                      {formatAmount(
+                        transaction.amount,
+                        transaction.invoice.currency
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className="uppercase">
+                        {transaction.method}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge
+                        variant={getStatusBadgeVariant(transaction.status)}
+                        className="uppercase"
+                      >
+                        {transaction.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {formatDateTime(transaction.createdAt)}
+                    </TableCell>
+                    <TableCell>
+                      {transaction.status === "pending" &&
+                        transaction.method !== "dodo_checkout" && (
+                          <Button
+                            size="sm"
+                            onClick={() =>
+                              handleConfirmTransaction(transaction.id)
+                            }
+                            disabled={confirmMutation.isPending}
+                          >
+                            {confirmMutation.isPending ? (
+                              <Spinner data-icon="inline-start" />
+                            ) : (
+                              <HugeiconsIcon
+                                icon={TaskDone02Icon}
+                                strokeWidth={2}
+                                data-icon="inline-start"
+                              />
+                            )}
+                            Confirm
+                          </Button>
+                        )}
+                      {transaction.status === "pending" &&
+                        transaction.method === "dodo_checkout" && (
+                          <Badge variant="outline" className="uppercase">
+                            Auto via webhook
+                          </Badge>
+                        )}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+
+          <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
+            {pagination ? (
+              <AdminPaginationControls
+                page={pagination.page}
+                totalPages={pagination.totalPages}
+                pageSize={pagination.pageSize}
+                totalCount={pagination.totalCount}
+                pageStart={pageStart}
+                pageEnd={pageEnd}
+                onPageChange={setPage}
+                onPageSizeChange={(value) => {
+                  setPage(1)
+                  setPageSize(value)
+                }}
+              />
+            ) : null}
+          </div>
         </div>
       )}
 

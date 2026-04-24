@@ -1,6 +1,8 @@
 export const queryKeys = {
   allInstances: () => ["instances"] as const,
   instanceDetails: (id: number) => ["instances", id] as const,
+  users: () => ["users"] as const,
+  userDetails: (id: number) => ["users", id] as const,
   plans: () => ["plans"] as const,
   invoices: () => ["invoices"] as const,
   transactions: () => ["transactions"] as const,
