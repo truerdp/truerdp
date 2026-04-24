@@ -11,7 +11,7 @@ Detailed product, domain, lifecycle, backend, and operations notes are maintaine
 
 ## Current Status
 
-Current implementation highlights:
+Current implementation highlights-to-date:
 
 - `apps/backend` exposes authentication, catalog, billing, instance, order, webhook, and admin APIs
 - billing follows `user -> order -> invoice -> transaction -> instance`, with renewal orders reusing the same lifecycle primitives
