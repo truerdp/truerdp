@@ -106,12 +106,17 @@ function normalizeGenericWebhook(
     rawEventType.includes("fail") ||
     rawEventType.includes("failed") ||
     rawEventType.includes("declin") ||
+    rawEventType.includes("invalid") ||
+    rawEventType.includes("expire") ||
     rawEventType.includes("cancel") ||
     rawEventType.includes("error") ||
     rawEventType.includes("refunded") ||
     rawStatus === "failed" ||
     rawStatus === "cancelled" ||
-    rawStatus === "declined"
+    rawStatus === "declined" ||
+    rawStatus === "canceled" ||
+    rawStatus === "invalid" ||
+    rawStatus === "expired"
 
   let eventType: "payment.succeeded" | "payment.failed"
   let computedFailureReason: string | null =

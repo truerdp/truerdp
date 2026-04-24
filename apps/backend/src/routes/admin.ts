@@ -123,7 +123,9 @@ const adminInvoiceListQuerySchema = z.object({
   transactionStatus: z
     .enum(["none", "pending", "confirmed", "failed"])
     .optional(),
-  method: z.enum(["none", "upi", "usdt_trc20", "dodo_checkout"]).optional(),
+  method: z
+    .enum(["none", "upi", "usdt_trc20", "dodo_checkout", "coingate_checkout"])
+    .optional(),
 })
 
 function requireAdmin(user: any, reply: any) {

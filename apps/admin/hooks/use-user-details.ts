@@ -112,7 +112,12 @@ export interface AdminUser360Details {
       id: number | null
       reference: string | null
       status: "pending" | "confirmed" | "failed" | null
-      method: "upi" | "usdt_trc20" | "dodo_checkout" | null
+      method:
+        | "upi"
+        | "usdt_trc20"
+        | "dodo_checkout"
+        | "coingate_checkout"
+        | null
     }
     order: {
       id: number
@@ -128,7 +133,7 @@ export interface AdminUser360Details {
     id: number
     userId: number
     amount: number
-    method: "dodo_checkout" | "upi" | "usdt_trc20"
+    method: "dodo_checkout" | "coingate_checkout" | "upi" | "usdt_trc20"
     status: "pending" | "confirmed" | "failed"
     createdAt: string
     confirmedAt: string | null

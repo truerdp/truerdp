@@ -26,6 +26,7 @@ import {
 } from "../schema.js"
 import { calculatePrice } from "./pricing.js"
 import { createCheckoutSessionForTransaction } from "./dodo-payments.js"
+import { createCoinGateOrderForTransaction } from "./coingate-payments.js"
 
 const PAYMENT_WINDOW_HOURS = 48
 
@@ -33,6 +34,7 @@ export const supportedPaymentMethodSchema = z.enum([
   "upi",
   "usdt_trc20",
   "dodo_checkout",
+  "coingate_checkout",
 ])
 
 export type SupportedPaymentMethod = z.infer<
@@ -155,6 +157,33 @@ function formatBillingTransactionResponse(record: BillingTransactionRecord) {
         }
       : null,
   }
+}
+
+function extractGatewayRedirectUrlFromMetadata(input: {
+  method: SupportedPaymentMethod
+  metadata: unknown
+}) {
+  if (!input.metadata || typeof input.metadata !== "object") {
+    return null
+  }
+
+  const metadata = input.metadata as Record<string, unknown>
+
+  if (input.method === "dodo_checkout") {
+    const value = metadata.dodo_checkout_url
+    return typeof value === "string" && value.trim().length > 0
+      ? value.trim()
+      : null
+  }
+
+  if (input.method === "coingate_checkout") {
+    const value = metadata.coingate_payment_url
+    return typeof value === "string" && value.trim().length > 0
+      ? value.trim()
+      : null
+  }
+
+  return null
 }
 
 async function expireStaleBillingAttempts(input: {
@@ -811,7 +840,16 @@ export async function createBillingTransaction(input: {
   })
 
   if (reusableTransaction) {
-    return formatBillingTransactionResponse(reusableTransaction)
+    const response = formatBillingTransactionResponse(reusableTransaction)
+    const gatewayRedirectUrl = extractGatewayRedirectUrlFromMetadata({
+      method: input.method,
+      metadata: reusableTransaction.transaction.metadata,
+    })
+
+    return {
+      ...response,
+      gatewayRedirectUrl,
+    }
   }
 
   const reusableInvoice = await findReusableInvoice({
@@ -865,6 +903,24 @@ export async function createBillingTransaction(input: {
   })
 
   let gatewayRedirectUrl: string | null = null
+  const requiresHostedCheckout =
+    input.method === "dodo_checkout" || input.method === "coingate_checkout"
+  let transactionReference = created.transaction.reference
+
+  if (requiresHostedCheckout && !transactionReference) {
+    transactionReference = createTransactionReference()
+
+    await db
+      .update(transactions)
+      .set({ reference: transactionReference })
+      .where(eq(transactions.id, created.transaction.id))
+
+    // reflect the reference on the in-memory object used for response
+    ;(
+      created.transaction as unknown as { reference: string | null }
+    ).reference = transactionReference
+  }
+
   if (input.method === "dodo_checkout") {
     const billing = orderResult.order.billingDetails
     const name =
@@ -880,17 +936,7 @@ export async function createBillingTransaction(input: {
         : undefined
 
     // Ensure we always have a non-null reference for external reconciliation
-    const txnRef = created.transaction.reference ?? createTransactionReference()
-    if (!created.transaction.reference) {
-      await db
-        .update(transactions)
-        .set({ reference: txnRef })
-        .where(eq(transactions.id, created.transaction.id))
-      // reflect the reference on the in-memory object used for response
-      ;(
-        created.transaction as unknown as { reference: string | null }
-      ).reference = txnRef
-    }
+    const txnRef = transactionReference ?? createTransactionReference()
 
     const session = await createCheckoutSessionForTransaction({
       planPricingId: orderResult.order.planPricingId,
@@ -924,6 +970,37 @@ export async function createBillingTransaction(input: {
       .where(eq(transactions.id, created.transaction.id))
 
     gatewayRedirectUrl = session.checkoutUrl
+  }
+
+  if (input.method === "coingate_checkout") {
+    const txnRef = transactionReference ?? createTransactionReference()
+    const billing = orderResult.order.billingDetails
+    const session = await createCoinGateOrderForTransaction({
+      amountMinor: created.invoice.totalAmount,
+      currency: created.invoice.currency,
+      orderId: orderResult.order.id,
+      invoiceId: created.invoice.id,
+      transactionId: created.transaction.id,
+      reference: txnRef,
+      planName: created.order.planName,
+      durationDays: created.order.durationDays,
+      billingEmail: billing?.email ?? null,
+    })
+
+    await db
+      .update(transactions)
+      .set({
+        metadata: {
+          coingate_order_id: session.orderId,
+          coingate_payment_url: session.paymentUrl,
+          coingate_status: session.status,
+          coingate_callback_token: session.callbackToken,
+          coingate_environment: session.environment,
+        } as unknown as typeof transactions.$inferInsert.metadata,
+      })
+      .where(eq(transactions.id, created.transaction.id))
+
+    gatewayRedirectUrl = session.paymentUrl
   }
 
   const response = formatBillingTransactionResponse({
@@ -1028,7 +1105,7 @@ export type AdminInvoiceListParams = {
   search?: string
   invoiceStatus?: "unpaid" | "paid" | "expired"
   transactionStatus?: "none" | "pending" | "confirmed" | "failed"
-  method?: "none" | "upi" | "usdt_trc20" | "dodo_checkout"
+  method?: "none" | "upi" | "usdt_trc20" | "dodo_checkout" | "coingate_checkout"
 }
 
 export async function listAdminInvoices(params: AdminInvoiceListParams) {
@@ -1059,7 +1136,7 @@ export async function listAdminInvoices(params: AdminInvoiceListParams) {
   )`
 
   const latestTransactionMethodSql = sql<
-    "upi" | "usdt_trc20" | "dodo_checkout" | null
+    "upi" | "usdt_trc20" | "dodo_checkout" | "coingate_checkout" | null
   >`(
     select ${transactions.method}
     from ${transactions}

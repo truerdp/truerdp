@@ -98,7 +98,13 @@ function formatCurrency(amount: number, currency: string) {
 }
 
 function formatMethod(
-  method: "upi" | "usdt_trc20" | "dodo_checkout" | null | undefined
+  method:
+    | "upi"
+    | "usdt_trc20"
+    | "dodo_checkout"
+    | "coingate_checkout"
+    | null
+    | undefined
 ) {
   if (!method) {
     return "-"
@@ -111,6 +117,8 @@ function formatMethod(
       return "USDT (TRC20)"
     case "dodo_checkout":
       return "Dodo Checkout"
+    case "coingate_checkout":
+      return "CoinGate"
     default:
       return String(method).replaceAll("_", " ")
   }
@@ -332,7 +340,7 @@ interface Insight {
 
 function MetaRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex flex-col gap-1 border-b border-border/50 py-3 last:border-b-0 last:pb-0 first:pt-0 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+    <div className="flex flex-col gap-1 border-b border-border/50 py-3 first:pt-0 last:border-b-0 last:pb-0 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
       <span className="text-sm text-muted-foreground">{label}</span>
       <span className="w-full text-sm font-medium break-words sm:w-auto sm:text-right">
         {value}
@@ -1032,7 +1040,8 @@ export function UserDetails({ userId }: UserDetailsProps) {
                           <div className="flex flex-wrap items-start justify-between gap-3">
                             <div className="space-y-1">
                               <div className="font-mono text-sm font-medium">
-                                {transaction.reference || `txn_${transaction.id}`}
+                                {transaction.reference ||
+                                  `txn_${transaction.id}`}
                               </div>
                               <div className="text-xs text-muted-foreground">
                                 Invoice {transaction.invoice.invoiceNumber}
@@ -1102,7 +1111,8 @@ export function UserDetails({ userId }: UserDetailsProps) {
                               <TableCell>
                                 <div className="flex flex-col gap-1">
                                   <span className="font-mono text-sm">
-                                    {transaction.reference || `txn_${transaction.id}`}
+                                    {transaction.reference ||
+                                      `txn_${transaction.id}`}
                                   </span>
                                   <span className="text-xs text-muted-foreground">
                                     Invoice {transaction.invoice.invoiceNumber}
@@ -1172,8 +1182,8 @@ export function UserDetails({ userId }: UserDetailsProps) {
                 <AlertTitle>Infrastructure follow-up needed</AlertTitle>
                 <AlertDescription>
                   {summary.expiringSoonInstances} instance
-                  {summary.expiringSoonInstances === 1 ? "" : "s"} expire
-                  within the next 72 hours.
+                  {summary.expiringSoonInstances === 1 ? "" : "s"} expire within
+                  the next 72 hours.
                 </AlertDescription>
               </Alert>
             ) : null}
@@ -1299,7 +1309,9 @@ export function UserDetails({ userId }: UserDetailsProps) {
                               <TableCell>
                                 <div className="flex flex-col gap-1">
                                   <Link
-                                    href={adminPaths.instanceDetails(instance.id)}
+                                    href={adminPaths.instanceDetails(
+                                      instance.id
+                                    )}
                                     className="font-medium transition-colors hover:text-primary"
                                   >
                                     Instance #{instance.id}
@@ -1425,7 +1437,10 @@ export function UserDetails({ userId }: UserDetailsProps) {
             <CardContent>
               <MetaRow label="User ID" value={`#${user.id}`} />
               <MetaRow label="Role" value={formatStatusLabel(user.role)} />
-              <MetaRow label="Member since" value={formatDateOnly(user.createdAt)} />
+              <MetaRow
+                label="Member since"
+                value={formatDateOnly(user.createdAt)}
+              />
               <MetaRow
                 label="Profile updated"
                 value={formatDateTime(user.updatedAt)}

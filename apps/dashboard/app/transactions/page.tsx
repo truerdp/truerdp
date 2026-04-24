@@ -74,6 +74,8 @@ function formatMethod(method: Transaction["method"]) {
       return "USDT (TRC20)"
     case "dodo_checkout":
       return "Dodo Checkout"
+    case "coingate_checkout":
+      return "CoinGate"
     default:
       return String(method).toUpperCase()
   }

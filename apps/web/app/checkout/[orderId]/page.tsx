@@ -45,7 +45,11 @@ import { useProfile } from "@/hooks/use-profile"
 import { useTransactions } from "@/hooks/use-transactions"
 import { webPaths } from "@/lib/paths"
 
-type PaymentMethod = "dodo_checkout" | "upi" | "usdt_trc20"
+type PaymentMethod =
+  | "dodo_checkout"
+  | "coingate_checkout"
+  | "upi"
+  | "usdt_trc20"
 
 interface CreateTransactionResponse {
   id: number
@@ -139,7 +143,7 @@ export default function CheckoutOrderPage() {
       )
 
       if (transaction.gatewayRedirectUrl) {
-        // Hosted checkout – redirect user to Dodo Payments
+        // Hosted checkout – redirect user to payment provider
         window.location.assign(transaction.gatewayRedirectUrl)
         return
       }
@@ -320,6 +324,7 @@ export default function CheckoutOrderPage() {
                   const selected = value[0] as PaymentMethod | undefined
                   if (
                     selected === "dodo_checkout" ||
+                    selected === "coingate_checkout" ||
                     selected === "upi" ||
                     selected === "usdt_trc20"
                   ) {
@@ -329,6 +334,9 @@ export default function CheckoutOrderPage() {
               >
                 <ToggleGroupItem value="dodo_checkout">
                   Dodo Checkout (Recommended)
+                </ToggleGroupItem>
+                <ToggleGroupItem value="coingate_checkout">
+                  CoinGate (Crypto)
                 </ToggleGroupItem>
                 <ToggleGroupItem value="upi">UPI</ToggleGroupItem>
                 <ToggleGroupItem value="usdt_trc20">USDT TRC20</ToggleGroupItem>
@@ -343,6 +351,16 @@ export default function CheckoutOrderPage() {
                   You will be redirected to a secure payment page supporting
                   cards, wallets, and domestic/international methods. Upon
                   completion, you will return here automatically.
+                </AlertDescription>
+              </Alert>
+            ) : method === "coingate_checkout" ? (
+              <Alert>
+                <HugeiconsIcon icon={DollarCircleIcon} strokeWidth={2} />
+                <AlertTitle>Crypto checkout via CoinGate</AlertTitle>
+                <AlertDescription>
+                  You will be redirected to CoinGate to pay with supported
+                  cryptocurrencies. Payment confirmation is updated
+                  automatically through webhook events.
                 </AlertDescription>
               </Alert>
             ) : (

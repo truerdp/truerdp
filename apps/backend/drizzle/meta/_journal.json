@@ -92,6 +92,13 @@
       "when": 1776768600000,
       "tag": "0012_plan_pricing_dodo_sync_fields",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1776772200000,
+      "tag": "0013_add_coingate_checkout_payment_method",
+      "breakpoints": true
     }
   ]
 }

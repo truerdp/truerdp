@@ -1,5 +1,6 @@
 import "dotenv/config"
 import Fastify from "fastify"
+import { parse as parseQueryString } from "node:querystring"
 import cookie from "@fastify/cookie"
 import cors from "@fastify/cors"
 import { userRoutes } from "./routes/user.js"
@@ -22,6 +23,14 @@ server.register(fastifyRawBody, {
   global: true,
   runFirst: true,
 })
+
+server.addContentTypeParser(
+  /^application\/x-www-form-urlencoded(?:;.*)?$/,
+  { parseAs: "string" },
+  (_request, body: string, done) => {
+    done(null, parseQueryString(body))
+  }
+)
 
 const allowedOrigins = new Set(
   (process.env.CORS_ALLOWED_ORIGINS ?? "")

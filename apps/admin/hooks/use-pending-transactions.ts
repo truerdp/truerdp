@@ -8,7 +8,7 @@ export interface PendingTransaction {
   id: number
   userId: number
   amount: number
-  method: "upi" | "usdt_trc20" | "dodo_checkout"
+  method: "upi" | "usdt_trc20" | "dodo_checkout" | "coingate_checkout"
   status: "pending" | "confirmed" | "failed"
   createdAt: string
   reference: string

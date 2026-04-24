@@ -203,6 +203,10 @@ DATABASE_URL="postgres://postgres:postgres@localhost:5432/truerdp"
 PORT=3003
 JWT_SECRET=change-this-in-production
 RESOURCE_CREDENTIALS_SECRET=change-this-too
+COINGATE_ENVIRONMENT=sandbox
+COINGATE_API_TOKEN=
+COINGATE_RECEIVE_CURRENCY=DO_NOT_CONVERT
+BACKEND_BASE_URL=http://localhost:3003
 ```
 
 ## Commands

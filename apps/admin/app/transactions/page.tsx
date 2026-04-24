@@ -282,7 +282,8 @@ export default function AdminTransactionsPage() {
                     </TableCell>
                     <TableCell>
                       {transaction.status === "pending" &&
-                        transaction.method !== "dodo_checkout" && (
+                        transaction.method !== "dodo_checkout" &&
+                        transaction.method !== "coingate_checkout" && (
                           <Button
                             size="sm"
                             onClick={() =>
@@ -303,7 +304,8 @@ export default function AdminTransactionsPage() {
                           </Button>
                         )}
                       {transaction.status === "pending" &&
-                        transaction.method === "dodo_checkout" && (
+                        (transaction.method === "dodo_checkout" ||
+                          transaction.method === "coingate_checkout") && (
                           <Badge variant="outline" className="uppercase">
                             Auto via webhook
                           </Badge>

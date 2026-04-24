@@ -43,7 +43,18 @@ function formatMethod(method: InvoiceSummary["transaction"]["method"]) {
     return "-"
   }
 
-  return method === "upi" ? "UPI" : "USDT (TRC20)"
+  switch (method) {
+    case "upi":
+      return "UPI"
+    case "usdt_trc20":
+      return "USDT (TRC20)"
+    case "dodo_checkout":
+      return "Dodo Checkout"
+    case "coingate_checkout":
+      return "CoinGate"
+    default:
+      return String(method).replaceAll("_", " ")
+  }
 }
 
 function formatDateTime(value: string | null) {
@@ -299,14 +310,16 @@ export default function InvoiceDetailsPage() {
           <Separator />
           <div className="flex items-center justify-between gap-4">
             <span className="text-sm text-muted-foreground">Method</span>
-            <span className="text-sm">{formatMethod(invoice.transaction.method)}</span>
+            <span className="text-sm">
+              {formatMethod(invoice.transaction.method)}
+            </span>
           </div>
           <Separator />
           <div className="flex items-center justify-between gap-4">
             <span className="text-sm text-muted-foreground">
               Transaction Reference
             </span>
-            <span className="text-sm font-mono">
+            <span className="font-mono text-sm">
               {invoice.transaction.reference || "-"}
             </span>
           </div>
@@ -330,7 +343,9 @@ export default function InvoiceDetailsPage() {
           {payable ? (
             <Button
               onClick={() =>
-                window.location.assign(buildWebCheckoutReviewUrl(invoice.order.id))
+                window.location.assign(
+                  buildWebCheckoutReviewUrl(invoice.order.id)
+                )
               }
             >
               Pay now

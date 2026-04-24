@@ -55,7 +55,13 @@ type TransactionStatusFilter =
   | "pending"
   | "confirmed"
   | "failed"
-type MethodFilter = "all" | "none" | "upi" | "usdt_trc20" | "dodo_checkout"
+type MethodFilter =
+  | "all"
+  | "none"
+  | "upi"
+  | "usdt_trc20"
+  | "dodo_checkout"
+  | "coingate_checkout"
 
 function formatDateTime(value: string | null | undefined) {
   if (!value) {
@@ -96,6 +102,8 @@ function formatMethod(method: AdminInvoiceSummary["transaction"]["method"]) {
       return "USDT (TRC20)"
     case "dodo_checkout":
       return "Dodo Checkout"
+    case "coingate_checkout":
+      return "CoinGate"
     default:
       return String(method).toUpperCase()
   }
@@ -376,6 +384,9 @@ export default function AdminInvoicesPage() {
                       <SelectItem value="upi">UPI</SelectItem>
                       <SelectItem value="dodo_checkout">
                         Dodo Checkout
+                      </SelectItem>
+                      <SelectItem value="coingate_checkout">
+                        CoinGate
                       </SelectItem>
                       <SelectItem value="usdt_trc20">USDT (TRC20)</SelectItem>
                     </SelectContent>

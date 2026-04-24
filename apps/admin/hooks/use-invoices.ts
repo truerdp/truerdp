@@ -6,7 +6,12 @@ import { queryKeys } from "@/lib/query-keys"
 
 type InvoiceStatusFilter = "unpaid" | "paid" | "expired"
 type TransactionStatusFilter = "none" | "pending" | "confirmed" | "failed"
-type MethodFilter = "none" | "upi" | "usdt_trc20" | "dodo_checkout"
+type MethodFilter =
+  | "none"
+  | "upi"
+  | "usdt_trc20"
+  | "dodo_checkout"
+  | "coingate_checkout"
 
 export interface AdminInvoiceSummary {
   id: number
@@ -21,7 +26,7 @@ export interface AdminInvoiceSummary {
     id: number | null
     reference: string | null
     status: "pending" | "confirmed" | "failed" | null
-    method: "upi" | "usdt_trc20" | "dodo_checkout" | null
+    method: "upi" | "usdt_trc20" | "dodo_checkout" | "coingate_checkout" | null
     createdAt: string | null
   }
   order: {

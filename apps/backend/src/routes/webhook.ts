@@ -3,6 +3,7 @@ import z from "zod"
 import { ingestPaymentWebhook } from "../services/payment-webhooks.js"
 import { verifyRazorpaySignature } from "../services/webhook-adapters/razorpay.js"
 import { verifyAndUnwrapDodoWebhook } from "../services/dodo-payments.js"
+import { verifyAndNormalizeCoinGateWebhook } from "../services/coingate-payments.js"
 
 const webhookParamsSchema = z.object({
   provider: z.string().trim().min(1),
@@ -55,6 +56,18 @@ export async function webhookRoutes(server: FastifyInstance) {
         } catch (e: any) {
           request.log.error(e)
           return reply.status(401).send({ error: "Invalid Dodo signature" })
+        }
+      } else if (provider === "coingate") {
+        try {
+          payloadToIngest = await verifyAndNormalizeCoinGateWebhook({
+            payload: request.body,
+            rawBody: request.rawBody,
+          })
+        } catch (e: any) {
+          request.log.error(e)
+          return reply.status(401).send({
+            error: e?.message || "Invalid CoinGate webhook",
+          })
         }
       }
 
