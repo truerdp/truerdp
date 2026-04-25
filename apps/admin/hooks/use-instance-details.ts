@@ -13,6 +13,7 @@ export interface InstanceDetails {
       | "pending"
       | "provisioning"
       | "active"
+      | "suspended"
       | "expired"
       | "termination_pending"
       | "terminated"
@@ -67,6 +68,20 @@ export interface InstanceDetails {
     daysExtended: number
     createdAt: string
     extendedBy: {
+      id: number
+      email: string
+      firstName: string
+      lastName: string
+    } | null
+  }>
+  statusEvents: Array<{
+    id: number
+    action: "provision" | "extend" | "suspend" | "unsuspend" | "terminate"
+    reason: string
+    fromStatus: string
+    toStatus: string
+    createdAt: string
+    admin: {
       id: number
       email: string
       firstName: string

@@ -7,7 +7,11 @@ import {
   paymentWebhookEvents,
   transactions,
 } from "../schema.js"
-import { BillingError, confirmPendingTransaction } from "./billing.js"
+import {
+  BillingError,
+  confirmPendingTransaction,
+  notifyPaymentFailureForInvoice,
+} from "./billing.js"
 import { normalizeRazorpayEvent } from "./webhook-adapters/razorpay.js"
 
 const webhookProviderSchema = z.string().trim().min(1).max(64)
@@ -485,7 +489,9 @@ async function processWebhookEvent(input: {
   if (normalized.eventType === "payment.succeeded") {
     if (transaction.status === "pending") {
       try {
-        await confirmPendingTransaction(transaction.id)
+        await confirmPendingTransaction(transaction.id, {
+          source: "webhook",
+        })
       } catch (error) {
         if (!(error instanceof BillingError) || error.statusCode !== 400) {
           throw error
@@ -513,6 +519,11 @@ async function processWebhookEvent(input: {
   if (transaction.status === "pending") {
     await markPendingTransactionAsFailed({
       transactionId: transaction.id,
+      invoiceId: transaction.invoiceId,
+      reason: normalized.failureReason ?? "Payment failed via webhook",
+    })
+
+    await notifyPaymentFailureForInvoice({
       invoiceId: transaction.invoiceId,
       reason: normalized.failureReason ?? "Payment failed via webhook",
     })

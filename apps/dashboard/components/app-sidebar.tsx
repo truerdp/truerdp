@@ -19,6 +19,8 @@ import {
   DashboardSquare01Icon,
   ComputerTerminalIcon,
   CreditCardIcon,
+  CheckmarkBadgeIcon,
+  Alert02Icon,
 } from "@hugeicons/core-free-icons"
 import { dashboardPaths } from "@/lib/paths"
 import { useProfile } from "@/hooks/use-profile"
@@ -49,6 +51,16 @@ const navMain = [
     title: "Invoices",
     url: dashboardPaths.invoices,
     icon: <HugeiconsIcon icon={CreditCardIcon} strokeWidth={2} />,
+  },
+  {
+    title: "Support",
+    url: dashboardPaths.support,
+    icon: <HugeiconsIcon icon={Alert02Icon} strokeWidth={2} />,
+  },
+  {
+    title: "Account",
+    url: dashboardPaths.account,
+    icon: <HugeiconsIcon icon={CheckmarkBadgeIcon} strokeWidth={2} />,
   },
 ]
 
@@ -89,7 +101,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               (item.url === dashboardPaths.transactions &&
                 primarySegment === "transactions") ||
               (item.url === dashboardPaths.invoices &&
-                primarySegment === "invoices"),
+                primarySegment === "invoices") ||
+              (item.url === dashboardPaths.support &&
+                primarySegment === "support") ||
+              (item.url === dashboardPaths.account &&
+                primarySegment === "account"),
           }))}
         />
       </SidebarContent>

@@ -10,6 +10,7 @@ export interface InstanceDetailsData {
     | "pending"
     | "provisioning"
     | "active"
+    | "suspended"
     | "expired"
     | "termination_pending"
     | "terminated"

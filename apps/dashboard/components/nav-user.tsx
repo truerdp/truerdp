@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { useQueryClient } from "@tanstack/react-query"
+import Link from "next/link"
 import { useRouter } from "next/navigation"
 import {
   Avatar,
@@ -34,6 +35,7 @@ import {
   LogoutIcon,
 } from "@hugeicons/core-free-icons"
 import { buildWebLoginUrl, logout } from "@/lib/auth"
+import { dashboardPaths } from "@/lib/paths"
 
 export function NavUser({
   user,
@@ -133,7 +135,7 @@ export function NavUser({
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
-              <DropdownMenuItem>
+              <DropdownMenuItem render={<Link href={dashboardPaths.account} />}>
                 <HugeiconsIcon icon={CheckmarkBadgeIcon} strokeWidth={2} />
                 Account
               </DropdownMenuItem>

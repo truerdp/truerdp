@@ -167,6 +167,8 @@ export default function CheckoutReviewPage() {
   const orderId = Number(params.orderId ?? "")
   const hasValidOrderId = Number.isInteger(orderId) && orderId > 0
   const [isSavingBilling, setIsSavingBilling] = useState(false)
+  const [couponCode, setCouponCode] = useState("")
+  const [isUpdatingCoupon, setIsUpdatingCoupon] = useState(false)
   const {
     register,
     reset,
@@ -322,6 +324,40 @@ export default function CheckoutReviewPage() {
     }
 
     return persistBillingDetails(getValues())
+  }
+
+  async function updateCoupon(code: string | null) {
+    if (!order) {
+      return
+    }
+
+    try {
+      setIsUpdatingCoupon(true)
+      const response = await clientApi<{ order: unknown; message: string }>(
+        `/orders/${order.orderId}/coupon`,
+        {
+          method: "PATCH",
+          body: { code },
+        }
+      )
+
+      await queryClient.invalidateQueries({
+        queryKey: ["order", order.orderId],
+      })
+      toast.success(response.message)
+
+      if (!code) {
+        setCouponCode("")
+      }
+    } catch (submitError) {
+      const message =
+        submitError instanceof Error
+          ? submitError.message
+          : "Unable to update coupon"
+      toast.error(message)
+    } finally {
+      setIsUpdatingCoupon(false)
+    }
   }
 
   async function proceedToPayment() {
@@ -700,9 +736,68 @@ export default function CheckoutReviewPage() {
               </div>
               <Separator className="my-3" />
               <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">Subtotal</span>
+                <span>{formatAmount(order.invoice?.subtotal ?? order.pricing.priceUsdCents)}</span>
+              </div>
+              <Separator className="my-3" />
+              <div className="space-y-3">
+                <div className="flex flex-wrap items-end gap-2">
+                  <div className="min-w-0 flex-1">
+                    <label
+                      htmlFor="coupon-code"
+                      className="text-sm text-muted-foreground"
+                    >
+                      Coupon
+                    </label>
+                    <Input
+                      id="coupon-code"
+                      value={couponCode}
+                      onChange={(event) =>
+                        setCouponCode(event.target.value.toUpperCase())
+                      }
+                      disabled={isUpdatingCoupon || !!existingPendingTransaction}
+                      placeholder="WELCOME10"
+                    />
+                  </div>
+                  <Button
+                    variant="outline"
+                    onClick={() => void updateCoupon(couponCode)}
+                    disabled={
+                      isUpdatingCoupon ||
+                      !!existingPendingTransaction ||
+                      couponCode.trim().length === 0
+                    }
+                  >
+                    Apply
+                  </Button>
+                  {order.invoice?.couponId ? (
+                    <Button
+                      variant="ghost"
+                      onClick={() => void updateCoupon(null)}
+                      disabled={isUpdatingCoupon || !!existingPendingTransaction}
+                    >
+                      Remove
+                    </Button>
+                  ) : null}
+                </div>
+                {existingPendingTransaction ? (
+                  <p className="text-xs text-muted-foreground">
+                    Coupon changes are locked after payment starts.
+                  </p>
+                ) : null}
+              </div>
+              <Separator className="my-3" />
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">Discount</span>
+                <span>-{formatAmount(order.invoice?.discount ?? 0)}</span>
+              </div>
+              <Separator className="my-3" />
+              <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">Total</span>
                 <span className="text-lg font-semibold">
-                  {formatAmount(order.pricing.priceUsdCents)}
+                  {formatAmount(
+                    order.invoice?.totalAmount ?? order.pricing.priceUsdCents
+                  )}
                 </span>
               </div>
             </div>

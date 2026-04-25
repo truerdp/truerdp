@@ -99,6 +99,27 @@
       "when": 1776772200000,
       "tag": "0013_add_coingate_checkout_payment_method",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1777075200000,
+      "tag": "0014_password_reset_tokens",
+      "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1777161600000,
+      "tag": "0015_suspend_tickets_coupons",
+      "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1777168800000,
+      "tag": "0016_audit_notifications_cms",
+      "breakpoints": true
     }
   ]
 }

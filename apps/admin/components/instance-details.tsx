@@ -19,6 +19,7 @@ import {
   AlertTitle,
 } from "@workspace/ui/components/alert"
 import TerminateInstanceDialog from "@/components/terminate-instance-dialog"
+import { SuspendInstanceDialog } from "@/components/suspend-instance-dialog"
 import { useInstanceDetails } from "@/hooks/use-instance-details"
 
 function formatDateTime(dateString: string | null | undefined) {
@@ -41,6 +42,8 @@ function getStatusVariant(
   switch (status) {
     case "active":
       return "default"
+    case "suspended":
+      return "destructive"
     case "pending":
     case "provisioning":
       return "outline"
@@ -95,12 +98,20 @@ export function InstanceDetails({ instanceId }: InstanceDetailsProps) {
     )
   }
 
-  const { instance, plan, user, resource, server, extensionHistory } = data
+  const {
+    instance,
+    plan,
+    user,
+    resource,
+    server,
+    extensionHistory,
+    statusEvents,
+  } = data
 
   return (
     <div className="space-y-6">
       {/* Instance Info */}
-      <Card>
+      <Card className="w-full">
         <CardHeader>
           <div className="flex items-start justify-between">
             <div>
@@ -117,6 +128,14 @@ export function InstanceDetails({ instanceId }: InstanceDetailsProps) {
               {instance.status !== "terminated" && (
                 <TerminateInstanceDialog instanceId={instance.id} />
               )}
+              {instance.status === "suspended" ? (
+                <SuspendInstanceDialog
+                  instanceId={instance.id}
+                  mode="unsuspend"
+                />
+              ) : instance.status !== "terminated" ? (
+                <SuspendInstanceDialog instanceId={instance.id} mode="suspend" />
+              ) : null}
             </div>
           </div>
         </CardHeader>
@@ -245,6 +264,43 @@ export function InstanceDetails({ instanceId }: InstanceDetailsProps) {
                       Extended by:{" "}
                       {event.extendedBy
                         ? `${event.extendedBy.firstName} ${event.extendedBy.lastName} (${event.extendedBy.email})`
+                        : "Unknown admin"}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div>
+            <h3 className="mb-3 text-sm font-medium">Status Audit Trail</h3>
+            {statusEvents.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                No status actions recorded yet.
+              </p>
+            ) : (
+              <div className="space-y-2">
+                {statusEvents.map((event) => (
+                  <div
+                    key={event.id}
+                    className="rounded-lg border bg-muted/30 p-3 text-sm"
+                  >
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div className="font-medium">
+                        {event.action.replaceAll("_", " ")}:{" "}
+                        {event.fromStatus} -&gt; {event.toStatus}
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        {formatDateTime(event.createdAt)}
+                      </div>
+                    </div>
+                    <div className="mt-1 text-xs text-muted-foreground">
+                      {event.reason}
+                    </div>
+                    <div className="mt-1 text-xs text-muted-foreground">
+                      Admin:{" "}
+                      {event.admin
+                        ? `${event.admin.firstName} ${event.admin.lastName} (${event.admin.email})`
                         : "Unknown admin"}
                     </div>
                   </div>

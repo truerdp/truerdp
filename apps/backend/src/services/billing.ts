@@ -15,6 +15,8 @@ import { db } from "../db.js"
 import {
   instances,
   invoices,
+  couponUsages,
+  coupons,
   orders,
   planPricing,
   plans,
@@ -27,6 +29,14 @@ import {
 import { calculatePrice } from "./pricing.js"
 import { createCheckoutSessionForTransaction } from "./dodo-payments.js"
 import { createCoinGateOrderForTransaction } from "./coingate-payments.js"
+import { createAdminAuditLog } from "./admin-audit.js"
+import {
+  sendAdminAlertEmail,
+  sendExpiryReminderEmail,
+  sendInvoiceCreatedEmail,
+  sendPaymentFailedEmail,
+  sendPaymentConfirmedEmail,
+} from "./email.js"
 
 const PAYMENT_WINDOW_HOURS = 48
 
@@ -76,6 +86,167 @@ function createInvoiceExpiry(baseDate = new Date()) {
   const expiresAt = new Date(baseDate)
   expiresAt.setHours(expiresAt.getHours() + PAYMENT_WINDOW_HOURS)
   return expiresAt
+}
+
+function formatEmailAmount(amountMinor: number, currency: string) {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency,
+  }).format(amountMinor / 100)
+}
+
+async function sendInvoiceCreatedNotification(invoiceId: number) {
+  const [record] = await db
+    .select({
+      invoice: {
+        id: invoices.id,
+        invoiceNumber: invoices.invoiceNumber,
+        totalAmount: invoices.totalAmount,
+        currency: invoices.currency,
+        expiresAt: invoices.expiresAt,
+      },
+      order: {
+        planName: orders.planName,
+      },
+      user: {
+        email: users.email,
+        firstName: users.firstName,
+      },
+    })
+    .from(invoices)
+    .innerJoin(orders, eq(invoices.orderId, orders.id))
+    .innerJoin(users, eq(orders.userId, users.id))
+    .where(eq(invoices.id, invoiceId))
+    .limit(1)
+
+  if (!record) {
+    return
+  }
+
+  try {
+    await sendInvoiceCreatedEmail({
+      to: record.user.email,
+      firstName: record.user.firstName,
+      invoiceId: record.invoice.id,
+      invoiceNumber: record.invoice.invoiceNumber,
+      planName: record.order.planName,
+      amount: formatEmailAmount(
+        record.invoice.totalAmount,
+        record.invoice.currency
+      ),
+      expiresAt: record.invoice.expiresAt,
+    })
+  } catch (emailError) {
+    console.error("Failed to send invoice created email", emailError)
+  }
+}
+
+async function sendPaymentConfirmedNotification(input: {
+  invoiceId: number
+  transactionId: number
+}) {
+  const [record] = await db
+    .select({
+      invoice: {
+        id: invoices.id,
+        invoiceNumber: invoices.invoiceNumber,
+        totalAmount: invoices.totalAmount,
+        currency: invoices.currency,
+        paidAt: invoices.paidAt,
+      },
+      transaction: {
+        reference: transactions.reference,
+      },
+      order: {
+        planName: orders.planName,
+      },
+      user: {
+        email: users.email,
+        firstName: users.firstName,
+      },
+    })
+    .from(invoices)
+    .innerJoin(orders, eq(invoices.orderId, orders.id))
+    .innerJoin(users, eq(orders.userId, users.id))
+    .innerJoin(
+      transactions,
+      and(
+        eq(transactions.id, input.transactionId),
+        eq(transactions.invoiceId, invoices.id)
+      )
+    )
+    .where(eq(invoices.id, input.invoiceId))
+    .limit(1)
+
+  if (!record || !record.invoice.paidAt) {
+    return
+  }
+
+  try {
+    await sendPaymentConfirmedEmail({
+      to: record.user.email,
+      firstName: record.user.firstName,
+      invoiceId: record.invoice.id,
+      invoiceNumber: record.invoice.invoiceNumber,
+      transactionReference: record.transaction.reference,
+      planName: record.order.planName,
+      amount: formatEmailAmount(
+        record.invoice.totalAmount,
+        record.invoice.currency
+      ),
+      paidAt: record.invoice.paidAt,
+    })
+  } catch (emailError) {
+    console.error("Failed to send payment confirmed email", emailError)
+  }
+}
+
+async function sendPaymentFailedNotification(input: {
+  invoiceId: number
+  reason: string
+}) {
+  const [record] = await db
+    .select({
+      invoice: {
+        id: invoices.id,
+        invoiceNumber: invoices.invoiceNumber,
+        totalAmount: invoices.totalAmount,
+        currency: invoices.currency,
+      },
+      order: {
+        planName: orders.planName,
+      },
+      user: {
+        email: users.email,
+        firstName: users.firstName,
+      },
+    })
+    .from(invoices)
+    .innerJoin(orders, eq(invoices.orderId, orders.id))
+    .innerJoin(users, eq(orders.userId, users.id))
+    .where(eq(invoices.id, input.invoiceId))
+    .limit(1)
+
+  if (!record) {
+    return
+  }
+
+  try {
+    await sendPaymentFailedEmail({
+      to: record.user.email,
+      firstName: record.user.firstName,
+      invoiceNumber: record.invoice.invoiceNumber,
+      invoiceId: record.invoice.id,
+      planName: record.order.planName,
+      amount: formatEmailAmount(
+        record.invoice.totalAmount,
+        record.invoice.currency
+      ),
+      reason: input.reason,
+    })
+  } catch (emailError) {
+    console.error("Failed to send payment failed email", emailError)
+  }
 }
 
 type BillingTransactionRecord = {
@@ -233,6 +404,20 @@ async function expireStaleBillingAttempts(input: {
         )
       )
   })
+
+  for (const invoiceId of staleInvoiceIds) {
+    try {
+      await sendPaymentFailedNotification({
+        invoiceId,
+        reason: "Invoice expired before payment confirmation",
+      })
+    } catch (notificationError) {
+      console.error(
+        "Failed to send payment expiration notification",
+        notificationError
+      )
+    }
+  }
 }
 
 async function findReusableBillingTransaction(input: {
@@ -547,6 +732,7 @@ export async function findPendingTransactionForInstance(
 
 type BillingOrderRecord = {
   order: typeof orders.$inferSelect
+  invoice?: typeof invoices.$inferSelect | null
   plan: {
     id: number
     name: string
@@ -579,7 +765,132 @@ function formatBillingOrderResponse(record: BillingOrderRecord) {
       durationDays: record.order.durationDays,
       priceUsdCents: planPriceUsdCents,
     },
+    invoice: record.invoice
+      ? {
+          id: record.invoice.id,
+          invoiceNumber: record.invoice.invoiceNumber,
+          subtotal: record.invoice.subtotal,
+          discount: record.invoice.discount,
+          totalAmount: record.invoice.totalAmount,
+          currency: record.invoice.currency,
+          couponId: record.invoice.couponId,
+          status: record.invoice.status,
+          expiresAt: record.invoice.expiresAt,
+          paidAt: record.invoice.paidAt,
+        }
+      : null,
   }
+}
+
+async function getOrderInvoice(orderId: number) {
+  const invoiceResult = await db
+    .select()
+    .from(invoices)
+    .where(eq(invoices.orderId, orderId))
+    .limit(1)
+
+  return invoiceResult[0] ?? null
+}
+
+async function assertOrderHasNoTransactions(orderId: number) {
+  const existingTransactions = await db
+    .select({ id: transactions.id })
+    .from(transactions)
+    .innerJoin(invoices, eq(transactions.invoiceId, invoices.id))
+    .where(eq(invoices.orderId, orderId))
+    .limit(1)
+
+  if (existingTransactions[0]) {
+    throw new BillingError(
+      400,
+      "Coupon cannot be changed after payment has started"
+    )
+  }
+}
+
+function calculateCouponDiscount(input: {
+  subtotal: number
+  type: "percent" | "flat"
+  value: number
+}) {
+  if (input.type === "percent") {
+    if (input.value < 1 || input.value > 100) {
+      throw new BillingError(400, "Percent coupon value must be 1-100")
+    }
+
+    return Math.floor((input.subtotal * input.value) / 100)
+  }
+
+  if (input.value < 1) {
+    throw new BillingError(400, "Flat coupon value must be greater than zero")
+  }
+
+  return input.value
+}
+
+async function validateCouponForOrder(input: {
+  userId: number
+  order: typeof orders.$inferSelect
+  code: string
+}) {
+  const normalizedCode = input.code.trim().toUpperCase()
+
+  if (!normalizedCode) {
+    throw new BillingError(400, "Coupon code is required")
+  }
+
+  const couponResult = await db
+    .select()
+    .from(coupons)
+    .where(sql`upper(${coupons.code}) = ${normalizedCode}`)
+    .limit(1)
+
+  const coupon = couponResult[0]
+
+  if (!coupon || !coupon.isActive) {
+    throw new BillingError(400, "Coupon is not valid")
+  }
+
+  if (coupon.expiresAt && coupon.expiresAt < new Date()) {
+    throw new BillingError(400, "Coupon has expired")
+  }
+
+  if (
+    coupon.appliesTo !== "all" &&
+    coupon.appliesTo !== input.order.kind
+  ) {
+    throw new BillingError(400, "Coupon is not valid for this order")
+  }
+
+  const existingUsage = await db
+    .select({ id: couponUsages.id })
+    .from(couponUsages)
+    .where(
+      and(
+        eq(couponUsages.couponId, coupon.id),
+        eq(couponUsages.userId, input.userId)
+      )
+    )
+    .limit(1)
+
+  if (existingUsage[0]) {
+    throw new BillingError(400, "Coupon has already been used")
+  }
+
+  if (coupon.maxUses != null) {
+    const usageCountResult = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(couponUsages)
+      .where(eq(couponUsages.couponId, coupon.id))
+
+    const usageCount = usageCountResult[0]?.count ?? 0
+
+    if (usageCount >= coupon.maxUses) {
+      throw new BillingError(400, "Coupon usage limit has been reached")
+    }
+  }
+
+  return coupon
 }
 
 async function getBillingOrderById(orderId: number) {
@@ -627,7 +938,9 @@ export async function getBillingOrderForUser(userId: number, orderId: number) {
     throw new BillingError(403, "Forbidden")
   }
 
-  return formatBillingOrderResponse(record)
+  const invoice = await getOrderInvoice(orderId)
+
+  return formatBillingOrderResponse({ ...record, invoice })
 }
 
 export async function updateBillingDetailsForUser(input: {
@@ -666,6 +979,110 @@ export async function updateBillingDetailsForUser(input: {
   }
 
   return formatBillingOrderResponse(updated)
+}
+
+export async function applyCouponToBillingOrder(input: {
+  userId: number
+  orderId: number
+  code: string
+}) {
+  const record = await getBillingOrderById(input.orderId)
+
+  if (!record) {
+    throw new BillingError(404, "Order not found")
+  }
+
+  if (record.order.userId !== input.userId) {
+    throw new BillingError(403, "Forbidden")
+  }
+
+  if (record.order.status !== "pending_payment") {
+    throw new BillingError(400, "Order is no longer payable")
+  }
+
+  await assertOrderHasNoTransactions(record.order.id)
+
+  const invoice = await getOrderInvoice(record.order.id)
+
+  if (!invoice || invoice.status !== "unpaid") {
+    throw new BillingError(400, "Order does not have an unpaid invoice")
+  }
+
+  const coupon = await validateCouponForOrder({
+    userId: input.userId,
+    order: record.order,
+    code: input.code,
+  })
+
+  const discount = Math.min(
+    invoice.subtotal - 1,
+    calculateCouponDiscount({
+      subtotal: invoice.subtotal,
+      type: coupon.type,
+      value: coupon.value,
+    })
+  )
+
+  if (discount < 1) {
+    throw new BillingError(400, "Coupon does not reduce this invoice")
+  }
+
+  const [updatedInvoice] = await db
+    .update(invoices)
+    .set({
+      discount,
+      totalAmount: invoice.subtotal - discount,
+      couponId: coupon.id,
+    })
+    .where(eq(invoices.id, invoice.id))
+    .returning()
+
+  return formatBillingOrderResponse({
+    ...record,
+    invoice: updatedInvoice ?? invoice,
+  })
+}
+
+export async function removeCouponFromBillingOrder(input: {
+  userId: number
+  orderId: number
+}) {
+  const record = await getBillingOrderById(input.orderId)
+
+  if (!record) {
+    throw new BillingError(404, "Order not found")
+  }
+
+  if (record.order.userId !== input.userId) {
+    throw new BillingError(403, "Forbidden")
+  }
+
+  if (record.order.status !== "pending_payment") {
+    throw new BillingError(400, "Order is no longer payable")
+  }
+
+  await assertOrderHasNoTransactions(record.order.id)
+
+  const invoice = await getOrderInvoice(record.order.id)
+
+  if (!invoice || invoice.status !== "unpaid") {
+    throw new BillingError(400, "Order does not have an unpaid invoice")
+  }
+
+  const [updatedInvoice] = await db
+    .update(invoices)
+    .set({
+      discount: 0,
+      totalAmount: invoice.subtotal,
+      couponId: null,
+    })
+    .where(eq(invoices.id, invoice.id))
+    .returning()
+
+  return formatBillingOrderResponse({
+    ...record,
+    invoice: updatedInvoice ?? invoice,
+  })
 }
 
 export async function createBillingOrder(input: {
@@ -709,6 +1126,10 @@ export async function createBillingOrder(input: {
     const isExpired =
       instance.expiryDate != null && instance.expiryDate < new Date()
 
+    if (instance.status === "suspended") {
+      throw new BillingError(400, "Suspended instances cannot be renewed")
+    }
+
     if (!["active", "expired"].includes(instance.status) && !isExpired) {
       throw new BillingError(400, "Instance is not eligible for renewal")
     }
@@ -727,7 +1148,7 @@ export async function createBillingOrder(input: {
   const discount = Math.max(0, planPriceUsdCentsValue - totalAmount)
   const now = new Date()
 
-  const createdOrder = await db.transaction(async (tx) => {
+  const created = await db.transaction(async (tx) => {
     const orderInsertValues = {
       userId: input.userId,
       planId: pricingSelection.plan.id,
@@ -753,21 +1174,28 @@ export async function createBillingOrder(input: {
     }
     const orderPlanPriceUsdCentsValue = Number(orderPlanPriceUsdCents)
 
-    await tx.insert(invoices).values({
-      orderId: order.id,
-      invoiceNumber: createInvoiceNumber(),
-      subtotal: orderPlanPriceUsdCentsValue,
-      discount,
-      totalAmount,
-      status: "unpaid",
-      expiresAt: createInvoiceExpiry(now),
-    })
+    const insertedInvoices = await tx
+      .insert(invoices)
+      .values({
+        orderId: order.id,
+        invoiceNumber: createInvoiceNumber(),
+        subtotal: orderPlanPriceUsdCentsValue,
+        discount,
+        totalAmount,
+        status: "unpaid",
+        expiresAt: createInvoiceExpiry(now),
+      })
+      .returning({ id: invoices.id })
 
-    return order
+    const invoice = requireInsertedRecord(insertedInvoices[0], "invoice")
+
+    return { order, invoiceId: invoice.id }
   })
 
+  await sendInvoiceCreatedNotification(created.invoiceId)
+
   return formatBillingOrderResponse({
-    order: createdOrder,
+    order: created.order,
     plan: {
       id: pricingSelection.plan.id,
       name: pricingSelection.plan.name,
@@ -782,6 +1210,7 @@ export async function createBillingTransaction(input: {
   userId: number
   orderId: number
   method: SupportedPaymentMethod
+  ipAddress?: string | null
 }) {
   const orderResult = await getBillingOrderById(input.orderId)
 
@@ -859,6 +1288,7 @@ export async function createBillingTransaction(input: {
 
   const created = await db.transaction(async (tx) => {
     let invoice = reusableInvoice
+    let createdInvoiceId: number | null = null
 
     if (!invoice) {
       const insertedInvoices = await tx
@@ -875,6 +1305,7 @@ export async function createBillingTransaction(input: {
         .returning()
 
       invoice = requireInsertedRecord(insertedInvoices[0], "invoice")
+      createdInvoiceId = invoice.id
     }
 
     const insertedTransactions = await tx
@@ -899,8 +1330,13 @@ export async function createBillingTransaction(input: {
       transaction,
       invoice,
       order: orderResult.order,
+      createdInvoiceId,
     }
   })
+
+  if (created.createdInvoiceId) {
+    await sendInvoiceCreatedNotification(created.createdInvoiceId)
+  }
 
   let gatewayRedirectUrl: string | null = null
   const requiresHostedCheckout =
@@ -985,6 +1421,22 @@ export async function createBillingTransaction(input: {
       planName: created.order.planName,
       durationDays: created.order.durationDays,
       billingEmail: billing?.email ?? null,
+      shopper: billing
+        ? {
+            ipAddress: input.ipAddress,
+            firstName: billing.firstName,
+            lastName: billing.lastName,
+            email: billing.email,
+            companyName: billing.companyName,
+            taxId: billing.taxId,
+            addressLine1: billing.addressLine1,
+            addressLine2: billing.addressLine2,
+            city: billing.city,
+            state: billing.state,
+            postalCode: billing.postalCode,
+            country: billing.country,
+          }
+        : null,
     })
 
     await db
@@ -1347,8 +1799,15 @@ export async function listAdminTransactions(params: AdminListPaginationParams) {
   }
 }
 
-export async function confirmPendingTransaction(transactionId: number) {
-  return db.transaction(async (tx) => {
+export async function confirmPendingTransaction(
+  transactionId: number,
+  input?: {
+    adminUserId?: number | null
+    reason?: string
+    source?: "admin" | "webhook" | "system"
+  }
+) {
+  const confirmation = await db.transaction(async (tx) => {
     const txResult = await tx
       .select({
         transaction: {
@@ -1363,6 +1822,7 @@ export async function confirmPendingTransaction(transactionId: number) {
         invoice: {
           id: invoices.id,
           status: invoices.status,
+          couponId: invoices.couponId,
         },
         order: {
           id: orders.id,
@@ -1420,6 +1880,10 @@ export async function confirmPendingTransaction(transactionId: number) {
 
       if (existingInstance.status === "terminated") {
         throw new BillingError(400, "Cannot renew a terminated instance")
+      }
+
+      if (existingInstance.status === "suspended") {
+        throw new BillingError(400, "Cannot renew a suspended instance")
       }
 
       const baseDate =
@@ -1481,6 +1945,17 @@ export async function confirmPendingTransaction(transactionId: number) {
       })
       .where(eq(orders.id, current.order.id))
 
+    if (current.invoice.couponId) {
+      await tx
+        .insert(couponUsages)
+        .values({
+          couponId: current.invoice.couponId,
+          userId: current.transaction.userId,
+          invoiceId: current.invoice.id,
+        })
+        .onConflictDoNothing()
+    }
+
     return {
       message:
         current.order.kind === "renewal"
@@ -1501,6 +1976,134 @@ export async function confirmPendingTransaction(transactionId: number) {
         confirmedAt: now,
       },
       kind: current.order.kind,
+      before: {
+        transactionStatus: current.transaction.status,
+        invoiceStatus: current.invoice.status,
+        orderStatus: current.order.status,
+      },
     }
   })
+
+  await sendPaymentConfirmedNotification({
+    invoiceId: confirmation.invoice.id,
+    transactionId: confirmation.transaction.id,
+  })
+
+  try {
+    await createAdminAuditLog({
+      adminUserId: input?.adminUserId ?? null,
+      action: "transaction.confirm",
+      entityType: "transaction",
+      entityId: confirmation.transaction.id,
+      reason:
+        input?.reason ??
+        (input?.adminUserId
+          ? "Admin confirmed pending transaction"
+          : "Payment confirmed"),
+      beforeState: {
+        transactionStatus: confirmation.before.transactionStatus,
+        invoiceStatus: confirmation.before.invoiceStatus,
+        orderStatus: confirmation.before.orderStatus,
+      },
+      afterState: {
+        transactionStatus: confirmation.transaction.status,
+        invoiceStatus: confirmation.invoice.status,
+        orderStatus: confirmation.order.status,
+      },
+      metadata: {
+        source: input?.source ?? "system",
+        kind: confirmation.kind,
+        instanceId: confirmation.instance?.id ?? null,
+      },
+    })
+  } catch (auditError) {
+    console.error("Failed to write transaction confirmation audit log", auditError)
+  }
+
+  return confirmation
+}
+
+export async function notifyPaymentFailureForInvoice(input: {
+  invoiceId: number
+  reason: string
+}) {
+  await sendPaymentFailedNotification({
+    invoiceId: input.invoiceId,
+    reason: input.reason,
+  })
+
+  try {
+    await sendAdminAlertEmail({
+      subject: `Payment failed for invoice #${input.invoiceId}`,
+      text: `Invoice #${input.invoiceId} moved to failed/expired state. Reason: ${input.reason}`,
+    })
+  } catch (alertError) {
+    console.error("Failed to send admin alert for payment failure", alertError)
+  }
+}
+
+export async function sendExpiryReminderSweep(input?: {
+  daysAhead?: number
+  now?: Date
+}) {
+  const now = input?.now ?? new Date()
+  const daysAhead = Math.max(1, Math.min(input?.daysAhead ?? 3, 30))
+  const upperBound = new Date(now)
+  upperBound.setDate(upperBound.getDate() + daysAhead)
+
+  const rows = await db
+    .select({
+      instance: {
+        id: instances.id,
+        expiryDate: instances.expiryDate,
+      },
+      user: {
+        email: users.email,
+        firstName: users.firstName,
+      },
+      plan: {
+        name: plans.name,
+      },
+    })
+    .from(instances)
+    .innerJoin(users, eq(instances.userId, users.id))
+    .innerJoin(plans, eq(instances.planId, plans.id))
+    .where(
+      and(
+        inArray(instances.status, ["active", "suspended"]),
+        gte(instances.expiryDate, now),
+        lt(instances.expiryDate, upperBound)
+      )
+    )
+
+  let sent = 0
+
+  for (const row of rows) {
+    if (!row.instance.expiryDate) {
+      continue
+    }
+
+    const diffMs = row.instance.expiryDate.getTime() - now.getTime()
+    const daysRemaining = Math.max(1, Math.ceil(diffMs / (1000 * 60 * 60 * 24)))
+
+    try {
+      await sendExpiryReminderEmail({
+        to: row.user.email,
+        firstName: row.user.firstName,
+        instanceId: row.instance.id,
+        planName: row.plan.name,
+        expiryDate: row.instance.expiryDate,
+        daysRemaining,
+      })
+      sent += 1
+    } catch (emailError) {
+      console.error("Failed to send expiry reminder email", emailError)
+    }
+  }
+
+  return {
+    sent,
+    checked: rows.length,
+    daysAhead,
+  }
 }

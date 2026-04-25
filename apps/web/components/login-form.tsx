@@ -155,6 +155,11 @@ export function LoginForm({
                   <FieldError>{errors.password.message}</FieldError>
                 ) : null}
               </Field>
+              <div className="-mt-3 text-right text-sm">
+                <Link href={webPaths.forgotPassword} className="underline">
+                  Forgot password?
+                </Link>
+              </div>
               <Field>
                 <Button type="submit" disabled={isSubmitting}>
                   {isSubmitting && <Spinner data-icon="inline-start" />}

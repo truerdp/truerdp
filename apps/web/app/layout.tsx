@@ -1,4 +1,6 @@
 import { Geist_Mono, Geist } from "next/font/google"
+import { draftMode } from "next/headers"
+import { VisualEditing } from "next-sanity/visual-editing"
 
 import "@workspace/ui/globals.css"
 import "./globals.css"
@@ -8,6 +10,7 @@ import { ThemeProvider } from "@/components/theme-provider"
 import { cn } from "@workspace/ui/lib/utils"
 import { AppProviders } from "./providers"
 import SiteHeader from "@/components/site-header"
+import { SanityLive } from "@/lib/sanity"
 
 const geist = Geist({ subsets: ["latin"], variable: "--font-sans" })
 
@@ -16,11 +19,13 @@ const fontMono = Geist_Mono({
   variable: "--font-mono",
 })
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode
 }>) {
+  const { isEnabled } = await draftMode()
+
   return (
     <html
       lang="en"
@@ -38,6 +43,8 @@ export default function RootLayout({
             <AppProviders>
               <SiteHeader />
               {children}
+              {isEnabled ? <SanityLive /> : null}
+              {isEnabled ? <VisualEditing /> : null}
               <Toaster richColors position="top-center" duration={5000} />
             </AppProviders>
           </TooltipProvider>

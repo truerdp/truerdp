@@ -22,6 +22,8 @@ import {
   CreditCardIcon,
   Package02Icon,
   UserAdd01Icon,
+  NoteIcon,
+  Audit01Icon,
 } from "@hugeicons/core-free-icons"
 import { adminPaths } from "@/lib/paths"
 import { useProfile } from "@/hooks/use-profile"
@@ -52,6 +54,26 @@ const navMain = [
     title: "Plans",
     url: adminPaths.plans,
     icon: <HugeiconsIcon icon={Package02Icon} strokeWidth={2} />,
+  },
+  {
+    title: "Content",
+    url: adminPaths.content,
+    icon: <HugeiconsIcon icon={NoteIcon} strokeWidth={2} />,
+  },
+  {
+    title: "Audit Logs",
+    url: adminPaths.auditLogs,
+    icon: <HugeiconsIcon icon={Audit01Icon} strokeWidth={2} />,
+  },
+  {
+    title: "Coupons",
+    url: adminPaths.coupons,
+    icon: <HugeiconsIcon icon={CreditCardIcon} strokeWidth={2} />,
+  },
+  {
+    title: "Support",
+    url: adminPaths.support,
+    icon: <HugeiconsIcon icon={Alert02Icon} strokeWidth={2} />,
   },
   {
     title: "Servers",
@@ -112,6 +134,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 segments.length === 1) ||
               (item.url === adminPaths.users && segments[0] === "users") ||
               (item.url === adminPaths.plans && segments[0] === "plans") ||
+              (item.url === adminPaths.content && segments[0] === "content") ||
+              (item.url === adminPaths.auditLogs &&
+                segments[0] === "audit-logs") ||
+              (item.url === adminPaths.coupons && segments[0] === "coupons") ||
+              (item.url === adminPaths.support && segments[0] === "support") ||
               (item.url === adminPaths.invoices &&
                 segments[0] === "invoices") ||
               (item.url === adminPaths.transactions &&

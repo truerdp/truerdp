@@ -38,6 +38,18 @@ export interface BillingOrder {
     durationDays: number
     priceUsdCents: number
   }
+  invoice: {
+    id: number
+    invoiceNumber: string
+    subtotal: number
+    discount: number
+    totalAmount: number
+    currency: string
+    couponId: number | null
+    status: "unpaid" | "paid" | "expired"
+    expiresAt: string
+    paidAt: string | null
+  } | null
 }
 
 export function useOrder(orderId: number | null) {

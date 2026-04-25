@@ -3,14 +3,20 @@ import { z } from "zod"
 import { verifyAuth } from "../middleware/auth.js"
 import {
   BillingError,
+  applyCouponToBillingOrder,
   createBillingOrder,
   getBillingOrderForUser,
+  removeCouponFromBillingOrder,
   updateBillingDetailsForUser,
 } from "../services/billing.js"
 
 const createOrderSchema = z.object({
   planPricingId: z.number().int().positive(),
   instanceId: z.number().int().positive().optional(),
+})
+
+const couponSchema = z.object({
+  code: z.string().trim().min(1).optional().nullable(),
 })
 
 const orderIdParamsSchema = z.object({
@@ -124,6 +130,50 @@ export async function orderRoutes(server: FastifyInstance) {
           message: "Billing details saved",
           orderId: updated.orderId,
           billingDetails: updated.billingDetails,
+        })
+      } catch (err: any) {
+        request.log.error(err)
+
+        if (err instanceof BillingError) {
+          return reply.status(err.statusCode).send({
+            error: err.message,
+          })
+        }
+
+        return reply.status(400).send({
+          error: err.message || "Invalid request",
+        })
+      }
+    }
+  )
+
+  server.patch(
+    "/orders/:id/coupon",
+    { preHandler: verifyAuth },
+    async (request: any, reply) => {
+      try {
+        const params = orderIdParamsSchema.parse(request.params)
+        const body = couponSchema.parse(request.body ?? {})
+        const userId = request.user.userId
+
+        const updated =
+          body.code && body.code.trim()
+            ? await applyCouponToBillingOrder({
+                userId,
+                orderId: params.id,
+                code: body.code,
+              })
+            : await removeCouponFromBillingOrder({
+                userId,
+                orderId: params.id,
+              })
+
+        return reply.send({
+          message:
+            body.code && body.code.trim()
+              ? "Coupon applied"
+              : "Coupon removed",
+          order: updated,
         })
       } catch (err: any) {
         request.log.error(err)

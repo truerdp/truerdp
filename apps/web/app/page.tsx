@@ -14,14 +14,19 @@ import {
   HomeAutoCheckout,
   PlanCheckoutButton,
 } from "@/components/home-checkout-actions"
+import { getCmsPage } from "@/lib/cms"
 import { formatAmount } from "@/lib/format"
 
 export const dynamic = "force-dynamic"
 
-export const metadata: Metadata = {
-  title: "TrueRDP Plans",
-  description:
-    "Browse TrueRDP hosting plans, compare pricing, and start checkout instantly.",
+export async function generateMetadata(): Promise<Metadata> {
+  const homepage = await getCmsPage("homepage")
+  return {
+    title: homepage.seoTitle || homepage.title,
+    description:
+      homepage.seoDescription ||
+      "Browse TrueRDP hosting plans, compare pricing, and start checkout instantly.",
+  }
 }
 
 interface PlanPricingOption {
@@ -58,6 +63,30 @@ async function getPlans() {
 
 export default async function Page() {
   const { plans, error } = await getPlans()
+  const homepage = await getCmsPage("homepage")
+  const hero =
+    (homepage.content?.hero as
+      | {
+          badge?: string
+          headline?: string
+          description?: string
+        }
+      | undefined) ?? {}
+  const sections =
+    (homepage.content?.sections as
+      | {
+          planGroupsTitle?: string
+          planLocationsTitle?: string
+          comparisonTitle?: string
+          comparisonDescription?: string
+        }
+      | undefined) ?? {}
+  const footerLinks = Array.isArray(homepage.content?.footerLinks)
+    ? (homepage.content.footerLinks as Array<{
+        label?: string
+        href?: string
+      }>)
+    : []
 
   const planCountLabel =
     plans.length === 0
@@ -93,15 +122,14 @@ export default async function Page() {
       <section className="rounded-2xl border bg-linear-to-b from-muted/50 to-background p-8">
         <Badge variant="secondary" className="mb-3">
           <HugeiconsIcon icon={ServerStack01Icon} size={14} strokeWidth={2} />
-          Instant setup workflow
+          {hero.badge || "Instant setup workflow"}
         </Badge>
         <h1 className="text-3xl font-semibold tracking-tight md:text-4xl">
-          Choose a TrueRDP plan and start your order in minutes
+          {hero.headline || "Choose a TrueRDP plan and start your order in minutes"}
         </h1>
         <p className="mt-3 max-w-2xl text-sm text-muted-foreground md:text-base">
-          Select duration, pick a payment method, and generate a transaction.
-          Provisioning is then handled by admin confirmation in the current
-          flow.
+          {hero.description ||
+            "Select duration, pick a payment method, and generate a transaction. Provisioning is then handled by admin confirmation in the current flow."}
         </p>
         <div className="mt-4 text-sm text-muted-foreground">
           {planCountLabel}
@@ -155,7 +183,9 @@ export default async function Page() {
       {!error && plans.length > 0 ? (
         <section className="mt-10 grid gap-6 lg:grid-cols-2">
           <div className="rounded-xl border bg-muted/20 p-5">
-            <h2 className="text-lg font-semibold">Plans by Type</h2>
+            <h2 className="text-lg font-semibold">
+              {sections.planGroupsTitle || "Plans by Type"}
+            </h2>
             <div className="mt-4 space-y-4">
               {Object.entries(plansByType).map(([planType, groupedPlans]) => (
                 <div key={planType} className="space-y-2">
@@ -175,7 +205,9 @@ export default async function Page() {
           </div>
 
           <div className="rounded-xl border bg-muted/20 p-5">
-            <h2 className="text-lg font-semibold">Plans by Location</h2>
+            <h2 className="text-lg font-semibold">
+              {sections.planLocationsTitle || "Plans by Location"}
+            </h2>
             <div className="mt-4 space-y-4">
               {Object.entries(plansByLocation).map(
                 ([planLocation, groupedPlans]) => (
@@ -194,6 +226,66 @@ export default async function Page() {
                 )
               )}
             </div>
+          </div>
+        </section>
+      ) : null}
+
+      {!error && plans.length > 0 ? (
+        <section className="mt-10 rounded-xl border p-5">
+          <h2 className="text-lg font-semibold">
+            {sections.comparisonTitle || "Plan comparison"}
+          </h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {sections.comparisonDescription ||
+              "Use this matrix to compare plan resources and locations before checkout."}
+          </p>
+          <div className="mt-4 overflow-x-auto">
+            <table className="w-full min-w-[640px] text-left text-sm">
+              <thead>
+                <tr className="border-b text-muted-foreground">
+                  <th className="py-2 pr-3 font-medium">Plan</th>
+                  <th className="py-2 pr-3 font-medium">CPU</th>
+                  <th className="py-2 pr-3 font-medium">RAM</th>
+                  <th className="py-2 pr-3 font-medium">Storage</th>
+                  <th className="py-2 pr-3 font-medium">Type</th>
+                  <th className="py-2 pr-3 font-medium">Location</th>
+                </tr>
+              </thead>
+              <tbody>
+                {plans.map((plan) => (
+                  <tr key={`compare-${plan.id}`} className="border-b last:border-b-0">
+                    <td className="py-2 pr-3 font-medium">{plan.name}</td>
+                    <td className="py-2 pr-3">{plan.cpu} vCPU</td>
+                    <td className="py-2 pr-3">{plan.ram} GB</td>
+                    <td className="py-2 pr-3">{plan.storage} GB</td>
+                    <td className="py-2 pr-3">{plan.planType}</td>
+                    <td className="py-2 pr-3">{plan.planLocation}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      ) : null}
+
+      {footerLinks.length > 0 ? (
+        <section className="mt-10 border-t pt-6">
+          <div className="flex flex-wrap gap-3 text-sm">
+            {footerLinks.map((item, index) => {
+              if (!item.href || !item.label) {
+                return null
+              }
+
+              return (
+                <a
+                  key={`${item.href}-${index}`}
+                  href={item.href}
+                  className="rounded-md border px-3 py-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                >
+                  {item.label}
+                </a>
+              )
+            })}
           </div>
         </section>
       ) : null}

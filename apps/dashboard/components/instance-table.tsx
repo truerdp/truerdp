@@ -21,6 +21,7 @@ export interface Instance {
     | "pending"
     | "provisioning"
     | "active"
+    | "suspended"
     | "expired"
     | "termination_pending"
     | "terminated"
@@ -39,6 +40,8 @@ function getStatusVariant(
   switch (status) {
     case "active":
       return "secondary"
+    case "suspended":
+      return "destructive"
     case "pending":
     case "provisioning":
       return "outline"

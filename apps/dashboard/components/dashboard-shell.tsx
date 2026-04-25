@@ -71,6 +71,14 @@ function getBreadcrumbState(segments: string[]) {
     }
   }
 
+  if (segments[0] === "account") {
+    return {
+      currentLabel: "Account",
+      parentLabel: null,
+      parentHref: dashboardPaths.overview,
+    }
+  }
+
   return {
     currentLabel: "Dashboard",
     parentLabel: null,

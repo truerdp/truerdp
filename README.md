@@ -203,11 +203,37 @@ DATABASE_URL="postgres://postgres:postgres@localhost:5432/truerdp"
 PORT=3003
 JWT_SECRET=change-this-in-production
 RESOURCE_CREDENTIALS_SECRET=change-this-too
+RESEND_API_KEY=
+RESEND_FROM_EMAIL="TrueRDP <onboarding@resend.dev>"
+RESEND_REPLY_TO_EMAIL=
+RESEND_BASE_URL=
+DASHBOARD_BASE_URL=http://localhost:3001
 COINGATE_ENVIRONMENT=sandbox
 COINGATE_API_TOKEN=
 COINGATE_RECEIVE_CURRENCY=DO_NOT_CONVERT
 BACKEND_BASE_URL=http://localhost:3003
 ```
+
+Web CMS env values (set in repo root `.env` or shell for `apps/web`):
+
+```env
+NEXT_PUBLIC_SANITY_PROJECT_ID=
+NEXT_PUBLIC_SANITY_DATASET=production
+SANITY_PROJECT_ID=
+SANITY_DATASET=production
+SANITY_API_VERSION=2026-03-01
+SANITY_API_TOKEN=
+SANITY_BROWSER_TOKEN=
+SANITY_DRAFT_SECRET=
+SANITY_REVALIDATE_SECRET=
+```
+
+Sanity routes used by `apps/web`:
+
+- Studio: `http://localhost:3000/studio`
+- Draft mode enable: `/api/draft?secret=...&slug=/target-path`
+- Draft mode disable: `/api/draft/disable?slug=/target-path`
+- Revalidation webhook: `POST /api/revalidate` (signed with `SANITY_REVALIDATE_SECRET`)
 
 ## Commands
 
@@ -232,6 +258,8 @@ pnpm --filter web dev
 pnpm --filter dashboard dev
 pnpm --filter admin dev
 pnpm --filter backend dev
+pnpm --filter web sanity:studio
+pnpm --filter web sanity:deploy
 ```
 
 Backend database workflows:

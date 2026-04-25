@@ -14,32 +14,17 @@ import {
 } from "@workspace/ui/components/alert"
 import { Badge } from "@workspace/ui/components/badge"
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@workspace/ui/components/card"
-import { Separator } from "@workspace/ui/components/separator"
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@workspace/ui/components/table"
 import { Skeleton } from "@workspace/ui/components/skeleton"
 import RenewButton from "@/components/renew-button"
 import { cn } from "@workspace/ui/lib/utils"
 import { formatAmount } from "@/lib/format"
-
-interface DetailItemProps {
-  label: string
-  value: string
-}
-
-function DetailItem({ label, value }: DetailItemProps) {
-  return (
-    <div className="flex items-center justify-between gap-4">
-      <span className="text-sm text-muted-foreground">{label}</span>
-      <span className="font-medium">{value}</span>
-    </div>
-  )
-}
 
 function formatDate(value: string | null): string {
   if (!value) return "-"
@@ -56,6 +41,9 @@ function getStatusVariant(
   switch (status) {
     case "active":
       return "default"
+
+    case "suspended":
+      return "destructive"
 
     case "pending":
     case "provisioning":
@@ -95,22 +83,61 @@ function getBillingStatusVariant(
 
 function InstanceDetailsSkeleton() {
   return (
-    <Card className="max-w-2xl">
-      <CardHeader>
-        <Skeleton className="h-6 w-40" />
-        <Skeleton className="h-4 w-64" />
-      </CardHeader>
-      <CardContent className="flex flex-col gap-4">
-        <Skeleton className="h-4 w-full" />
-        <Skeleton className="h-4 w-full" />
-        <Skeleton className="h-4 w-full" />
-        <Skeleton className="h-4 w-full" />
-        <Skeleton className="h-4 w-full" />
-      </CardContent>
-      <CardFooter>
-        <Skeleton className="h-9 w-40" />
-      </CardFooter>
-    </Card>
+    <section className="space-y-4">
+      <div>
+        <h1 className="text-2xl font-bold tracking-tight">Instance Details</h1>
+        <p className="text-sm text-muted-foreground">
+          Review your provisioned instance details.
+        </p>
+      </div>
+      <div className="rounded-lg border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>ID</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Billing</TableHead>
+              <TableHead>IP Address</TableHead>
+              <TableHead>Username</TableHead>
+              <TableHead>Start Date</TableHead>
+              <TableHead>Expiry Date</TableHead>
+              <TableHead>Action</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            <TableRow>
+              <TableCell>
+                <Skeleton className="h-4 w-10" />
+              </TableCell>
+              <TableCell>
+                <Skeleton className="h-5 w-16" />
+              </TableCell>
+              <TableCell>
+                <Skeleton className="h-5 w-16" />
+              </TableCell>
+              <TableCell>
+                <Skeleton className="h-4 w-24" />
+              </TableCell>
+              <TableCell>
+                <Skeleton className="h-4 w-20" />
+              </TableCell>
+              <TableCell>
+                <Skeleton className="h-4 w-24" />
+              </TableCell>
+              <TableCell>
+                <Skeleton className="h-4 w-24" />
+              </TableCell>
+              <TableCell>
+                <div className="flex items-center gap-2">
+                  <Skeleton className="h-9 w-32" />
+                  <Skeleton className="h-9 w-20" />
+                </div>
+              </TableCell>
+            </TableRow>
+          </TableBody>
+        </Table>
+      </div>
+    </section>
   )
 }
 
@@ -150,9 +177,18 @@ export default function InstanceDetails() {
   }
 
   return (
-    <div className="flex flex-col gap-6">
+    <section className="space-y-4">
+      <div>
+        <h1 className="text-2xl font-bold tracking-tight">
+          Instance #{data.id}
+        </h1>
+        <p className="text-sm text-muted-foreground">
+          Review your provisioned instance details.
+        </p>
+      </div>
+
       {hasPendingRenewal && (
-        <Alert className="max-w-2xl border-yellow-300 bg-yellow-50 text-yellow-800">
+        <Alert className="border-yellow-300 bg-yellow-50 text-yellow-800">
           <HugeiconsIcon
             icon={Alert02Icon}
             strokeWidth={2}
@@ -174,64 +210,57 @@ export default function InstanceDetails() {
           )}
         </Alert>
       )}
-      <Card className="max-w-2xl">
-        <CardHeader>
-          <CardTitle>Instance #{data?.id}</CardTitle>
-          <CardDescription>
-            Review your provisioned instance details.
-          </CardDescription>
-        </CardHeader>
 
-        <CardContent className="flex flex-col gap-4">
-          {data && (
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">Status</span>
-              <span>
+      <div className="rounded-lg border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>ID</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Billing</TableHead>
+              <TableHead>IP Address</TableHead>
+              <TableHead>Username</TableHead>
+              <TableHead>Start Date</TableHead>
+              <TableHead>Expiry Date</TableHead>
+              <TableHead>Action</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            <TableRow>
+              <TableCell className="font-mono text-sm">{data.id}</TableCell>
+              <TableCell>
                 <Badge variant={getStatusVariant(data.status)}>
                   {formatStatus(data.status)}
                 </Badge>
-              </span>
-            </div>
-          )}
-          <Separator />
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-muted-foreground">
-              Billing Status
-            </span>
-            <span>
-              <Badge variant={getBillingStatusVariant(billingStatus)}>
-                {formatStatus(billingStatus)}
-              </Badge>
-            </span>
-          </div>
-          <Separator />
-          <DetailItem label="IP Address" value={data?.ipAddress ?? "-"} />
-          <Separator />
-          <DetailItem label="Username" value={data?.username ?? "-"} />
-          <Separator />
-          <DetailItem
-            label="Start Date"
-            value={formatDate(data?.startDate ?? null)}
-          />
-          <Separator />
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-muted-foreground">Expiry Date</span>
-            <span
-              className={cn("font-medium", isExpired ? "text-red-500" : "")}
-            >
-              {formatDate(data.expiryDate)}
-              {isExpired && " (expired)"}
-            </span>
-          </div>
-        </CardContent>
-
-        <CardFooter>
-          {data && <CredentialsDialog instanceId={data.id} />}
-          {canShowRenew && (
-            <RenewButton instanceId={data.id} disabled={!canRenew} />
-          )}
-        </CardFooter>
-      </Card>
-    </div>
+              </TableCell>
+              <TableCell>
+                <Badge variant={getBillingStatusVariant(billingStatus)}>
+                  {formatStatus(billingStatus)}
+                </Badge>
+              </TableCell>
+              <TableCell className="font-mono">
+                {data.ipAddress ?? "-"}
+              </TableCell>
+              <TableCell>{data.username ?? "-"}</TableCell>
+              <TableCell>{formatDate(data.startDate)}</TableCell>
+              <TableCell
+                className={cn("font-medium", isExpired ? "text-red-500" : "")}
+              >
+                {formatDate(data.expiryDate)}
+                {isExpired && " (expired)"}
+              </TableCell>
+              <TableCell>
+                <div className="flex flex-wrap items-center gap-2">
+                  <CredentialsDialog instanceId={data.id} />
+                  {canShowRenew && (
+                    <RenewButton instanceId={data.id} disabled={!canRenew} />
+                  )}
+                </div>
+              </TableCell>
+            </TableRow>
+          </TableBody>
+        </Table>
+      </div>
+    </section>
   )
 }

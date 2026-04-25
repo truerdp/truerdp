@@ -12,7 +12,7 @@ import {
   UserAdd01Icon,
 } from "@hugeicons/core-free-icons"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { useState, type ReactNode } from "react"
 import { useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
@@ -52,11 +52,16 @@ interface MenuItem {
 
 export default function SiteHeader() {
   const router = useRouter()
+  const pathname = usePathname()
   const queryClient = useQueryClient()
   const profileQuery = useProfile()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [isLoggingOut, setIsLoggingOut] = useState(false)
   const isAuthenticated = !profileQuery.isError && Boolean(profileQuery.data)
+
+  if (pathname?.startsWith("/studio")) {
+    return null
+  }
 
   async function onLogout() {
     try {
@@ -101,15 +106,23 @@ export default function SiteHeader() {
       url: "#",
       items: [
         {
-          title: "Invoices",
-          description: "Track payment status and unpaid invoice lifecycle.",
+          title: "FAQ",
+          description: "Answers about provisioning, renewals, and payments.",
           icon: <HugeiconsIcon icon={Invoice03Icon} strokeWidth={2} />,
-          url: webPaths.checkoutSuccess,
+          url: webPaths.faq,
+        },
+        {
+          title: "Contact & Support",
+          description: "Get help through support channels and ticketing.",
+          icon: <HugeiconsIcon icon={Invoice03Icon} strokeWidth={2} />,
+          url: webPaths.contact,
         },
       ],
     },
     { title: "Pricing", url: webPaths.home },
-    { title: "Blog", url: "#" },
+    { title: "Terms", url: webPaths.terms },
+    { title: "Privacy", url: webPaths.privacy },
+    { title: "Refund Policy", url: webPaths.refundPolicy },
   ]
 
   return (
@@ -308,7 +321,7 @@ function renderDesktopMenuItem(item: MenuItem) {
           {item.items.map((subItem) => (
             <NavigationMenuLink
               key={subItem.title}
-              href={subItem.url}
+              render={<Link href={subItem.url} />}
               className="w-80 items-start gap-4"
             >
               <div className="text-foreground">{subItem.icon}</div>
@@ -329,7 +342,9 @@ function renderDesktopMenuItem(item: MenuItem) {
 
   return (
     <NavigationMenuItem key={item.title}>
-      <NavigationMenuLink href={item.url}>{item.title}</NavigationMenuLink>
+      <NavigationMenuLink render={<Link href={item.url} />}>
+        {item.title}
+      </NavigationMenuLink>
     </NavigationMenuItem>
   )
 }

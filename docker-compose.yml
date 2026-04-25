@@ -30,12 +30,14 @@ services:
     environment:
       DATABASE_URL: postgres://postgres:postgres@db:5432/truerdp
       PORT: 3003
+    env_file:
+      - apps/backend/.env
     ports:
       - "3003:3003"
     volumes:
       - .:/app
       - /app/node_modules
-    command: pnpm --filter backend dev
+    command: sh -c "CI=true pnpm install --frozen-lockfile && pnpm --filter backend dev"
 
 volumes:
   db_data:

@@ -18,6 +18,60 @@ type CoinGateOrderResponse = {
   paid_at?: string | null
 }
 
+type CoinGateShopperInput = {
+  ipAddress?: string | null
+  firstName?: string | null
+  lastName?: string | null
+  email?: string | null
+  companyName?: string | null
+  taxId?: string | null
+  addressLine1?: string | null
+  addressLine2?: string | null
+  city?: string | null
+  state?: string | null
+  postalCode?: string | null
+  country?: string | null
+}
+
+type CoinGateShopperPayload = {
+  type: "business" | "personal"
+  ip_address?: string
+  email?: string
+  first_name?: string
+  last_name?: string
+  residence_address?: string
+  residence_postal_code?: string
+  residence_city?: string
+  residence_country?: string
+  company_details?: {
+    name: string
+    code?: string
+    address?: string
+    postal_code?: string
+    city?: string
+    country?: string
+  }
+}
+
+const countryNameToIso2: Record<string, string> = {
+  india: "IN",
+  bharat: "IN",
+  ind: "IN",
+  usa: "US",
+  "united states": "US",
+  "united states of america": "US",
+  uk: "GB",
+  "united kingdom": "GB",
+  england: "GB",
+  uae: "AE",
+  "united arab emirates": "AE",
+  russia: "RU",
+  vietnam: "VN",
+  "south korea": "KR",
+  "north korea": "KP",
+  "czech republic": "CZ",
+}
+
 function getEnv(key: string, required = true) {
   const value = process.env[key]
 
@@ -73,6 +127,33 @@ function getReceiveCurrency() {
   return configured && configured.length > 0 ? configured : "DO_NOT_CONVERT"
 }
 
+function normalizeCountryLookupKey(value: string) {
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/[._-]+/g, " ")
+    .replace(/\s+/g, " ")
+}
+
+function normalizeCountryToIso2(value: string | null | undefined) {
+  const raw = value?.trim()
+
+  if (!raw) {
+    return ""
+  }
+
+  if (/^[A-Za-z]{2}$/.test(raw)) {
+    return raw.toUpperCase()
+  }
+
+  return countryNameToIso2[normalizeCountryLookupKey(raw)] ?? ""
+}
+
+function trimmedOptional(value: string | null | undefined) {
+  const trimmed = value?.trim()
+  return trimmed && trimmed.length > 0 ? trimmed : undefined
+}
+
 function toAmountMajor(amountMinor: number) {
   return Number((amountMinor / 100).toFixed(2))
 }
@@ -122,6 +203,57 @@ function stringifyUnknown(value: unknown) {
   }
 
   return ""
+}
+
+function isCoinGateValidationError(err: unknown) {
+  return err instanceof Error && err.message.includes("(422)")
+}
+
+function buildCoinGateShopperPayload(input?: CoinGateShopperInput | null) {
+  if (!input) {
+    return null
+  }
+
+  const country = normalizeCountryToIso2(input.country) || undefined
+  const address = [input.addressLine1, input.addressLine2]
+    .map((part) => trimmedOptional(part))
+    .filter(Boolean)
+    .join(", ")
+  const companyName = trimmedOptional(input.companyName)
+  const type = companyName ? "business" : "personal"
+  const shopper: CoinGateShopperPayload = {
+    type,
+    ip_address: trimmedOptional(input.ipAddress),
+    email: trimmedOptional(input.email),
+    first_name: trimmedOptional(input.firstName),
+    last_name: trimmedOptional(input.lastName),
+  }
+
+  if (companyName) {
+    shopper.company_details = {
+      name: companyName,
+      code: trimmedOptional(input.taxId),
+      address: address || undefined,
+      postal_code: trimmedOptional(input.postalCode),
+      city: trimmedOptional(input.city),
+      country,
+    }
+  } else {
+    shopper.residence_address = address || undefined
+    shopper.residence_postal_code = trimmedOptional(input.postalCode)
+    shopper.residence_city = trimmedOptional(input.city)
+    shopper.residence_country = country
+  }
+
+  const hasShopperDetails = Object.entries(shopper).some(
+    ([key, value]) => key !== "type" && value
+  )
+
+  if (!hasShopperDetails) {
+    return null
+  }
+
+  return shopper
 }
 
 async function coinGateRequest<T>(input: {
@@ -321,9 +453,13 @@ async function getCoinGateOrderById(orderId: number) {
 
   const topLevel = objectFromUnknown(response)
   const nestedData = objectFromUnknown(topLevel.data)
-  const candidate = objectFromUnknown(
-    topLevel.order ?? nestedData.order ?? nestedData ?? topLevel
-  )
+  const nestedOrder = objectFromUnknown(topLevel.order ?? nestedData.order)
+  const candidate =
+    Object.keys(nestedOrder).length > 0
+      ? nestedOrder
+      : Object.keys(nestedData).length > 0
+        ? nestedData
+        : topLevel
 
   if (Object.keys(candidate).length === 0) {
     throw new Error(`CoinGate order ${orderId} returned an empty response`)
@@ -351,6 +487,69 @@ function mapCoinGateStatusToEventType(status: string) {
   return "payment.processing"
 }
 
+function isCoinGateTerminalStatus(status: string) {
+  const normalized = status.trim().toLowerCase()
+
+  return (
+    normalized === "paid" ||
+    normalized === "canceled" ||
+    normalized === "cancelled" ||
+    normalized === "expired" ||
+    normalized === "invalid"
+  )
+}
+
+function getPendingStatusPollAttempts() {
+  const raw = process.env.COINGATE_PENDING_STATUS_POLL_ATTEMPTS?.trim()
+  const parsed = raw ? Number.parseInt(raw, 10) : NaN
+
+  if (Number.isFinite(parsed) && parsed >= 0) {
+    return parsed
+  }
+
+  // Additional attempts after the initial read.
+  return 4
+}
+
+function getPendingStatusPollDelayMs() {
+  const raw = process.env.COINGATE_PENDING_STATUS_POLL_DELAY_MS?.trim()
+  const parsed = raw ? Number.parseInt(raw, 10) : NaN
+
+  if (Number.isFinite(parsed) && parsed >= 0) {
+    return parsed
+  }
+
+  return 500
+}
+
+function sleep(ms: number) {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms)
+  })
+}
+
+async function pollCoinGateOrderUntilTerminal(orderId: number) {
+  let latest = await getCoinGateOrderById(orderId)
+  const attempts = getPendingStatusPollAttempts()
+  const delayMs = getPendingStatusPollDelayMs()
+
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
+    const status = stringifyUnknown(latest.status).trim().toLowerCase()
+
+    if (isCoinGateTerminalStatus(status)) {
+      return latest
+    }
+
+    if (delayMs > 0) {
+      await sleep(delayMs)
+    }
+
+    latest = await getCoinGateOrderById(orderId)
+  }
+
+  return latest
+}
+
 export async function createCoinGateOrderForTransaction(input: {
   amountMinor: number
   currency: string
@@ -361,36 +560,54 @@ export async function createCoinGateOrderForTransaction(input: {
   planName: string
   durationDays: number
   billingEmail?: string | null
+  shopper?: CoinGateShopperInput | null
 }) {
   const callbackToken = randomUUID().replaceAll("-", "")
   const currency = input.currency.trim().toUpperCase()
-  const response = await coinGateRequest<CoinGateOrderResponse>({
-    path: "/orders",
-    method: "POST",
-    body: {
-      order_id: input.reference,
-      price_amount: toAmountMajor(input.amountMinor),
-      price_currency: currency,
-      receive_currency: getReceiveCurrency(),
-      title: buildCoinGateTitle({
-        planName: input.planName,
-        durationDays: input.durationDays,
-      }),
-      description: buildCoinGateDescription({
-        orderId: input.orderId,
-        invoiceId: input.invoiceId,
-        transactionReference: input.reference,
-      }),
-      callback_url: buildCoinGateCallbackUrl(),
-      cancel_url: buildCoinGateCancelUrl(input.orderId),
-      success_url: buildCoinGateSuccessUrl({
-        orderId: input.orderId,
-        transactionId: input.transactionId,
-      }),
-      token: callbackToken,
-      purchaser_email: input.billingEmail?.trim() || undefined,
-    },
-  })
+  const shopper = buildCoinGateShopperPayload(input.shopper)
+  const body: Record<string, unknown> = {
+    order_id: input.reference,
+    price_amount: toAmountMajor(input.amountMinor),
+    price_currency: currency,
+    receive_currency: getReceiveCurrency(),
+    title: buildCoinGateTitle({
+      planName: input.planName,
+      durationDays: input.durationDays,
+    }),
+    description: buildCoinGateDescription({
+      orderId: input.orderId,
+      invoiceId: input.invoiceId,
+      transactionReference: input.reference,
+    }),
+    callback_url: buildCoinGateCallbackUrl(),
+    cancel_url: buildCoinGateCancelUrl(input.orderId),
+    success_url: buildCoinGateSuccessUrl({
+      orderId: input.orderId,
+      transactionId: input.transactionId,
+    }),
+    token: callbackToken,
+    purchaser_email: input.billingEmail?.trim() || undefined,
+  }
+
+  let response: CoinGateOrderResponse
+
+  try {
+    response = await coinGateRequest<CoinGateOrderResponse>({
+      path: "/orders",
+      method: "POST",
+      body: shopper ? { ...body, shopper } : body,
+    })
+  } catch (err) {
+    if (!shopper || !isCoinGateValidationError(err)) {
+      throw err
+    }
+
+    response = await coinGateRequest<CoinGateOrderResponse>({
+      path: "/orders",
+      method: "POST",
+      body,
+    })
+  }
 
   const paymentUrl =
     typeof response.payment_url === "string" ? response.payment_url.trim() : ""
@@ -440,7 +657,7 @@ export async function verifyAndNormalizeCoinGateWebhook(input: {
     throw new Error("CoinGate callback order id is invalid")
   }
 
-  const order = await getCoinGateOrderById(parsedOrderId)
+  const order = await pollCoinGateOrderUntilTerminal(parsedOrderId)
   const orderToken = stringifyUnknown(order.token).trim() || null
 
   if (callbackToken && orderToken && callbackToken !== orderToken) {
@@ -477,6 +694,51 @@ export async function verifyAndNormalizeCoinGateWebhook(input: {
     stringifyUnknown(order.created_at).trim() ||
     null
   const eventId = `coingate:${parsedOrderId}:${status}`
+
+  return {
+    id: eventId,
+    event_id: eventId,
+    type: eventType,
+    status,
+    reference: orderReference,
+    amount: toAmountMinor(order.price_amount),
+    currency: stringifyUnknown(order.price_currency).trim() || null,
+    occurredAt,
+    failureReason:
+      eventType === "payment.failed"
+        ? `CoinGate order status: ${status}`
+        : null,
+    metadata: {
+      reference: orderReference,
+    },
+    data: {
+      metadata: {
+        reference: orderReference,
+      },
+      amount: toAmountMinor(order.price_amount),
+      currency: stringifyUnknown(order.price_currency).trim() || null,
+      status,
+      occurredAt,
+      failureReason:
+        eventType === "payment.failed"
+          ? `CoinGate order status: ${status}`
+          : null,
+    },
+  }
+}
+
+export async function normalizeCoinGateOrderStatus(orderId: number) {
+  const order = await pollCoinGateOrderUntilTerminal(orderId)
+  const status =
+    stringifyUnknown(order.status).trim().toLowerCase() || "unknown"
+  const eventType = mapCoinGateStatusToEventType(status)
+  const occurredAt =
+    stringifyUnknown(order.paid_at).trim() ||
+    stringifyUnknown(order.updated_at).trim() ||
+    stringifyUnknown(order.created_at).trim() ||
+    null
+  const orderReference = stringifyUnknown(order.order_id).trim() || null
+  const eventId = `coingate:${orderId}:${status}`
 
   return {
     id: eventId,

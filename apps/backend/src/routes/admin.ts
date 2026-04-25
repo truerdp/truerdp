@@ -3,7 +3,10 @@ import { and, asc, desc, eq, gte, inArray, lt, ne, sql } from "drizzle-orm"
 import z from "zod"
 import { db } from "../db.js"
 import {
+  coupons,
+  couponUsages,
   instanceExtensions,
+  instanceStatusEvents,
   instances,
   invoices,
   orders,
@@ -21,6 +24,7 @@ import {
   confirmPendingTransaction,
   listAdminTransactions,
   listPendingTransactions,
+  sendExpiryReminderSweep,
 } from "../services/billing.js"
 import { getAdminUser360, listAdminUsers } from "../services/admin-user.js"
 import { syncDodoProductForPlanPricing } from "../services/dodo-payments.js"
@@ -31,15 +35,26 @@ import {
   AllocationError,
   deallocateServer,
 } from "../services/allocation.js"
+import { createAdminAuditLog, listAdminAuditLogs } from "../services/admin-audit.js"
+import { sendProvisionedEmail } from "../services/email.js"
 
 const provisionSchema = z.object({
   serverId: z.number().int().positive(),
   username: z.string().trim().min(1).optional(),
   password: z.string().min(1).optional(),
+  reason: z.string().trim().min(3).max(500).optional(),
 })
 
 const extendInstanceSchema = z.object({
   days: z.number().int().positive(),
+})
+
+const reasonSchema = z.object({
+  reason: z.string().trim().min(3).max(500),
+})
+
+const optionalReasonSchema = z.object({
+  reason: z.string().trim().min(3).max(500).optional(),
 })
 
 const planPricingInputSchema = z.object({
@@ -108,11 +123,44 @@ const serverInputSchema = z.object({
 
 const serverStatusUpdateSchema = z.object({
   status: z.enum(["available", "assigned", "cleaning", "retired"]),
+  reason: z.string().trim().min(3).max(500).optional(),
+})
+
+const couponInputSchema = z
+  .object({
+    code: z.string().trim().min(1).max(64),
+    type: z.enum(["percent", "flat"]),
+    value: z.number().int().positive(),
+    appliesTo: z.enum(["all", "new_purchase", "renewal"]).default("all"),
+    maxUses: z.number().int().positive().nullable().optional(),
+    expiresAt: z.string().datetime().nullable().optional(),
+    isActive: z.boolean().default(true),
+  })
+  .refine((value) => value.type !== "percent" || value.value <= 100, {
+    message: "Percent coupon value must be 1-100",
+    path: ["value"],
+  })
+
+const couponStatusSchema = z.object({
+  isActive: z.boolean(),
 })
 
 const adminListPaginationQuerySchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
   pageSize: z.coerce.number().int().min(1).max(100).default(20),
+})
+
+const adminAuditLogQuerySchema = z.object({
+  page: z.coerce.number().int().min(1).default(1),
+  pageSize: z.coerce.number().int().min(1).max(100).default(20),
+  action: z.string().trim().optional(),
+  entityType: z.string().trim().optional(),
+  entityId: z.coerce.number().int().positive().optional(),
+  adminUserId: z.coerce.number().int().positive().optional(),
+})
+
+const expiryReminderRunSchema = z.object({
+  daysAhead: z.number().int().min(1).max(30).optional(),
 })
 
 const adminInvoiceListQuerySchema = z.object({
@@ -135,6 +183,34 @@ function requireAdmin(user: any, reply: any) {
   }
 
   return true
+}
+
+function getEffectiveRestoreStatus(expiryDate: Date | null) {
+  return expiryDate && expiryDate < new Date() ? "expired" : "active"
+}
+
+async function recordInstanceStatusEvent(input: {
+  instanceId: number
+  adminUserId: number
+  action: "provision" | "extend" | "suspend" | "unsuspend" | "terminate"
+  reason: string
+  fromStatus: typeof instances.$inferSelect.status
+  toStatus: typeof instances.$inferSelect.status
+}) {
+  await db.insert(instanceStatusEvents).values(input)
+  await createAdminAuditLog({
+    adminUserId: input.adminUserId,
+    action: `instance.${input.action}`,
+    entityType: "instance",
+    entityId: input.instanceId,
+    reason: input.reason,
+    beforeState: {
+      status: input.fromStatus,
+    },
+    afterState: {
+      status: input.toStatus,
+    },
+  })
 }
 
 export async function adminRoutes(server: FastifyInstance) {
@@ -525,12 +601,176 @@ export async function adminRoutes(server: FastifyInstance) {
     }
   )
 
+  server.get(
+    "/admin/coupons",
+    { preHandler: verifyAuth },
+    async (request: any, reply) => {
+      try {
+        if (!requireAdmin(request.user, reply)) {
+          return
+        }
+
+        return await db
+          .select({
+            id: coupons.id,
+            code: coupons.code,
+            type: coupons.type,
+            value: coupons.value,
+            appliesTo: coupons.appliesTo,
+            maxUses: coupons.maxUses,
+            expiresAt: coupons.expiresAt,
+            isActive: coupons.isActive,
+            createdAt: coupons.createdAt,
+            updatedAt: coupons.updatedAt,
+            usageCount: sql<number>`(
+              select count(*)::int
+              from ${couponUsages} cu
+              where cu.coupon_id = ${coupons.id}
+            )`,
+          })
+          .from(coupons)
+          .orderBy(desc(coupons.createdAt))
+      } catch (err: any) {
+        server.log.error(err)
+        return reply.status(500).send({
+          error: "Internal server error",
+        })
+      }
+    }
+  )
+
+  server.post(
+    "/admin/coupons",
+    { preHandler: verifyAuth },
+    async (request: any, reply) => {
+      try {
+        if (!requireAdmin(request.user, reply)) {
+          return
+        }
+
+        const body = couponInputSchema.parse(request.body ?? {})
+
+        const [created] = await db
+          .insert(coupons)
+          .values({
+            code: body.code.trim().toUpperCase(),
+            type: body.type,
+            value: body.value,
+            appliesTo: body.appliesTo,
+            maxUses: body.maxUses ?? null,
+            expiresAt: body.expiresAt ? new Date(body.expiresAt) : null,
+            isActive: body.isActive,
+          })
+          .returning()
+
+        return {
+          message: "Coupon created successfully",
+          coupon: created,
+        }
+      } catch (err: any) {
+        server.log.error(err)
+        return reply.status(400).send({
+          error: err.message || "Invalid request",
+        })
+      }
+    }
+  )
+
+  server.put(
+    "/admin/coupons/:id",
+    { preHandler: verifyAuth },
+    async (request: any, reply) => {
+      try {
+        if (!requireAdmin(request.user, reply)) {
+          return
+        }
+
+        const couponId = Number(request.params.id)
+
+        if (Number.isNaN(couponId)) {
+          return reply.status(400).send({ error: "Invalid coupon id" })
+        }
+
+        const body = couponInputSchema.parse(request.body ?? {})
+        const [updated] = await db
+          .update(coupons)
+          .set({
+            code: body.code.trim().toUpperCase(),
+            type: body.type,
+            value: body.value,
+            appliesTo: body.appliesTo,
+            maxUses: body.maxUses ?? null,
+            expiresAt: body.expiresAt ? new Date(body.expiresAt) : null,
+            isActive: body.isActive,
+          })
+          .where(eq(coupons.id, couponId))
+          .returning()
+
+        if (!updated) {
+          return reply.status(404).send({ error: "Coupon not found" })
+        }
+
+        return {
+          message: "Coupon updated successfully",
+          coupon: updated,
+        }
+      } catch (err: any) {
+        server.log.error(err)
+        return reply.status(400).send({
+          error: err.message || "Invalid request",
+        })
+      }
+    }
+  )
+
+  server.patch(
+    "/admin/coupons/:id/status",
+    { preHandler: verifyAuth },
+    async (request: any, reply) => {
+      try {
+        if (!requireAdmin(request.user, reply)) {
+          return
+        }
+
+        const couponId = Number(request.params.id)
+
+        if (Number.isNaN(couponId)) {
+          return reply.status(400).send({ error: "Invalid coupon id" })
+        }
+
+        const body = couponStatusSchema.parse(request.body ?? {})
+        const [updated] = await db
+          .update(coupons)
+          .set({ isActive: body.isActive })
+          .where(eq(coupons.id, couponId))
+          .returning()
+
+        if (!updated) {
+          return reply.status(404).send({ error: "Coupon not found" })
+        }
+
+        return {
+          message: body.isActive
+            ? "Coupon activated successfully"
+            : "Coupon deactivated successfully",
+          coupon: updated,
+        }
+      } catch (err: any) {
+        server.log.error(err)
+        return reply.status(400).send({
+          error: err.message || "Invalid request",
+        })
+      }
+    }
+  )
+
   server.post(
     "/admin/transactions/:id/confirm",
     { preHandler: verifyAuth },
     async (request: any, reply) => {
       try {
         const transactionId = Number(request.params.id)
+        const body = optionalReasonSchema.parse(request.body ?? {})
 
         if (!requireAdmin(request.user, reply)) {
           return
@@ -540,7 +780,11 @@ export async function adminRoutes(server: FastifyInstance) {
           return reply.status(400).send({ error: "Invalid transaction id" })
         }
 
-        return await confirmPendingTransaction(transactionId)
+        return await confirmPendingTransaction(transactionId, {
+          adminUserId: request.user.userId,
+          reason: body.reason,
+          source: "admin",
+        })
       } catch (err: any) {
         server.log.error(err)
 
@@ -613,6 +857,14 @@ export async function adminRoutes(server: FastifyInstance) {
         const now = new Date()
         const expiry = new Date(now)
         expiry.setDate(expiry.getDate() + linkedOrder.durationDays)
+        const [serverBeforeAllocation] = await db
+          .select({
+            id: servers.id,
+            status: servers.status,
+          })
+          .from(servers)
+          .where(eq(servers.id, body.serverId))
+          .limit(1)
 
         // Older paid instances may still be marked pending or failed.
         // Move them into provisioning before allocation so the allocator
@@ -657,6 +909,64 @@ export async function adminRoutes(server: FastifyInstance) {
             .where(eq(orders.id, linkedOrder.id))
         })
 
+        await recordInstanceStatusEvent({
+          instanceId,
+          adminUserId: request.user.userId,
+          action: "provision",
+          reason: body.reason ?? "Admin provisioned instance",
+          fromStatus: instance.status,
+          toStatus: "active",
+        })
+
+        if (
+          serverBeforeAllocation &&
+          serverBeforeAllocation.status !== allocated.server.status
+        ) {
+          await createAdminAuditLog({
+            adminUserId: request.user.userId,
+            action: "server.status_change",
+            entityType: "server",
+            entityId: allocated.server.id,
+            reason:
+              body.reason ??
+              `Server assigned during provisioning for instance #${instanceId}`,
+            beforeState: {
+              status: serverBeforeAllocation.status,
+            },
+            afterState: {
+              status: allocated.server.status,
+            },
+            metadata: {
+              instanceId,
+            },
+          })
+        }
+
+        const [instanceOwner] = await db
+          .select({
+            email: users.email,
+            firstName: users.firstName,
+            planName: plans.name,
+          })
+          .from(instances)
+          .innerJoin(users, eq(instances.userId, users.id))
+          .innerJoin(plans, eq(instances.planId, plans.id))
+          .where(eq(instances.id, instanceId))
+          .limit(1)
+
+        if (instanceOwner) {
+          void sendProvisionedEmail({
+            to: instanceOwner.email,
+            firstName: instanceOwner.firstName,
+            instanceId,
+            planName: instanceOwner.planName,
+            ipAddress: allocated.server.ipAddress,
+            username: allocated.resource.username ?? null,
+          }).catch((emailError) => {
+            server.log.error(emailError)
+          })
+        }
+
         return {
           message: "Instance provisioned successfully",
           resource: allocated.resource,
@@ -682,6 +992,7 @@ export async function adminRoutes(server: FastifyInstance) {
     async (request: any, reply) => {
       try {
         const instanceId = Number(request.params.id)
+        const body = optionalReasonSchema.parse(request.body ?? {})
 
         if (!requireAdmin(request.user, reply)) {
           return
@@ -711,8 +1022,23 @@ export async function adminRoutes(server: FastifyInstance) {
 
         const terminatedAt = new Date()
 
+        const [activeServerBeforeTermination] = await db
+          .select({
+            serverId: servers.id,
+            status: servers.status,
+          })
+          .from(resources)
+          .innerJoin(servers, eq(resources.serverId, servers.id))
+          .where(
+            and(
+              eq(resources.instanceId, instanceId),
+              eq(resources.status, "active")
+            )
+          )
+          .limit(1)
+
         // Deallocate server and mark resource as released
-        await deallocateServer(instanceId)
+        const deallocated = await deallocateServer(instanceId)
 
         // Mark instance as terminated
         await db
@@ -723,6 +1049,42 @@ export async function adminRoutes(server: FastifyInstance) {
           })
           .where(eq(instances.id, instanceId))
 
+        await recordInstanceStatusEvent({
+          instanceId,
+          adminUserId: request.user.userId,
+          action: "terminate",
+          reason: body.reason ?? "Admin terminated instance",
+          fromStatus: instance.status,
+          toStatus: "terminated",
+        })
+
+        if (deallocated?.serverId && activeServerBeforeTermination) {
+          const [serverAfterTermination] = await db
+            .select({
+              status: servers.status,
+            })
+            .from(servers)
+            .where(eq(servers.id, deallocated.serverId))
+            .limit(1)
+
+          await createAdminAuditLog({
+            adminUserId: request.user.userId,
+            action: "server.status_change",
+            entityType: "server",
+            entityId: deallocated.serverId,
+            reason: body.reason ?? "Server moved to cleaning after termination",
+            beforeState: {
+              status: activeServerBeforeTermination.status,
+            },
+            afterState: {
+              status: serverAfterTermination?.status ?? "cleaning",
+            },
+            metadata: {
+              instanceId,
+            },
+          })
+        }
+
         return {
           message: "Instance terminated successfully",
         }
@@ -730,6 +1092,131 @@ export async function adminRoutes(server: FastifyInstance) {
         server.log.error(err)
         return reply.status(500).send({
           error: "Internal server error",
+        })
+      }
+    }
+  )
+
+  server.post(
+    "/admin/instances/:id/suspend",
+    { preHandler: verifyAuth },
+    async (request: any, reply) => {
+      try {
+        const instanceId = Number(request.params.id)
+
+        if (!requireAdmin(request.user, reply)) {
+          return
+        }
+
+        if (Number.isNaN(instanceId)) {
+          return reply.status(400).send({ error: "Invalid instance id" })
+        }
+
+        const body = reasonSchema.parse(request.body ?? {})
+        const result = await db
+          .select()
+          .from(instances)
+          .where(eq(instances.id, instanceId))
+          .limit(1)
+
+        const instance = result[0]
+
+        if (!instance) {
+          return reply.status(404).send({ error: "Instance not found" })
+        }
+
+        if (instance.status === "suspended") {
+          return reply.status(400).send({ error: "Instance already suspended" })
+        }
+
+        if (
+          !["active", "provisioning", "expired"].includes(instance.status)
+        ) {
+          return reply.status(400).send({
+            error: "Instance cannot be suspended in its current state",
+          })
+        }
+
+        await db
+          .update(instances)
+          .set({ status: "suspended" })
+          .where(eq(instances.id, instanceId))
+
+        await recordInstanceStatusEvent({
+          instanceId,
+          adminUserId: request.user.userId,
+          action: "suspend",
+          reason: body.reason,
+          fromStatus: instance.status,
+          toStatus: "suspended",
+        })
+
+        return { message: "Instance suspended successfully" }
+      } catch (err: any) {
+        server.log.error(err)
+        return reply.status(400).send({
+          error: err.message || "Invalid request",
+        })
+      }
+    }
+  )
+
+  server.post(
+    "/admin/instances/:id/unsuspend",
+    { preHandler: verifyAuth },
+    async (request: any, reply) => {
+      try {
+        const instanceId = Number(request.params.id)
+
+        if (!requireAdmin(request.user, reply)) {
+          return
+        }
+
+        if (Number.isNaN(instanceId)) {
+          return reply.status(400).send({ error: "Invalid instance id" })
+        }
+
+        const body = reasonSchema.parse(request.body ?? {})
+        const result = await db
+          .select()
+          .from(instances)
+          .where(eq(instances.id, instanceId))
+          .limit(1)
+
+        const instance = result[0]
+
+        if (!instance) {
+          return reply.status(404).send({ error: "Instance not found" })
+        }
+
+        if (instance.status !== "suspended") {
+          return reply.status(400).send({ error: "Instance is not suspended" })
+        }
+
+        const restoreStatus = getEffectiveRestoreStatus(instance.expiryDate)
+
+        await db
+          .update(instances)
+          .set({ status: restoreStatus })
+          .where(eq(instances.id, instanceId))
+
+        await recordInstanceStatusEvent({
+          instanceId,
+          adminUserId: request.user.userId,
+          action: "unsuspend",
+          reason: body.reason,
+          fromStatus: "suspended",
+          toStatus: restoreStatus,
+        })
+
+        return {
+          message: "Instance suspension undone successfully",
+          status: restoreStatus,
+        }
+      } catch (err: any) {
+        server.log.error(err)
+        return reply.status(400).send({
+          error: err.message || "Invalid request",
         })
       }
     }
@@ -795,6 +1282,15 @@ export async function adminRoutes(server: FastifyInstance) {
             newExpiryDate,
             daysExtended: body.days,
           })
+        })
+
+        await recordInstanceStatusEvent({
+          instanceId,
+          adminUserId: request.user.userId,
+          action: "extend",
+          reason: `Admin extended instance by ${body.days} days`,
+          fromStatus: instance.status,
+          toStatus: instance.status,
         })
 
         return {
@@ -922,6 +1418,69 @@ export async function adminRoutes(server: FastifyInstance) {
   )
 
   server.get(
+    "/admin/audit-logs",
+    { preHandler: verifyAuth },
+    async (request: any, reply) => {
+      try {
+        if (!requireAdmin(request.user, reply)) {
+          return
+        }
+
+        const query = adminAuditLogQuerySchema.parse(request.query ?? {})
+        return await listAdminAuditLogs(query)
+      } catch (err: any) {
+        server.log.error(err)
+        return reply.status(400).send({
+          error: err.message || "Invalid request",
+        })
+      }
+    }
+  )
+
+  server.post(
+    "/admin/notifications/expiry-reminders/run",
+    { preHandler: verifyAuth },
+    async (request: any, reply) => {
+      try {
+        if (!requireAdmin(request.user, reply)) {
+          return
+        }
+
+        const body = expiryReminderRunSchema.parse(request.body ?? {})
+        const result = await sendExpiryReminderSweep({
+          daysAhead: body.daysAhead,
+        })
+
+        await createAdminAuditLog({
+          adminUserId: request.user.userId,
+          action: "notification.expiry_reminder.run",
+          entityType: "system",
+          entityId: null,
+          reason: "Admin triggered expiry reminder run",
+          beforeState: null,
+          afterState: {
+            sent: result.sent,
+            checked: result.checked,
+          },
+          metadata: {
+            daysAhead: result.daysAhead,
+          },
+        })
+
+        return {
+          message: "Expiry reminder sweep completed",
+          ...result,
+        }
+      } catch (err: any) {
+        server.log.error(err)
+        return reply.status(400).send({
+          error: err.message || "Invalid request",
+        })
+      }
+    }
+  )
+
+  server.get(
     "/admin/instances/expired",
     { preHandler: verifyAuth },
     async (request: any, reply) => {
@@ -946,6 +1505,7 @@ export async function adminRoutes(server: FastifyInstance) {
           .where(
             and(
               ne(instances.status, "terminated"),
+              ne(instances.status, "suspended"),
               lt(instances.expiryDate, today)
             )
           )
@@ -1212,9 +1772,30 @@ export async function adminRoutes(server: FastifyInstance) {
           .where(eq(instanceExtensions.instanceId, instanceId))
           .orderBy(desc(instanceExtensions.createdAt))
 
+        const statusEvents = await db
+          .select({
+            id: instanceStatusEvents.id,
+            action: instanceStatusEvents.action,
+            reason: instanceStatusEvents.reason,
+            fromStatus: instanceStatusEvents.fromStatus,
+            toStatus: instanceStatusEvents.toStatus,
+            createdAt: instanceStatusEvents.createdAt,
+            admin: {
+              id: users.id,
+              email: users.email,
+              firstName: users.firstName,
+              lastName: users.lastName,
+            },
+          })
+          .from(instanceStatusEvents)
+          .leftJoin(users, eq(instanceStatusEvents.adminUserId, users.id))
+          .where(eq(instanceStatusEvents.instanceId, instanceId))
+          .orderBy(desc(instanceStatusEvents.createdAt))
+
         return {
           ...result[0],
           extensionHistory,
+          statusEvents,
         }
       } catch (err: any) {
         server.log.error(err)
@@ -1367,6 +1948,20 @@ export async function adminRoutes(server: FastifyInstance) {
         }
 
         const body = serverStatusUpdateSchema.parse(request.body)
+        const [currentServer] = await db
+          .select({
+            id: servers.id,
+            status: servers.status,
+          })
+          .from(servers)
+          .where(eq(servers.id, serverId))
+          .limit(1)
+
+        if (!currentServer) {
+          return reply.status(404).send({
+            error: "Server not found",
+          })
+        }
 
         const [updatedServer] = await db
           .update(servers)
@@ -1389,10 +1984,26 @@ export async function adminRoutes(server: FastifyInstance) {
           })
 
         if (!updatedServer) {
-          return reply.status(404).send({
-            error: "Server not found",
+          return reply.status(500).send({
+            error: "Failed to update server status",
           })
         }
+
+        await createAdminAuditLog({
+          adminUserId: request.user.userId,
+          action: "server.status_change",
+          entityType: "server",
+          entityId: updatedServer.id,
+          reason:
+            body.reason ??
+            `Admin changed server status from ${currentServer.status} to ${updatedServer.status}`,
+          beforeState: {
+            status: currentServer.status,
+          },
+          afterState: {
+            status: updatedServer.status,
+          },
+        })
 
         return {
           message: "Server status updated successfully",

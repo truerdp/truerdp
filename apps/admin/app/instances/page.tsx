@@ -1,7 +1,6 @@
 "use client"
 
 import { useState } from "react"
-import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { format } from "date-fns"
 import { HugeiconsIcon } from "@hugeicons/react"
@@ -47,6 +46,7 @@ import {
 } from "@workspace/ui/components/alert-dialog"
 import { useAllInstances, type Instance } from "@/hooks/use-all-instances"
 import { ProvisionInstanceDialog } from "@/components/provision-instance-dialog"
+import { SuspendInstanceDialog } from "@/components/suspend-instance-dialog"
 import { adminPaths } from "@/lib/paths"
 import { AdminPaginationControls } from "@/components/admin-pagination-controls"
 import { useTerminateInstance } from "@/hooks/use-terminate-instance"
@@ -71,6 +71,8 @@ function getStatusVariant(
   switch (status) {
     case "active":
       return "default"
+    case "suspended":
+      return "destructive"
     case "pending":
     case "provisioning":
       return "outline"
@@ -177,6 +179,11 @@ export default function AdminInstancesPage() {
   const [terminateDialogOpen, setTerminateDialogOpen] = useState(false)
   const [selectedTerminateInstanceId, setSelectedTerminateInstanceId] =
     useState<number | null>(null)
+  const [suspendDialogOpen, setSuspendDialogOpen] = useState(false)
+  const [selectedSuspendInstance, setSelectedSuspendInstance] = useState<{
+    instanceId: number
+    mode: "suspend" | "unsuspend"
+  } | null>(null)
   const terminateInstance = useTerminateInstance()
 
   const instances = data?.items ?? []
@@ -199,6 +206,17 @@ export default function AdminInstancesPage() {
   const handleTerminateInstance = (instanceId: number) => {
     setSelectedTerminateInstanceId(instanceId)
     setTerminateDialogOpen(true)
+  }
+
+  const handleSuspendInstance = (
+    instanceId: number,
+    mode: "suspend" | "unsuspend"
+  ) => {
+    setSelectedSuspendInstance({ instanceId, mode })
+
+    window.setTimeout(() => {
+      setSuspendDialogOpen(true)
+    }, 0)
   }
 
   const confirmTerminateInstance = async () => {
@@ -354,6 +372,24 @@ export default function AdminInstancesPage() {
                                 Provision
                               </DropdownMenuItem>
                             ) : null}
+                            {instance.status === "suspended" ? (
+                              <DropdownMenuItem
+                                onClick={() =>
+                                  handleSuspendInstance(instance.id, "unsuspend")
+                                }
+                              >
+                                Undo suspension
+                              </DropdownMenuItem>
+                            ) : instance.status !== "terminated" ? (
+                              <DropdownMenuItem
+                                onClick={() =>
+                                  handleSuspendInstance(instance.id, "suspend")
+                                }
+                                variant="destructive"
+                              >
+                                Suspend
+                              </DropdownMenuItem>
+                            ) : null}
                             {instance.status !== "terminated" ? (
                               <DropdownMenuItem
                                 onClick={() =>
@@ -399,6 +435,22 @@ export default function AdminInstancesPage() {
         instanceId={selectedInstanceId || 0}
         onOpenChange={setProvisionDialogOpen}
       />
+
+      {selectedSuspendInstance ? (
+        <SuspendInstanceDialog
+          open={suspendDialogOpen}
+          onOpenChange={(open) => {
+            setSuspendDialogOpen(open)
+
+            if (!open) {
+              setSelectedSuspendInstance(null)
+            }
+          }}
+          instanceId={selectedSuspendInstance.instanceId}
+          mode={selectedSuspendInstance.mode}
+          trigger="none"
+        />
+      ) : null}
 
       <AlertDialog
         open={terminateDialogOpen}

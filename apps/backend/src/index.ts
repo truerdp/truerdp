@@ -11,6 +11,8 @@ import { instanceRoutes } from "./routes/instance.js"
 import { planRoutes } from "./routes/plan.js"
 import { webhookRoutes } from "./routes/webhook.js"
 import { orderRoutes } from "./routes/order.js"
+import { supportRoutes } from "./routes/support.js"
+import { contentRoutes } from "./routes/content.js"
 import fastifyRawBody from "fastify-raw-body"
 
 const server = Fastify({
@@ -88,6 +90,8 @@ server.register(orderRoutes)
 server.register(transactionRoutes)
 server.register(adminRoutes)
 server.register(instanceRoutes)
+server.register(supportRoutes)
+server.register(contentRoutes)
 server.register(webhookRoutes)
 
 server.get("/", async () => {

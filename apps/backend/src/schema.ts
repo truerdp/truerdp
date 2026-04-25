@@ -20,6 +20,7 @@ export const instanceStatusEnum = pgEnum("instance_status", [
   "pending",
   "provisioning",
   "active",
+  "suspended",
   "expired",
   "termination_pending",
   "terminated",
@@ -65,6 +66,11 @@ export const paymentMethodEnum = pgEnum("payment_method", [
 ])
 
 export const couponTypeEnum = pgEnum("coupon_type", ["percent", "flat"])
+export const couponAppliesToEnum = pgEnum("coupon_applies_to", [
+  "all",
+  "new_purchase",
+  "renewal",
+])
 
 export const purchaseKindEnum = pgEnum("purchase_kind", [
   "new_purchase",
@@ -73,6 +79,13 @@ export const purchaseKindEnum = pgEnum("purchase_kind", [
 
 export const ticketStatusEnum = pgEnum("ticket_status", ["open", "closed"])
 export const senderTypeEnum = pgEnum("sender_type", ["user", "admin"])
+export const instanceStatusActionEnum = pgEnum("instance_status_action", [
+  "provision",
+  "extend",
+  "suspend",
+  "unsuspend",
+  "terminate",
+])
 
 /* ================= USERS ================= */
 
@@ -91,6 +104,31 @@ export const users = pgTable("users", {
     .$onUpdateFn(() => new Date())
     .notNull(),
 })
+
+/* ================= PASSWORD RESETS ================= */
+
+export const passwordResetTokens = pgTable(
+  "password_reset_tokens",
+  {
+    id: serial("id").primaryKey(),
+
+    userId: integer("user_id")
+      .notNull()
+      .references(() => users.id),
+
+    tokenHash: text("token_hash").notNull(),
+    expiresAt: timestamp("expires_at").notNull(),
+    usedAt: timestamp("used_at"),
+
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => ({
+    userIdIdx: index("password_reset_tokens_user_id_idx").on(table.userId),
+    tokenHashUnique: uniqueIndex("password_reset_tokens_hash_unique").on(
+      table.tokenHash
+    ),
+  })
+)
 
 /* ================= PLANS ================= */
 
@@ -240,6 +278,7 @@ export const coupons = pgTable(
     code: text("code").notNull(),
     type: couponTypeEnum("type").notNull(),
     value: integer("value").notNull(),
+    appliesTo: couponAppliesToEnum("applies_to").default("all").notNull(),
 
     maxUses: integer("max_uses"),
     expiresAt: timestamp("expires_at"),
@@ -339,6 +378,41 @@ export const instances = pgTable(
     expiryDateIdx: index("instances_expiry_date_idx").on(table.expiryDate),
     originOrderIdIdx: index("instances_origin_order_id_idx").on(
       table.originOrderId
+    ),
+  })
+)
+
+/* ================= INSTANCE STATUS EVENTS ================= */
+
+export const instanceStatusEvents = pgTable(
+  "instance_status_events",
+  {
+    id: serial("id").primaryKey(),
+
+    instanceId: integer("instance_id")
+      .notNull()
+      .references(() => instances.id),
+
+    adminUserId: integer("admin_user_id")
+      .notNull()
+      .references(() => users.id),
+
+    action: instanceStatusActionEnum("action").notNull(),
+    reason: text("reason").notNull(),
+    fromStatus: instanceStatusEnum("from_status").notNull(),
+    toStatus: instanceStatusEnum("to_status").notNull(),
+
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => ({
+    instanceIdIdx: index("instance_status_events_instance_id_idx").on(
+      table.instanceId
+    ),
+    adminUserIdIdx: index("instance_status_events_admin_user_id_idx").on(
+      table.adminUserId
+    ),
+    createdAtIdx: index("instance_status_events_created_at_idx").on(
+      table.createdAt
     ),
   })
 )
@@ -602,7 +676,96 @@ export const messages = pgTable("messages", {
     .references(() => tickets.id),
 
   senderType: senderTypeEnum("sender_type").notNull(),
+  senderUserId: integer("sender_user_id").references(() => users.id),
   message: text("message").notNull(),
 
   createdAt: timestamp("created_at").defaultNow().notNull(),
 })
+
+/* ================= CMS PAGES ================= */
+
+export const cmsPages = pgTable(
+  "cms_pages",
+  {
+    id: serial("id").primaryKey(),
+
+    slug: text("slug").notNull(),
+    title: text("title").notNull(),
+    summary: text("summary"),
+    content: jsonb("content")
+      .$type<Record<string, unknown>>()
+      .default(sql`'{}'::jsonb`)
+      .notNull(),
+    seoTitle: text("seo_title"),
+    seoDescription: text("seo_description"),
+    isPublished: boolean("is_published").default(false).notNull(),
+    publishedAt: timestamp("published_at"),
+
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdateFn(() => new Date())
+      .notNull(),
+  },
+  (table) => ({
+    slugUnique: uniqueIndex("cms_pages_slug_unique").on(table.slug),
+    isPublishedIdx: index("cms_pages_is_published_idx").on(table.isPublished),
+    updatedAtIdx: index("cms_pages_updated_at_idx").on(table.updatedAt),
+  })
+)
+
+/* ================= EMAIL TEMPLATES ================= */
+
+export const emailTemplates = pgTable(
+  "email_templates",
+  {
+    id: serial("id").primaryKey(),
+
+    key: text("key").notNull(),
+    subjectTemplate: text("subject_template").notNull(),
+    htmlTemplate: text("html_template").notNull(),
+    textTemplate: text("text_template"),
+    isActive: boolean("is_active").default(true).notNull(),
+
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdateFn(() => new Date())
+      .notNull(),
+  },
+  (table) => ({
+    keyUnique: uniqueIndex("email_templates_key_unique").on(table.key),
+    isActiveIdx: index("email_templates_is_active_idx").on(table.isActive),
+  })
+)
+
+/* ================= ADMIN AUDIT LOGS ================= */
+
+export const adminAuditLogs = pgTable(
+  "admin_audit_logs",
+  {
+    id: serial("id").primaryKey(),
+
+    adminUserId: integer("admin_user_id").references(() => users.id),
+    action: text("action").notNull(),
+    entityType: text("entity_type").notNull(),
+    entityId: integer("entity_id"),
+    reason: text("reason").notNull(),
+    beforeState: jsonb("before_state").$type<Record<string, unknown> | null>(),
+    afterState: jsonb("after_state").$type<Record<string, unknown> | null>(),
+    metadata: jsonb("metadata").$type<Record<string, unknown> | null>(),
+
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => ({
+    adminUserIdx: index("admin_audit_logs_admin_user_id_idx").on(
+      table.adminUserId
+    ),
+    entityIdx: index("admin_audit_logs_entity_idx").on(
+      table.entityType,
+      table.entityId
+    ),
+    actionIdx: index("admin_audit_logs_action_idx").on(table.action),
+    createdAtIdx: index("admin_audit_logs_created_at_idx").on(table.createdAt),
+  })
+)

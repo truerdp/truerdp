@@ -19,6 +19,7 @@ import {
 import { Button } from "@workspace/ui/components/button"
 import { Badge } from "@workspace/ui/components/badge"
 import { Skeleton } from "@workspace/ui/components/skeleton"
+import { clientApi } from "@workspace/api"
 import {
   Empty,
   EmptyDescription,
@@ -37,7 +38,8 @@ function CheckoutSuccessPageContent() {
   const hasOrderId = Number.isInteger(orderId) && orderId > 0
   const transactionId = Number(searchParams.get("transactionId") ?? "")
   const hasTransactionId = Number.isInteger(transactionId) && transactionId > 0
-  const { data, isLoading } = useTransactions()
+  const { data, isLoading, refetch } = useTransactions()
+  const [hasSyncedCoinGate, setHasSyncedCoinGate] = useState(false)
 
   useEffect(() => {
     setHasMounted(true)
@@ -50,6 +52,30 @@ function CheckoutSuccessPageContent() {
 
     return data.find((item) => item.id === transactionId) ?? null
   }, [data, hasTransactionId, transactionId])
+
+  useEffect(() => {
+    if (
+      !transaction ||
+      hasSyncedCoinGate ||
+      transaction.method !== "coingate_checkout" ||
+      transaction.status !== "pending"
+    ) {
+      return
+    }
+
+    setHasSyncedCoinGate(true)
+
+    void clientApi(`/transactions/${transaction.id}/sync-coingate`, {
+      method: "POST",
+    })
+      .catch(() => {
+        // Keep the success page readable; the transaction table still shows
+        // the authoritative pending state if provider sync is not ready yet.
+      })
+      .finally(() => {
+        void refetch()
+      })
+  }, [hasSyncedCoinGate, refetch, transaction])
 
   const dashboardUrl =
     process.env.NEXT_PUBLIC_DASHBOARD_URL ?? "http://localhost:3001"

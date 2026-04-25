@@ -4,6 +4,13 @@ export const queryKeys = {
   users: () => ["users"] as const,
   userDetails: (id: number) => ["users", id] as const,
   plans: () => ["plans"] as const,
+  contentPages: () => ["content", "pages"] as const,
+  emailTemplates: () => ["content", "email-templates"] as const,
+  auditLogs: (params: Record<string, string | number | undefined>) =>
+    ["audit-logs", params] as const,
+  coupons: () => ["coupons"] as const,
+  supportTickets: () => ["support", "tickets"] as const,
+  supportTicket: (id: number) => ["support", "tickets", id] as const,
   invoices: () => ["invoices"] as const,
   transactions: () => ["transactions"] as const,
   servers: () => ["servers"] as const,
