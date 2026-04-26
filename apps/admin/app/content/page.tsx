@@ -197,6 +197,7 @@ function TemplateEditorForm({
     () => interpolateTemplate(subjectTemplate, previewVariables),
     [subjectTemplate]
   )
+  const availableVariables = useMemo(() => Object.keys(previewVariables), [])
   const previewHtml = useMemo(
     () => interpolateTemplate(htmlTemplate, previewVariables),
     [htmlTemplate]
@@ -255,6 +256,7 @@ function TemplateEditorForm({
           <EmailHtmlEditor
             value={htmlTemplate}
             onChange={setHtmlTemplate}
+            variableTokens={availableVariables}
           />
         </div>
 

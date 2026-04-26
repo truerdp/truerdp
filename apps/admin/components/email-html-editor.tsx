@@ -1,10 +1,12 @@
 "use client"
 
 import { useEffect, useRef } from "react"
+import { Button } from "@workspace/ui/components/button"
 
 type Props = {
   value: string
   onChange: (nextValue: string) => void
+  variableTokens?: string[]
 }
 
 type QuillModule = typeof import("quill")
@@ -18,7 +20,11 @@ function normalizeHtml(input: string) {
   return trimmed
 }
 
-export default function EmailHtmlEditor({ value, onChange }: Props) {
+export default function EmailHtmlEditor({
+  value,
+  onChange,
+  variableTokens = [],
+}: Props) {
   const hostRef = useRef<HTMLDivElement | null>(null)
   const quillRef = useRef<QuillInstance | null>(null)
   const onChangeRef = useRef(onChange)
@@ -88,8 +94,39 @@ export default function EmailHtmlEditor({ value, onChange }: Props) {
     quill.clipboard.dangerouslyPasteHTML(incomingHtml)
   }, [value])
 
+  const insertToken = (token: string) => {
+    const quill = quillRef.current
+    if (!quill) {
+      return
+    }
+
+    const selection = quill.getSelection(true)
+    const index = selection?.index ?? quill.getLength()
+    const tokenWithSpacing = `{{${token}}} `
+
+    quill.insertText(index, tokenWithSpacing, "user")
+    quill.setSelection(index + tokenWithSpacing.length, 0, "silent")
+    quill.focus()
+  }
+
   return (
     <div className="overflow-hidden rounded-md border bg-background">
+      {variableTokens.length > 0 ? (
+        <div className="flex flex-wrap gap-2 border-b bg-muted/30 px-3 py-2">
+          {variableTokens.map((token) => (
+            <Button
+              key={token}
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={() => insertToken(token)}
+              className="h-7 px-2 text-xs"
+            >
+              {`{{${token}}}`}
+            </Button>
+          ))}
+        </div>
+      ) : null}
       <div ref={hostRef} className="min-h-56" />
     </div>
   )
