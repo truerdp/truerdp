@@ -1,4 +1,5 @@
 import { Geist, Geist_Mono } from "next/font/google"
+import "quill/dist/quill.snow.css"
 
 import "@workspace/ui/globals.css"
 import "./globals.css"

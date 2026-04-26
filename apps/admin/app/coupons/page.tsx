@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { format } from "date-fns"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
 import { clientApi } from "@workspace/api"
@@ -17,6 +18,12 @@ import { Field, FieldLabel } from "@workspace/ui/components/field"
 import { Input } from "@workspace/ui/components/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@workspace/ui/components/select"
 import { Switch } from "@workspace/ui/components/switch"
+import { Calendar } from "@workspace/ui/components/calendar"
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@workspace/ui/components/popover"
 import {
   Table,
   TableBody,
@@ -63,6 +70,10 @@ function formatCouponValue(coupon: Coupon) {
   return coupon.type === "percent"
     ? `${coupon.value}%`
     : `$${(coupon.value / 100).toFixed(2)}`
+}
+
+function formatTimeValue(date: Date) {
+  return `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`
 }
 
 export default function CouponsPage() {
@@ -115,6 +126,56 @@ export default function CouponsPage() {
       maxUses: coupon.maxUses,
       expiresAt: coupon.expiresAt,
       isActive: coupon.isActive,
+    })
+  }
+
+  const expiryDate = form.expiresAt ? new Date(form.expiresAt) : null
+  const expiryTime = expiryDate ? formatTimeValue(expiryDate) : ""
+
+  function setExpiryDatePart(nextDate: Date | undefined) {
+    if (!nextDate) {
+      setForm((current) => ({ ...current, expiresAt: null }))
+      return
+    }
+
+    setForm((current) => {
+      const base = current.expiresAt ? new Date(current.expiresAt) : new Date()
+      const merged = new Date(nextDate)
+      merged.setHours(base.getHours(), base.getMinutes(), 0, 0)
+      return {
+        ...current,
+        expiresAt: merged.toISOString(),
+      }
+    })
+  }
+
+  function setExpiryTimePart(time: string) {
+    if (!time) {
+      return
+    }
+
+    const [hoursRaw, minutesRaw] = time.split(":")
+    const hours = Number(hoursRaw)
+    const minutes = Number(minutesRaw)
+
+    if (
+      Number.isNaN(hours) ||
+      Number.isNaN(minutes) ||
+      hours < 0 ||
+      hours > 23 ||
+      minutes < 0 ||
+      minutes > 59
+    ) {
+      return
+    }
+
+    setForm((current) => {
+      const base = current.expiresAt ? new Date(current.expiresAt) : new Date()
+      base.setHours(hours, minutes, 0, 0)
+      return {
+        ...current,
+        expiresAt: base.toISOString(),
+      }
     })
   }
 
@@ -222,18 +283,42 @@ export default function CouponsPage() {
           </Field>
           <Field>
             <FieldLabel>Expires at</FieldLabel>
-            <Input
-              type="datetime-local"
-              value={form.expiresAt ? form.expiresAt.slice(0, 16) : ""}
-              onChange={(event) =>
-                setForm((current) => ({
-                  ...current,
-                  expiresAt: event.target.value
-                    ? new Date(event.target.value).toISOString()
-                    : null,
-                }))
-              }
-            />
+            <div className="space-y-2">
+              <Popover>
+                <PopoverTrigger
+                  render={<Button variant="outline" className="w-full justify-start" />}
+                >
+                  {expiryDate
+                    ? format(expiryDate, "MMM d, yyyy")
+                    : "Pick a date"}
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0">
+                  <Calendar
+                    mode="single"
+                    selected={expiryDate ?? undefined}
+                    onSelect={setExpiryDatePart}
+                  />
+                </PopoverContent>
+              </Popover>
+              <div className="flex gap-2">
+                <Input
+                  type="time"
+                  value={expiryTime}
+                  disabled={!expiryDate}
+                  onChange={(event) => setExpiryTimePart(event.target.value)}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() =>
+                    setForm((current) => ({ ...current, expiresAt: null }))
+                  }
+                  disabled={!expiryDate}
+                >
+                  Clear
+                </Button>
+              </div>
+            </div>
           </Field>
           <div className="flex items-center gap-2">
             <Switch

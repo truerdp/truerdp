@@ -66,3 +66,23 @@
   --sidebar-border: oklch(0.2503 0.0187 172.1743);
   --sidebar-ring: oklch(0.7678 0.1655 162.189);
 }
+
+.ql-toolbar.ql-snow {
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  background: color-mix(in oklch, var(--muted) 50%, transparent);
+}
+
+.ql-container.ql-snow {
+  border: 0;
+}
+
+.ql-editor {
+  min-height: 14rem;
+  font-size: 0.875rem;
+}
+
+.ql-editor.ql-blank::before {
+  color: var(--muted-foreground);
+  font-style: normal;
+}

@@ -1,14 +1,26 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useMemo, useState } from "react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { clientApi } from "@workspace/api"
 import { Button } from "@workspace/ui/components/button"
 import { Input } from "@workspace/ui/components/input"
 import { Label } from "@workspace/ui/components/label"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@workspace/ui/components/select"
 import { Textarea } from "@workspace/ui/components/textarea"
-import { Separator } from "@workspace/ui/components/separator"
 import { Switch } from "@workspace/ui/components/switch"
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@workspace/ui/components/tabs"
 import {
   Alert,
   AlertDescription,
@@ -16,19 +28,7 @@ import {
 } from "@workspace/ui/components/alert"
 import { toast } from "sonner"
 import { queryKeys } from "@/lib/query-keys"
-
-type CmsPage = {
-  id: number
-  slug: string
-  title: string
-  summary: string | null
-  content: Record<string, unknown>
-  seoTitle: string | null
-  seoDescription: string | null
-  isPublished: boolean
-  publishedAt: string | null
-  updatedAt: string
-}
+import EmailHtmlEditor from "@/components/email-html-editor"
 
 type EmailTemplate = {
   id: number
@@ -39,15 +39,6 @@ type EmailTemplate = {
   isActive: boolean
   updatedAt: string
 }
-
-const defaultPageSlugs = [
-  "homepage",
-  "faq",
-  "terms",
-  "privacy",
-  "refund-policy",
-  "contact",
-]
 
 const defaultTemplateKeys = [
   "welcome",
@@ -60,40 +51,284 @@ const defaultTemplateKeys = [
   "admin_alert",
 ]
 
+type EmailTemplateSample = {
+  subjectTemplate: string
+  htmlTemplate: string
+  textTemplate: string | null
+  isActive: boolean
+}
+
+type TemplateDraft = {
+  subjectTemplate: string
+  htmlTemplate: string
+  textTemplate: string
+  isActive: boolean
+}
+
+const defaultEmailTemplateSamples: Record<string, EmailTemplateSample> = {
+  welcome: {
+    subjectTemplate: "Welcome to TrueRDP",
+    htmlTemplate:
+      "<h1>Welcome {{firstName}}</h1><p>Your TrueRDP account is ready.</p>",
+    textTemplate: "Welcome {{firstName}}, your TrueRDP account is ready.",
+    isActive: true,
+  },
+  password_reset: {
+    subjectTemplate: "Reset your TrueRDP password",
+    htmlTemplate:
+      '<h1>Password reset</h1><p>Use this link to reset your password: <a href="{{resetUrl}}">{{resetUrl}}</a></p>',
+    textTemplate:
+      "Reset your password using this link: {{resetUrl}}. This link expires in 1 hour.",
+    isActive: true,
+  },
+  invoice_created: {
+    subjectTemplate: "Invoice {{invoiceNumber}} created",
+    htmlTemplate:
+      '<h1>Invoice created</h1><p>Hi {{firstName}}, invoice {{invoiceNumber}} for {{planName}} is ready.</p><p>Amount due: {{amount}}</p><p><a href="{{invoiceUrl}}">View invoice</a></p>',
+    textTemplate:
+      "Hi {{firstName}}, invoice {{invoiceNumber}} for {{planName}} is ready. Amount due: {{amount}}. View invoice: {{invoiceUrl}}",
+    isActive: true,
+  },
+  payment_confirmed: {
+    subjectTemplate: "Payment confirmed for {{invoiceNumber}}",
+    htmlTemplate:
+      '<h1>Payment confirmed</h1><p>Hi {{firstName}}, payment for {{invoiceNumber}} has been confirmed.</p><p>Amount: {{amount}}</p><p><a href="{{invoiceUrl}}">View receipt</a></p>',
+    textTemplate:
+      "Hi {{firstName}}, payment for {{invoiceNumber}} has been confirmed. Amount: {{amount}}. View receipt: {{invoiceUrl}}",
+    isActive: true,
+  },
+  payment_failed: {
+    subjectTemplate: "Payment failed for {{invoiceNumber}}",
+    htmlTemplate:
+      '<h1>Payment failed</h1><p>Hi {{firstName}}, payment for invoice {{invoiceNumber}} failed.</p><p>Reason: {{reason}}</p><p><a href="{{invoiceUrl}}">Retry payment</a></p>',
+    textTemplate:
+      "Hi {{firstName}}, payment for invoice {{invoiceNumber}} failed. Reason: {{reason}}. Retry payment: {{invoiceUrl}}",
+    isActive: true,
+  },
+  instance_provisioned: {
+    subjectTemplate: "Instance #{{instanceId}} is ready",
+    htmlTemplate:
+      '<h1>Your instance is ready</h1><p>Hi {{firstName}}, your {{planName}} instance is provisioned.</p><p>IP: {{ipAddress}}</p><p>Username: {{username}}</p><p><a href="{{instanceUrl}}">Open instance</a></p>',
+    textTemplate:
+      "Hi {{firstName}}, your {{planName}} instance is ready. IP: {{ipAddress}} Username: {{username}}. Open instance: {{instanceUrl}}",
+    isActive: true,
+  },
+  expiry_reminder: {
+    subjectTemplate:
+      "Instance #{{instanceId}} expires in {{daysRemaining}} day(s)",
+    htmlTemplate:
+      '<h1>Expiry reminder</h1><p>Hi {{firstName}}, your {{planName}} instance expires on {{expiryDate}}.</p><p><a href="{{instanceUrl}}">Review instance</a></p>',
+    textTemplate:
+      "Hi {{firstName}}, your {{planName}} instance expires on {{expiryDate}}. Review instance: {{instanceUrl}}",
+    isActive: true,
+  },
+  admin_alert: {
+    subjectTemplate: "{{subject}}",
+    htmlTemplate: "<h1>Admin alert</h1><p>{{text}}</p><p>{{html}}</p>",
+    textTemplate: "{{text}}",
+    isActive: true,
+  },
+}
+
+const fallbackSample: EmailTemplateSample = {
+  subjectTemplate: "New template",
+  htmlTemplate: "<p>{{text}}</p>",
+  textTemplate: "{{text}}",
+  isActive: true,
+}
+
+function getSampleTemplate(key: string): EmailTemplateSample {
+  return defaultEmailTemplateSamples[key] ?? fallbackSample
+}
+
+const previewVariables: Record<string, string> = {
+  firstName: "Alex",
+  resetUrl: "https://dashboard.truerdp.com/reset-password?token=demo-token",
+  invoiceNumber: "INV-2026-0042",
+  planName: "Starter RDP",
+  amount: "$40.00",
+  invoiceUrl: "https://dashboard.truerdp.com/invoices/42",
+  reason: "Insufficient funds",
+  instanceId: "108",
+  ipAddress: "203.0.113.25",
+  username: "administrator",
+  instanceUrl: "https://dashboard.truerdp.com/instances/108",
+  expiryDate: "Apr 30, 2026 12:00 PM",
+  daysRemaining: "5",
+  subject: "Instance suspended by admin",
+  text: "A new operational alert has been generated.",
+  html: "<strong>Review instance actions in admin.</strong>",
+}
+
+function interpolateTemplate(
+  template: string,
+  variables: Record<string, string>
+) {
+  return template.replaceAll(/{{\s*([a-zA-Z0-9_]+)\s*}}/g, (_, key: string) => {
+    return variables[key] ?? `{{${key}}}`
+  })
+}
+
+type TemplateEditorFormProps = {
+  templateKey: string
+  availableTemplateKeys: string[]
+  source: EmailTemplateSample
+  onTemplateKeyChange: (value: string | null) => void
+  onSave: (draft: TemplateDraft) => void
+  isSaving: boolean
+  isLoading: boolean
+}
+
+function TemplateEditorForm({
+  templateKey,
+  availableTemplateKeys,
+  source,
+  onTemplateKeyChange,
+  onSave,
+  isSaving,
+  isLoading,
+}: TemplateEditorFormProps) {
+  const [subjectTemplate, setSubjectTemplate] = useState(source.subjectTemplate)
+  const [htmlTemplate, setHtmlTemplate] = useState(source.htmlTemplate)
+  const [textTemplate, setTextTemplate] = useState(source.textTemplate ?? "")
+  const [templateActive, setTemplateActive] = useState(source.isActive)
+
+  const previewSubject = useMemo(
+    () => interpolateTemplate(subjectTemplate, previewVariables),
+    [subjectTemplate]
+  )
+  const previewHtml = useMemo(
+    () => interpolateTemplate(htmlTemplate, previewVariables),
+    [htmlTemplate]
+  )
+  const previewText = useMemo(
+    () => interpolateTemplate(textTemplate, previewVariables),
+    [textTemplate]
+  )
+  const previewSrcDoc = useMemo(
+    () =>
+      `<!doctype html><html><body style="margin:0;padding:20px;font-family:Arial,sans-serif;color:#111827;line-height:1.5;background:#ffffff;">${previewHtml}</body></html>`,
+    [previewHtml]
+  )
+
+  return (
+    <div className="grid gap-6 lg:grid-cols-2">
+      <div className="space-y-4">
+        <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+          <div className="w-full space-y-2 md:max-w-sm">
+            <Label htmlFor="template-key">Template</Label>
+            <Select value={templateKey} onValueChange={onTemplateKeyChange}>
+              <SelectTrigger id="template-key" className="w-full">
+                <SelectValue placeholder="Select a template" />
+              </SelectTrigger>
+              <SelectContent>
+                {availableTemplateKeys.map((key) => (
+                  <SelectItem key={key} value={key}>
+                    {key}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex items-center gap-2 md:pb-1">
+            <Label htmlFor="template-active">Enabled</Label>
+            <Switch
+              id="template-active"
+              checked={templateActive}
+              onCheckedChange={setTemplateActive}
+            />
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="template-subject">Subject Template</Label>
+          <Input
+            id="template-subject"
+            value={subjectTemplate}
+            onChange={(event) => setSubjectTemplate(event.target.value)}
+            placeholder="Example: Payment confirmed for {{invoiceNumber}}"
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label>HTML Template</Label>
+          <EmailHtmlEditor
+            value={htmlTemplate}
+            onChange={setHtmlTemplate}
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="template-text">Text Template</Label>
+          <Textarea
+            id="template-text"
+            value={textTemplate}
+            onChange={(event) => setTextTemplate(event.target.value)}
+            className="min-h-28 font-mono text-xs"
+          />
+        </div>
+
+        <Button
+          onClick={() =>
+            onSave({
+              subjectTemplate,
+              htmlTemplate,
+              textTemplate,
+              isActive: templateActive,
+            })
+          }
+          disabled={isSaving || isLoading}
+        >
+          Save Template
+        </Button>
+      </div>
+
+      <div className="rounded-lg border bg-muted/10 p-4">
+        <div className="mb-3">
+          <h2 className="text-base font-semibold">Live Preview</h2>
+          <p className="text-xs text-muted-foreground">
+            Placeholders are rendered with sample values.
+          </p>
+        </div>
+        <div className="mb-4 rounded-md border bg-background p-3">
+          <p className="text-xs text-muted-foreground">Subject</p>
+          <p className="text-sm font-medium">{previewSubject}</p>
+        </div>
+        <Tabs defaultValue="html">
+          <TabsList>
+            <TabsTrigger value="html">HTML</TabsTrigger>
+            <TabsTrigger value="text">Text</TabsTrigger>
+          </TabsList>
+          <TabsContent value="html" className="mt-3">
+            <iframe
+              title="email-html-preview"
+              className="h-96 w-full rounded-md border bg-white"
+              srcDoc={previewSrcDoc}
+            />
+          </TabsContent>
+          <TabsContent value="text" className="mt-3">
+            <pre className="h-96 overflow-auto rounded-md border bg-background p-3 text-xs whitespace-pre-wrap">
+              {previewText}
+            </pre>
+          </TabsContent>
+        </Tabs>
+      </div>
+    </div>
+  )
+}
+
 export default function AdminContentPage() {
   const queryClient = useQueryClient()
-  const [selectedSlug, setSelectedSlug] = useState(defaultPageSlugs[0] ?? "homepage")
   const [selectedTemplateKey, setSelectedTemplateKey] = useState(
     defaultTemplateKeys[0] ?? "welcome"
   )
-  const [title, setTitle] = useState("")
-  const [summary, setSummary] = useState("")
-  const [seoTitle, setSeoTitle] = useState("")
-  const [seoDescription, setSeoDescription] = useState("")
-  const [contentJson, setContentJson] = useState("{}")
-  const [isPublished, setIsPublished] = useState(false)
-  const [subjectTemplate, setSubjectTemplate] = useState("")
-  const [htmlTemplate, setHtmlTemplate] = useState("")
-  const [textTemplate, setTextTemplate] = useState("")
-  const [templateActive, setTemplateActive] = useState(true)
-
-  const pagesQuery = useQuery<CmsPage[]>({
-    queryKey: queryKeys.contentPages(),
-    queryFn: () => clientApi("/admin/content/pages"),
-  })
+  const webBaseUrl =
+    process.env.NEXT_PUBLIC_WEB_URL?.trim() || "http://localhost:3000"
 
   const templatesQuery = useQuery<EmailTemplate[]>({
     queryKey: queryKeys.emailTemplates(),
     queryFn: () => clientApi("/admin/email-templates"),
   })
-
-  const availableSlugs = useMemo(() => {
-    const fromDb = new Set((pagesQuery.data ?? []).map((page) => page.slug))
-    for (const slug of defaultPageSlugs) {
-      fromDb.add(slug)
-    }
-    return Array.from(fromDb)
-  }, [pagesQuery.data])
 
   const availableTemplateKeys = useMemo(() => {
     const fromDb = new Set(
@@ -105,72 +340,27 @@ export default function AdminContentPage() {
     return Array.from(fromDb)
   }, [templatesQuery.data])
 
-  const selectedPage = (pagesQuery.data ?? []).find(
-    (page) => page.slug === selectedSlug
-  )
   const selectedTemplate = (templatesQuery.data ?? []).find(
     (template) => template.key === selectedTemplateKey
   )
+  const sampleTemplate = useMemo(
+    () => getSampleTemplate(selectedTemplateKey),
+    [selectedTemplateKey]
+  )
 
-  useEffect(() => {
-    setTitle(selectedPage?.title ?? "")
-    setSummary(selectedPage?.summary ?? "")
-    setSeoTitle(selectedPage?.seoTitle ?? "")
-    setSeoDescription(selectedPage?.seoDescription ?? "")
-    setContentJson(
-      JSON.stringify(selectedPage?.content ?? {}, null, 2)
-    )
-    setIsPublished(selectedPage?.isPublished ?? false)
-  }, [selectedPage?.slug, selectedPage?.updatedAt])
-
-  useEffect(() => {
-    setSubjectTemplate(selectedTemplate?.subjectTemplate ?? "")
-    setHtmlTemplate(selectedTemplate?.htmlTemplate ?? "")
-    setTextTemplate(selectedTemplate?.textTemplate ?? "")
-    setTemplateActive(selectedTemplate?.isActive ?? true)
-  }, [selectedTemplate?.key, selectedTemplate?.updatedAt])
-
-  const savePageMutation = useMutation({
-    mutationFn: async () => {
-      let parsedContent: Record<string, unknown> = {}
-
-      try {
-        parsedContent = JSON.parse(contentJson) as Record<string, unknown>
-      } catch {
-        throw new Error("Content JSON is invalid")
-      }
-
-      return clientApi(`/admin/content/pages/${selectedSlug}`, {
-        method: "PUT",
-        body: {
-          title,
-          summary: summary.trim().length > 0 ? summary : null,
-          content: parsedContent,
-          seoTitle: seoTitle.trim().length > 0 ? seoTitle : null,
-          seoDescription:
-            seoDescription.trim().length > 0 ? seoDescription : null,
-          isPublished,
-        },
-      })
-    },
-    onSuccess: async () => {
-      toast.success("CMS page saved")
-      await queryClient.invalidateQueries({ queryKey: queryKeys.contentPages() })
-    },
-    onError: (error: Error) => {
-      toast.error(error.message || "Failed to save page")
-    },
-  })
+  const source = selectedTemplate ?? sampleTemplate
+  const templateEditorKey = `${selectedTemplateKey}-${selectedTemplate?.updatedAt ?? "sample"}`
 
   const saveTemplateMutation = useMutation({
-    mutationFn: () =>
+    mutationFn: (draft: TemplateDraft) =>
       clientApi(`/admin/email-templates/${selectedTemplateKey}`, {
         method: "PUT",
         body: {
-          subjectTemplate,
-          htmlTemplate,
-          textTemplate: textTemplate.trim().length > 0 ? textTemplate : null,
-          isActive: templateActive,
+          subjectTemplate: draft.subjectTemplate,
+          htmlTemplate: draft.htmlTemplate,
+          textTemplate:
+            draft.textTemplate.trim().length > 0 ? draft.textTemplate : null,
+          isActive: draft.isActive,
         },
       }),
     onSuccess: async () => {
@@ -187,186 +377,46 @@ export default function AdminContentPage() {
   return (
     <section className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">
-          Legacy Content & Templates
-        </h1>
+        <h1 className="text-2xl font-bold tracking-tight">Email Templates</h1>
         <p className="text-sm text-muted-foreground">
-          Website content now lives in Sanity Studio. This page remains for
-          internal templates and legacy content records.
+          Configure email subjects and bodies used for transactional
+          notifications.
         </p>
       </div>
 
       <Alert>
         <AlertTitle>Website CMS moved to Sanity</AlertTitle>
         <AlertDescription>
-          Use <code>http://localhost:3000/studio</code> (or your web domain
-          <code>/studio</code>) to edit homepage, FAQ, terms, privacy, refund
-          policy, and contact pages.
+          To edit website content, go to <code>{webBaseUrl}/studio</code>.
         </AlertDescription>
       </Alert>
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        <div className="rounded-lg border p-4">
-          <div className="space-y-4">
-            <h2 className="text-lg font-semibold">CMS Pages</h2>
+      <div className="rounded-lg border p-4">
+        {!selectedTemplate ? (
+          <Alert className="mb-6">
+            <AlertTitle>Using sample template</AlertTitle>
+            <AlertDescription>
+              No saved template found for this key yet. You are editing a
+              prefilled sample; click save to persist it.
+            </AlertDescription>
+          </Alert>
+        ) : null}
 
-            <div className="space-y-2">
-              <Label htmlFor="cms-slug">Page</Label>
-              <select
-                id="cms-slug"
-                className="h-10 w-full rounded-md border bg-background px-3 text-sm"
-                value={selectedSlug}
-                onChange={(event) => setSelectedSlug(event.target.value)}
-              >
-                {availableSlugs.map((slug) => (
-                  <option key={slug} value={slug}>
-                    {slug}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="cms-title">Title</Label>
-              <Input
-                id="cms-title"
-                value={title}
-                onChange={(event) => setTitle(event.target.value)}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="cms-summary">Summary</Label>
-              <Input
-                id="cms-summary"
-                value={summary}
-                onChange={(event) => setSummary(event.target.value)}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="cms-seo-title">SEO Title</Label>
-              <Input
-                id="cms-seo-title"
-                value={seoTitle}
-                onChange={(event) => setSeoTitle(event.target.value)}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="cms-seo-description">SEO Description</Label>
-              <Textarea
-                id="cms-seo-description"
-                value={seoDescription}
-                onChange={(event) => setSeoDescription(event.target.value)}
-                className="min-h-20"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="cms-content-json">Content JSON</Label>
-              <Textarea
-                id="cms-content-json"
-                value={contentJson}
-                onChange={(event) => setContentJson(event.target.value)}
-                className="min-h-56 font-mono text-xs"
-              />
-            </div>
-
-            <div className="flex items-center justify-between rounded-md border p-3">
-              <Label htmlFor="cms-published">Published</Label>
-              <Switch
-                id="cms-published"
-                checked={isPublished}
-                onCheckedChange={setIsPublished}
-              />
-            </div>
-
-            <Button
-              onClick={() => savePageMutation.mutate()}
-              disabled={savePageMutation.isPending || pagesQuery.isLoading}
-            >
-              Save Page
-            </Button>
-          </div>
-        </div>
-
-        <div className="rounded-lg border p-4">
-          <div className="space-y-4">
-            <h2 className="text-lg font-semibold">Email Templates</h2>
-
-            <div className="space-y-2">
-              <Label htmlFor="template-key">Template</Label>
-              <select
-                id="template-key"
-                className="h-10 w-full rounded-md border bg-background px-3 text-sm"
-                value={selectedTemplateKey}
-                onChange={(event) => setSelectedTemplateKey(event.target.value)}
-              >
-                {availableTemplateKeys.map((key) => (
-                  <option key={key} value={key}>
-                    {key}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="template-subject">Subject Template</Label>
-              <Input
-                id="template-subject"
-                value={subjectTemplate}
-                onChange={(event) => setSubjectTemplate(event.target.value)}
-                placeholder="Example: Payment confirmed for {{invoiceNumber}}"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="template-html">HTML Template</Label>
-              <Textarea
-                id="template-html"
-                value={htmlTemplate}
-                onChange={(event) => setHtmlTemplate(event.target.value)}
-                className="min-h-48 font-mono text-xs"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="template-text">Text Template</Label>
-              <Textarea
-                id="template-text"
-                value={textTemplate}
-                onChange={(event) => setTextTemplate(event.target.value)}
-                className="min-h-28 font-mono text-xs"
-              />
-            </div>
-
-            <div className="flex items-center justify-between rounded-md border p-3">
-              <Label htmlFor="template-active">Enabled</Label>
-              <Switch
-                id="template-active"
-                checked={templateActive}
-                onCheckedChange={setTemplateActive}
-              />
-            </div>
-
-            <Button
-              onClick={() => saveTemplateMutation.mutate()}
-              disabled={
-                saveTemplateMutation.isPending || templatesQuery.isLoading
-              }
-            >
-              Save Template
-            </Button>
-          </div>
-        </div>
+        <TemplateEditorForm
+          key={templateEditorKey}
+          templateKey={selectedTemplateKey}
+          availableTemplateKeys={availableTemplateKeys}
+          source={source}
+          onTemplateKeyChange={(value) => {
+            if (value) {
+              setSelectedTemplateKey(value)
+            }
+          }}
+          onSave={(draft) => saveTemplateMutation.mutate(draft)}
+          isSaving={saveTemplateMutation.isPending}
+          isLoading={templatesQuery.isLoading}
+        />
       </div>
-
-      <Separator />
-
-      <p className="text-xs text-muted-foreground">
-        Template variables use <code>{"{{variableName}}"}</code> placeholders.
-      </p>
     </section>
   )
 }
