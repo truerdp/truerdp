@@ -26,6 +26,7 @@ export interface Plan {
   portSpeed: string
   setupFees: number
   planLocation: string
+  isFeatured: boolean
   defaultPricingId: number | null
   pricingOptions: PlanPricingOption[]
 }

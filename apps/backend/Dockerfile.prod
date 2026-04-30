@@ -1,0 +1,28 @@
+FROM node:20-alpine AS builder
+
+WORKDIR /app
+
+RUN corepack enable
+
+# Copy monorepo sources needed to install workspace deps and build backend.
+COPY . .
+
+RUN pnpm install --frozen-lockfile
+RUN pnpm --filter backend build
+
+FROM node:20-alpine AS runner
+
+WORKDIR /app
+
+ENV NODE_ENV=production
+
+RUN corepack enable
+
+# Copy built workspace and dependencies from builder stage.
+COPY --from=builder /app /app
+
+WORKDIR /app/apps/backend
+
+EXPOSE 3003
+
+CMD ["node", "dist/index.js"]

@@ -183,6 +183,7 @@ export function PlanDetails({ planId }: PlanDetailsProps) {
         setupFees: values.setupFees,
         planLocation: values.planLocation,
         isActive: plan.isActive,
+        isFeatured: plan.isFeatured,
         defaultPricingId: values.defaultPricingId,
         pricingOptions: values.pricingOptions.map((option) => ({
           id: option.pricingId,

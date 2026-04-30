@@ -309,9 +309,34 @@ export default function CheckoutOrderPage() {
               </div>
               <Separator className="my-3" />
               <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">Total</span>
+                <span className="text-muted-foreground">Subtotal</span>
+                <span>
+                  {formatAmount(
+                    order.invoice?.subtotal ?? order.pricing.priceUsdCents
+                  )}
+                </span>
+              </div>
+              {order.invoice?.discount ? (
+                <>
+                  <Separator className="my-3" />
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">
+                      Discount
+                      {order.invoice.couponCode
+                        ? ` (${order.invoice.couponCode})`
+                        : ""}
+                    </span>
+                    <span>-{formatAmount(order.invoice.discount)}</span>
+                  </div>
+                </>
+              ) : null}
+              <Separator className="my-3" />
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">Total due</span>
                 <span className="text-lg font-semibold">
-                  {formatAmount(order.pricing.priceUsdCents)}
+                  {formatAmount(
+                    order.invoice?.totalAmount ?? order.pricing.priceUsdCents
+                  )}
                 </span>
               </div>
             </div>

@@ -732,7 +732,9 @@ export async function findPendingTransactionForInstance(
 
 type BillingOrderRecord = {
   order: typeof orders.$inferSelect
-  invoice?: typeof invoices.$inferSelect | null
+  invoice?:
+    | (typeof invoices.$inferSelect & { couponCode?: string | null })
+    | null
   plan: {
     id: number
     name: string
@@ -774,6 +776,7 @@ function formatBillingOrderResponse(record: BillingOrderRecord) {
           totalAmount: record.invoice.totalAmount,
           currency: record.invoice.currency,
           couponId: record.invoice.couponId,
+          couponCode: record.invoice.couponCode ?? null,
           status: record.invoice.status,
           expiresAt: record.invoice.expiresAt,
           paidAt: record.invoice.paidAt,
@@ -792,12 +795,37 @@ async function getOrderInvoice(orderId: number) {
   return invoiceResult[0] ?? null
 }
 
+async function getCouponById(couponId: number | null | undefined) {
+  if (!couponId) {
+    return null
+  }
+
+  const [coupon] = await db
+    .select({
+      code: coupons.code,
+      type: coupons.type,
+      value: coupons.value,
+      maxUses: coupons.maxUses,
+      expiresAt: coupons.expiresAt,
+    })
+    .from(coupons)
+    .where(eq(coupons.id, couponId))
+    .limit(1)
+
+  return coupon ?? null
+}
+
 async function assertOrderHasNoTransactions(orderId: number) {
   const existingTransactions = await db
     .select({ id: transactions.id })
     .from(transactions)
     .innerJoin(invoices, eq(transactions.invoiceId, invoices.id))
-    .where(eq(invoices.orderId, orderId))
+    .where(
+      and(
+        eq(invoices.orderId, orderId),
+        inArray(transactions.status, ["pending", "confirmed"])
+      )
+    )
     .limit(1)
 
   if (existingTransactions[0]) {
@@ -806,6 +834,24 @@ async function assertOrderHasNoTransactions(orderId: number) {
       "Coupon cannot be changed after payment has started"
     )
   }
+}
+
+async function markTransactionSetupFailed(
+  transactionId: number,
+  error: unknown
+) {
+  const message =
+    error instanceof Error
+      ? error.message
+      : "Unable to create hosted checkout session"
+
+  await db
+    .update(transactions)
+    .set({
+      status: "failed",
+      failureReason: message,
+    })
+    .where(eq(transactions.id, transactionId))
 }
 
 function calculateCouponDiscount(input: {
@@ -939,8 +985,12 @@ export async function getBillingOrderForUser(userId: number, orderId: number) {
   }
 
   const invoice = await getOrderInvoice(orderId)
+  const coupon = await getCouponById(invoice?.couponId)
 
-  return formatBillingOrderResponse({ ...record, invoice })
+  return formatBillingOrderResponse({
+    ...record,
+    invoice: invoice ? { ...invoice, couponCode: coupon?.code ?? null } : invoice,
+  })
 }
 
 export async function updateBillingDetailsForUser(input: {
@@ -1039,7 +1089,7 @@ export async function applyCouponToBillingOrder(input: {
 
   return formatBillingOrderResponse({
     ...record,
-    invoice: updatedInvoice ?? invoice,
+    invoice: { ...(updatedInvoice ?? invoice), couponCode: coupon.code },
   })
 }
 
@@ -1081,7 +1131,7 @@ export async function removeCouponFromBillingOrder(input: {
 
   return formatBillingOrderResponse({
     ...record,
-    invoice: updatedInvoice ?? invoice,
+    invoice: { ...(updatedInvoice ?? invoice), couponCode: null },
   })
 }
 
@@ -1357,6 +1407,8 @@ export async function createBillingTransaction(input: {
     ).reference = transactionReference
   }
 
+  const invoiceCoupon = await getCouponById(created.invoice.couponId)
+
   if (input.method === "dodo_checkout") {
     const billing = orderResult.order.billingDetails
     const name =
@@ -1374,85 +1426,96 @@ export async function createBillingTransaction(input: {
     // Ensure we always have a non-null reference for external reconciliation
     const txnRef = transactionReference ?? createTransactionReference()
 
-    const session = await createCheckoutSessionForTransaction({
-      planPricingId: orderResult.order.planPricingId,
-      amountMinor: created.invoice.totalAmount,
-      currency: created.invoice.currency,
-      orderId: orderResult.order.id,
-      invoiceId: created.invoice.id,
-      transactionId: created.transaction.id,
-      reference: txnRef,
-      customer,
-      billing: billing
-        ? {
-            street: billing.addressLine1,
-            city: billing.city,
-            state: billing.state,
-            zipcode: billing.postalCode,
-            country: billing.country,
-          }
-        : undefined,
-    })
-
-    await db
-      .update(transactions)
-      .set({
-        metadata: {
-          dodo_session_id: session.sessionId,
-          dodo_checkout_url: session.checkoutUrl,
-          dodo_environment: session.environment,
-        } as unknown as typeof transactions.$inferInsert.metadata,
+    try {
+      const session = await createCheckoutSessionForTransaction({
+        planPricingId: orderResult.order.planPricingId,
+        amountMinor: created.invoice.totalAmount,
+        currency: created.invoice.currency,
+        orderId: orderResult.order.id,
+        invoiceId: created.invoice.id,
+        transactionId: created.transaction.id,
+        reference: txnRef,
+        discount: invoiceCoupon,
+        customer,
+        billing: billing
+          ? {
+              street: billing.addressLine1,
+              city: billing.city,
+              state: billing.state,
+              zipcode: billing.postalCode,
+              country: billing.country,
+            }
+          : undefined,
       })
-      .where(eq(transactions.id, created.transaction.id))
 
-    gatewayRedirectUrl = session.checkoutUrl
+      await db
+        .update(transactions)
+        .set({
+          metadata: {
+            dodo_session_id: session.sessionId,
+            dodo_checkout_url: session.checkoutUrl,
+            dodo_environment: session.environment,
+          } as unknown as typeof transactions.$inferInsert.metadata,
+        })
+        .where(eq(transactions.id, created.transaction.id))
+
+      gatewayRedirectUrl = session.checkoutUrl
+    } catch (error) {
+      await markTransactionSetupFailed(created.transaction.id, error)
+      throw error
+    }
   }
 
   if (input.method === "coingate_checkout") {
     const txnRef = transactionReference ?? createTransactionReference()
     const billing = orderResult.order.billingDetails
-    const session = await createCoinGateOrderForTransaction({
-      amountMinor: created.invoice.totalAmount,
-      currency: created.invoice.currency,
-      orderId: orderResult.order.id,
-      invoiceId: created.invoice.id,
-      transactionId: created.transaction.id,
-      reference: txnRef,
-      planName: created.order.planName,
-      durationDays: created.order.durationDays,
-      billingEmail: billing?.email ?? null,
-      shopper: billing
-        ? {
-            ipAddress: input.ipAddress,
-            firstName: billing.firstName,
-            lastName: billing.lastName,
-            email: billing.email,
-            companyName: billing.companyName,
-            taxId: billing.taxId,
-            addressLine1: billing.addressLine1,
-            addressLine2: billing.addressLine2,
-            city: billing.city,
-            state: billing.state,
-            postalCode: billing.postalCode,
-            country: billing.country,
-          }
-        : null,
-    })
-
-    await db
-      .update(transactions)
-      .set({
-        metadata: {
-          coingate_order_id: session.orderId,
-          coingate_payment_url: session.paymentUrl,
-          coingate_status: session.status,
-          coingate_callback_token: session.callbackToken,
-          coingate_environment: session.environment,
-        } as unknown as typeof transactions.$inferInsert.metadata,
+    try {
+      const session = await createCoinGateOrderForTransaction({
+        amountMinor: created.invoice.totalAmount,
+        currency: created.invoice.currency,
+        orderId: orderResult.order.id,
+        invoiceId: created.invoice.id,
+        transactionId: created.transaction.id,
+        reference: txnRef,
+        planName: created.order.planName,
+        durationDays: created.order.durationDays,
+        billingEmail: billing?.email ?? null,
+        shopper: billing
+          ? {
+              ipAddress: input.ipAddress,
+              firstName: billing.firstName,
+              lastName: billing.lastName,
+              email: billing.email,
+              companyName: billing.companyName,
+              taxId: billing.taxId,
+              addressLine1: billing.addressLine1,
+              addressLine2: billing.addressLine2,
+              city: billing.city,
+              state: billing.state,
+              postalCode: billing.postalCode,
+              country: billing.country,
+            }
+          : null,
       })
-      .where(eq(transactions.id, created.transaction.id))
 
-    gatewayRedirectUrl = session.paymentUrl
+      await db
+        .update(transactions)
+        .set({
+          metadata: {
+            coingate_order_id: session.orderId,
+            coingate_payment_url: session.paymentUrl,
+            coingate_status: session.status,
+            coingate_callback_token: session.callbackToken,
+            coingate_environment: session.environment,
+          } as unknown as typeof transactions.$inferInsert.metadata,
+        })
+        .where(eq(transactions.id, created.transaction.id))
+
+      gatewayRedirectUrl = session.paymentUrl
+    } catch (error) {
+      await markTransactionSetupFailed(created.transaction.id, error)
+      throw error
+    }
   }
 
   const response = formatBillingTransactionResponse({
@@ -2021,6 +2084,133 @@ export async function confirmPendingTransaction(
   }
 
   return confirmation
+}
+
+export async function failPendingTransactionForUser(input: {
+  userId: number
+  transactionId: number
+  reason: string
+  source?: "provider_return" | "webhook" | "system"
+}) {
+  const failed = await db.transaction(async (tx) => {
+    const [current] = await tx
+      .select({
+        transaction: {
+          id: transactions.id,
+          userId: transactions.userId,
+          invoiceId: transactions.invoiceId,
+          status: transactions.status,
+          failureReason: transactions.failureReason,
+        },
+        invoice: {
+          id: invoices.id,
+          status: invoices.status,
+        },
+        order: {
+          id: orders.id,
+          status: orders.status,
+        },
+      })
+      .from(transactions)
+      .innerJoin(invoices, eq(transactions.invoiceId, invoices.id))
+      .innerJoin(orders, eq(invoices.orderId, orders.id))
+      .where(eq(transactions.id, input.transactionId))
+      .limit(1)
+
+    if (!current) {
+      throw new BillingError(404, "Transaction not found")
+    }
+
+    if (current.transaction.userId !== input.userId) {
+      throw new BillingError(403, "Forbidden")
+    }
+
+    if (current.transaction.status === "confirmed") {
+      throw new BillingError(400, "Confirmed transactions cannot be failed")
+    }
+
+    if (current.transaction.status === "failed") {
+      return {
+        transaction: current.transaction,
+        invoice: current.invoice,
+        order: current.order,
+        changed: false,
+      }
+    }
+
+    await tx
+      .update(transactions)
+      .set({
+        status: "failed",
+        failureReason: input.reason,
+      })
+      .where(eq(transactions.id, current.transaction.id))
+
+    await tx
+      .update(invoices)
+      .set({
+        status: "expired",
+      })
+      .where(eq(invoices.id, current.invoice.id))
+
+    await tx
+      .update(orders)
+      .set({
+        status: "cancelled",
+      })
+      .where(eq(orders.id, current.order.id))
+
+    return {
+      transaction: {
+        ...current.transaction,
+        status: "failed" as const,
+        failureReason: input.reason,
+      },
+      invoice: {
+        ...current.invoice,
+        status: "expired" as const,
+      },
+      order: {
+        ...current.order,
+        status: "cancelled" as const,
+      },
+      changed: true,
+    }
+  })
+
+  if (failed.changed) {
+    await notifyPaymentFailureForInvoice({
+      invoiceId: failed.invoice.id,
+      reason: input.reason,
+    })
+
+    try {
+      await createAdminAuditLog({
+        adminUserId: null,
+        action: "transaction.fail",
+        entityType: "transaction",
+        entityId: failed.transaction.id,
+        reason: input.reason,
+        beforeState: {
+          transactionStatus: "pending",
+          invoiceStatus: "unpaid",
+          orderStatus: "pending_payment",
+        },
+        afterState: {
+          transactionStatus: failed.transaction.status,
+          invoiceStatus: failed.invoice.status,
+          orderStatus: failed.order.status,
+        },
+        metadata: {
+          source: input.source ?? "system",
+        },
+      })
+    } catch (auditError) {
+      console.error("Failed to write transaction failure audit log", auditError)
+    }
+  }
+
+  return failed
 }
 
 export async function notifyPaymentFailureForInvoice(input: {

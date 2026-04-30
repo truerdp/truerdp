@@ -26,6 +26,7 @@ export default function CreatePlanPage() {
       setupFees: values.setupFees,
       planLocation: values.planLocation,
       isActive: true,
+      isFeatured: false,
       pricingOptions: values.pricingOptions.map((option) => ({
         durationDays: option.durationDays,
         priceUsdCents: Math.round(option.priceUsd * 100),

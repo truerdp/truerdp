@@ -5,7 +5,6 @@ import { closeDbConnection, db } from "../db.js"
 import { planPricing, plans, servers, users } from "../schema.js"
 
 const DEFAULT_PASSWORD = "password123"
-const DEFAULT_PLAN_NAME = "Starter RDP"
 const DEFAULT_PLAN_PRICING = [
   {
     durationDays: 30,
@@ -15,7 +14,163 @@ const DEFAULT_PLAN_PRICING = [
     durationDays: 90,
     priceUsdCents: 1299,
   },
+  {
+    durationDays: 180,
+    priceUsdCents: 2399,
+  },
 ] as const
+
+const DEFAULT_PLANS = [
+  {
+    name: "Starter RDP",
+    cpu: 2,
+    cpuName: "Intel Xeon E5",
+    cpuThreads: 2,
+    ram: 4,
+    ramType: "DDR4",
+    storage: 80,
+    storageType: "SSD",
+    bandwidth: "2TB",
+    os: "Windows",
+    osVersion: "Windows Server 2022",
+    planType: "Dedicated",
+    portSpeed: "1Gbps",
+    setupFees: 0,
+    planLocation: "USA",
+    isFeatured: true,
+    pricingOptions: DEFAULT_PLAN_PRICING,
+  },
+  {
+    name: "Business RDP",
+    cpu: 4,
+    cpuName: "Intel Xeon Gold",
+    cpuThreads: 4,
+    ram: 8,
+    ramType: "DDR4 ECC",
+    storage: 160,
+    storageType: "SSD",
+    bandwidth: "4TB",
+    os: "Windows",
+    osVersion: "Windows Server 2022",
+    planType: "Dedicated",
+    portSpeed: "1Gbps",
+    setupFees: 0,
+    planLocation: "Germany",
+    isFeatured: true,
+    pricingOptions: [
+      {
+        durationDays: 30,
+        priceUsdCents: 899,
+      },
+      {
+        durationDays: 90,
+        priceUsdCents: 2499,
+      },
+      {
+        durationDays: 180,
+        priceUsdCents: 4599,
+      },
+    ],
+  },
+  {
+    name: "Performance RDP",
+    cpu: 6,
+    cpuName: "AMD EPYC",
+    cpuThreads: 8,
+    ram: 16,
+    ramType: "DDR4 ECC",
+    storage: 320,
+    storageType: "SSD",
+    bandwidth: "6TB",
+    os: "Windows",
+    osVersion: "Windows Server 2022 Datacenter",
+    planType: "Dedicated",
+    portSpeed: "2Gbps",
+    setupFees: 0,
+    planLocation: "Singapore",
+    isFeatured: true,
+    pricingOptions: [
+      {
+        durationDays: 30,
+        priceUsdCents: 1499,
+      },
+      {
+        durationDays: 90,
+        priceUsdCents: 4099,
+      },
+      {
+        durationDays: 365,
+        priceUsdCents: 14999,
+      },
+    ],
+  },
+  {
+    name: "Residential Basic",
+    cpu: 2,
+    cpuName: "Intel Core",
+    cpuThreads: 2,
+    ram: 4,
+    ramType: "DDR4",
+    storage: 60,
+    storageType: "SSD",
+    bandwidth: "1TB",
+    os: "Windows",
+    osVersion: "Windows 11 Pro",
+    planType: "Residential",
+    portSpeed: "500Mbps",
+    setupFees: 0,
+    planLocation: "India",
+    isFeatured: false,
+    pricingOptions: [
+      {
+        durationDays: 7,
+        priceUsdCents: 299,
+      },
+      {
+        durationDays: 30,
+        priceUsdCents: 999,
+      },
+      {
+        durationDays: 90,
+        priceUsdCents: 2699,
+      },
+    ],
+  },
+  {
+    name: "Residential Pro",
+    cpu: 4,
+    cpuName: "Intel Core i7",
+    cpuThreads: 4,
+    ram: 8,
+    ramType: "DDR4",
+    storage: 120,
+    storageType: "SSD",
+    bandwidth: "2TB",
+    os: "Windows",
+    osVersion: "Windows 11 Pro",
+    planType: "Residential",
+    portSpeed: "1Gbps",
+    setupFees: 0,
+    planLocation: "UK",
+    isFeatured: true,
+    pricingOptions: [
+      {
+        durationDays: 7,
+        priceUsdCents: 499,
+      },
+      {
+        durationDays: 30,
+        priceUsdCents: 1699,
+      },
+      {
+        durationDays: 90,
+        priceUsdCents: 4599,
+      },
+    ],
+  },
+] as const
+
+type SeedPlan = (typeof DEFAULT_PLANS)[number]
 
 function requireSeedRecord<T>(value: T | undefined, label: string): T {
   if (!value) {
@@ -60,22 +215,34 @@ async function upsertUser(input: {
   return user
 }
 
-async function upsertPlan() {
+async function upsertPlan(input: SeedPlan) {
   const existingPlan = await db
     .select({
       id: plans.id,
     })
     .from(plans)
-    .where(eq(plans.name, DEFAULT_PLAN_NAME))
+    .where(eq(plans.name, input.name))
     .limit(1)
 
   if (existingPlan[0]) {
     const [plan] = await db
       .update(plans)
       .set({
-        cpu: 2,
-        ram: 4,
-        storage: 80,
+        cpu: input.cpu,
+        cpuName: input.cpuName,
+        cpuThreads: input.cpuThreads,
+        ram: input.ram,
+        ramType: input.ramType,
+        storage: input.storage,
+        storageType: input.storageType,
+        bandwidth: input.bandwidth,
+        os: input.os,
+        osVersion: input.osVersion,
+        planType: input.planType,
+        portSpeed: input.portSpeed,
+        setupFees: input.setupFees,
+        planLocation: input.planLocation,
+        isFeatured: input.isFeatured,
         isActive: true,
       })
       .where(eq(plans.id, existingPlan[0].id))
@@ -90,10 +257,22 @@ async function upsertPlan() {
   const [plan] = await db
     .insert(plans)
     .values({
-      name: DEFAULT_PLAN_NAME,
-      cpu: 2,
-      ram: 4,
-      storage: 80,
+      name: input.name,
+      cpu: input.cpu,
+      cpuName: input.cpuName,
+      cpuThreads: input.cpuThreads,
+      ram: input.ram,
+      ramType: input.ramType,
+      storage: input.storage,
+      storageType: input.storageType,
+      bandwidth: input.bandwidth,
+      os: input.os,
+      osVersion: input.osVersion,
+      planType: input.planType,
+      portSpeed: input.portSpeed,
+      setupFees: input.setupFees,
+      planLocation: input.planLocation,
+      isFeatured: input.isFeatured,
       isActive: true,
     })
     .returning({
@@ -104,10 +283,13 @@ async function upsertPlan() {
   return requireSeedRecord(plan, "plan")
 }
 
-async function upsertPlanPricing(planId: number) {
+async function upsertPlanPricing(
+  planId: number,
+  pricingCatalog: SeedPlan["pricingOptions"]
+) {
   const pricingOptions = []
 
-  for (const option of DEFAULT_PLAN_PRICING) {
+  for (const option of pricingCatalog) {
     const existingPricing = await db
       .select({
         id: planPricing.id,
@@ -166,10 +348,21 @@ async function upsertPlanPricing(planId: number) {
         eq(planPricing.planId, planId),
         notInArray(
           planPricing.durationDays,
-          DEFAULT_PLAN_PRICING.map((option) => option.durationDays)
+          pricingCatalog.map((option) => option.durationDays)
         )
       )
     )
+
+  const defaultPricing = pricingOptions.find(
+    (option) => option.durationDays === 30
+  )
+
+  await db
+    .update(plans)
+    .set({
+      defaultPricingId: defaultPricing?.id ?? pricingOptions[0]?.id ?? null,
+    })
+    .where(eq(plans.id, planId))
 
   return pricingOptions
 }
@@ -224,16 +417,28 @@ async function seed() {
     role: "user",
   })
 
-  const plan = await upsertPlan()
-  const pricingOptions = await upsertPlanPricing(plan.id)
+  const seededPlans = []
+
+  for (const planInput of DEFAULT_PLANS) {
+    const plan = await upsertPlan(planInput)
+    const pricingOptions = await upsertPlanPricing(
+      plan.id,
+      planInput.pricingOptions
+    )
+
+    seededPlans.push({
+      ...plan,
+      pricingOptions,
+    })
+  }
+
   const server = await upsertServer()
 
   console.log("Seed complete")
   console.log({
     adminUser,
     normalUser,
-    plan,
-    pricingOptions,
+    plans: seededPlans,
     server,
     password: DEFAULT_PASSWORD,
   })

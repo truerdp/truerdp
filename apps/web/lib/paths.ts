@@ -2,6 +2,9 @@ import type { Route } from "next"
 
 export const webPaths = {
   home: "/" as Route,
+  plans: "/plans" as Route,
+  planCategory: (category: string) =>
+    `/plans/${encodeURIComponent(category.toLowerCase().replaceAll(" ", "-"))}` as Route,
   login: "/login" as Route,
   signup: "/signup" as Route,
   forgotPassword: "/forgot-password" as Route,

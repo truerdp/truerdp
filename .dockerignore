@@ -1,7 +1,12 @@
 node_modules
 .git
-.env
 npm-debug.log
 .pnpm-store
 .next
 dist
+**/node_modules
+**/.next
+**/dist
+**/.env
+**/.env.*
+!**/.env*.example

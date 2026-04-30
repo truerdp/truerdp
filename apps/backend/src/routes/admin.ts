@@ -27,7 +27,10 @@ import {
   sendExpiryReminderSweep,
 } from "../services/billing.js"
 import { getAdminUser360, listAdminUsers } from "../services/admin-user.js"
-import { syncDodoProductForPlanPricing } from "../services/dodo-payments.js"
+import {
+  syncDodoDiscountForCoupon,
+  syncDodoProductForPlanPricing,
+} from "../services/dodo-payments.js"
 import { encryptCredential } from "../services/resource-credentials.js"
 import { listAdminPlansWithPricing } from "../services/plan.js"
 import {
@@ -81,6 +84,7 @@ const createPlanSchema = z.object({
   setupFees: z.number().int().nonnegative().default(0),
   planLocation: z.string().trim().min(1).default("USA"),
   isActive: z.boolean().default(true),
+  isFeatured: z.boolean().default(false),
   pricingOptions: z.array(planPricingInputSchema.omit({ id: true })).min(1),
 })
 
@@ -101,12 +105,17 @@ const updatePlanSchema = z.object({
   setupFees: z.number().int().nonnegative(),
   planLocation: z.string().trim().min(1),
   isActive: z.boolean().default(true),
+  isFeatured: z.boolean().default(false),
   defaultPricingId: z.number().int().positive().optional().nullable(),
   pricingOptions: z.array(planPricingInputSchema).min(1),
 })
 
 const updatePlanStatusSchema = z.object({
   isActive: z.boolean(),
+})
+
+const updatePlanFeaturedSchema = z.object({
+  isFeatured: z.boolean(),
 })
 
 const serverInputSchema = z.object({
@@ -144,6 +153,33 @@ const couponInputSchema = z
 const couponStatusSchema = z.object({
   isActive: z.boolean(),
 })
+
+type CouponSyncTarget = typeof coupons.$inferSelect
+
+async function syncCouponToDodo(
+  tx: Parameters<Parameters<typeof db.transaction>[0]>[0],
+  coupon: CouponSyncTarget
+) {
+  const syncResult = await syncDodoDiscountForCoupon({
+    code: coupon.code,
+    type: coupon.type,
+    value: coupon.value,
+    maxUses: coupon.maxUses,
+    expiresAt: coupon.expiresAt,
+    isActive: coupon.isActive,
+    existingDodoDiscountId: coupon.dodoDiscountId,
+  })
+
+  await tx
+    .update(coupons)
+    .set({
+      dodoDiscountId: syncResult.dodoDiscountId,
+      dodoSyncStatus: "synced",
+      dodoSyncError: null,
+      dodoSyncedAt: syncResult.syncedAt,
+    })
+    .where(eq(coupons.id, coupon.id))
+}
 
 const adminListPaginationQuerySchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
@@ -273,6 +309,7 @@ export async function adminRoutes(server: FastifyInstance) {
               setupFees: body.setupFees,
               planLocation: body.planLocation,
               isActive: body.isActive,
+              isFeatured: body.isFeatured,
             })
             .returning({
               id: plans.id,
@@ -403,6 +440,7 @@ export async function adminRoutes(server: FastifyInstance) {
               setupFees: body.setupFees,
               planLocation: body.planLocation,
               isActive: body.isActive,
+              isFeatured: body.isFeatured,
               defaultPricingId: body.defaultPricingId ?? null,
             })
             .where(eq(plans.id, planId))
@@ -601,6 +639,53 @@ export async function adminRoutes(server: FastifyInstance) {
     }
   )
 
+  server.patch(
+    "/admin/plans/:id/featured",
+    { preHandler: verifyAuth },
+    async (request: any, reply) => {
+      try {
+        if (!requireAdmin(request.user, reply)) {
+          return
+        }
+
+        const planId = Number(request.params.id)
+
+        if (Number.isNaN(planId)) {
+          return reply.status(400).send({ error: "Invalid plan id" })
+        }
+
+        const body = updatePlanFeaturedSchema.parse(request.body)
+
+        const [updated] = await db
+          .update(plans)
+          .set({
+            isFeatured: body.isFeatured,
+          })
+          .where(eq(plans.id, planId))
+          .returning({
+            id: plans.id,
+          })
+
+        if (!updated) {
+          return reply.status(404).send({
+            error: "Plan not found",
+          })
+        }
+
+        return reply.send({
+          message: body.isFeatured
+            ? "Plan added to featured plans"
+            : "Plan removed from featured plans",
+        })
+      } catch (err: any) {
+        server.log.error(err)
+        return reply.status(400).send({
+          error: err.message || "Invalid request",
+        })
+      }
+    }
+  )
+
   server.get(
     "/admin/coupons",
     { preHandler: verifyAuth },
@@ -619,6 +704,10 @@ export async function adminRoutes(server: FastifyInstance) {
             appliesTo: coupons.appliesTo,
             maxUses: coupons.maxUses,
             expiresAt: coupons.expiresAt,
+            dodoDiscountId: coupons.dodoDiscountId,
+            dodoSyncStatus: coupons.dodoSyncStatus,
+            dodoSyncError: coupons.dodoSyncError,
+            dodoSyncedAt: coupons.dodoSyncedAt,
             isActive: coupons.isActive,
             createdAt: coupons.createdAt,
             updatedAt: coupons.updatedAt,
@@ -650,18 +739,34 @@ export async function adminRoutes(server: FastifyInstance) {
 
         const body = couponInputSchema.parse(request.body ?? {})
 
-        const [created] = await db
-          .insert(coupons)
-          .values({
-            code: body.code.trim().toUpperCase(),
-            type: body.type,
-            value: body.value,
-            appliesTo: body.appliesTo,
-            maxUses: body.maxUses ?? null,
-            expiresAt: body.expiresAt ? new Date(body.expiresAt) : null,
-            isActive: body.isActive,
-          })
-          .returning()
+        const created = await db.transaction(async (tx) => {
+          const [inserted] = await tx
+            .insert(coupons)
+            .values({
+              code: body.code.trim().toUpperCase(),
+              type: body.type,
+              value: body.value,
+              appliesTo: body.appliesTo,
+              maxUses: body.maxUses ?? null,
+              expiresAt: body.expiresAt ? new Date(body.expiresAt) : null,
+              isActive: body.isActive,
+            })
+            .returning()
+
+          if (!inserted) {
+            throw new Error("Failed to create coupon")
+          }
+
+          await syncCouponToDodo(tx, inserted)
+
+          const [synced] = await tx
+            .select()
+            .from(coupons)
+            .where(eq(coupons.id, inserted.id))
+            .limit(1)
+
+          return synced ?? inserted
+        })
 
         return {
           message: "Coupon created successfully",
@@ -692,19 +797,37 @@ export async function adminRoutes(server: FastifyInstance) {
         }
 
         const body = couponInputSchema.parse(request.body ?? {})
-        const [updated] = await db
-          .update(coupons)
-          .set({
-            code: body.code.trim().toUpperCase(),
-            type: body.type,
-            value: body.value,
-            appliesTo: body.appliesTo,
-            maxUses: body.maxUses ?? null,
-            expiresAt: body.expiresAt ? new Date(body.expiresAt) : null,
-            isActive: body.isActive,
-          })
-          .where(eq(coupons.id, couponId))
-          .returning()
+        const updated = await db.transaction(async (tx) => {
+          const [coupon] = await tx
+            .update(coupons)
+            .set({
+              code: body.code.trim().toUpperCase(),
+              type: body.type,
+              value: body.value,
+              appliesTo: body.appliesTo,
+              maxUses: body.maxUses ?? null,
+              expiresAt: body.expiresAt ? new Date(body.expiresAt) : null,
+              isActive: body.isActive,
+              dodoSyncStatus: "pending",
+              dodoSyncError: null,
+            })
+            .where(eq(coupons.id, couponId))
+            .returning()
+
+          if (!coupon) {
+            return null
+          }
+
+          await syncCouponToDodo(tx, coupon)
+
+          const [synced] = await tx
+            .select()
+            .from(coupons)
+            .where(eq(coupons.id, coupon.id))
+            .limit(1)
+
+          return synced ?? coupon
+        })
 
         if (!updated) {
           return reply.status(404).send({ error: "Coupon not found" })
@@ -739,11 +862,31 @@ export async function adminRoutes(server: FastifyInstance) {
         }
 
         const body = couponStatusSchema.parse(request.body ?? {})
-        const [updated] = await db
-          .update(coupons)
-          .set({ isActive: body.isActive })
-          .where(eq(coupons.id, couponId))
-          .returning()
+        const updated = await db.transaction(async (tx) => {
+          const [coupon] = await tx
+            .update(coupons)
+            .set({
+              isActive: body.isActive,
+              dodoSyncStatus: "pending",
+              dodoSyncError: null,
+            })
+            .where(eq(coupons.id, couponId))
+            .returning()
+
+          if (!coupon) {
+            return null
+          }
+
+          await syncCouponToDodo(tx, coupon)
+
+          const [synced] = await tx
+            .select()
+            .from(coupons)
+            .where(eq(coupons.id, coupon.id))
+            .limit(1)
+
+          return synced ?? coupon
+        })
 
         if (!updated) {
           return reply.status(404).send({ error: "Coupon not found" })

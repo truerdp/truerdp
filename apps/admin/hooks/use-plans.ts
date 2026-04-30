@@ -33,6 +33,7 @@ export interface Plan {
   setupFees: number
   planLocation: string
   isActive: boolean
+  isFeatured: boolean
   defaultPricingId: number | null
   pricingOptions: PlanPricingOption[]
 }

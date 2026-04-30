@@ -1,12 +1,13 @@
 "use client"
 
 import Link from "next/link"
-import { Suspense, useEffect, useMemo, useState } from "react"
+import { Suspense, useEffect, useMemo, useRef, useState } from "react"
 import { useSearchParams } from "next/navigation"
 import { HugeiconsIcon } from "@hugeicons/react"
 import {
   ArrowRight01Icon,
   CheckmarkCircle02Icon,
+  CreditCardIcon,
   Invoice03Icon,
 } from "@hugeicons/core-free-icons"
 import {
@@ -38,8 +39,17 @@ function CheckoutSuccessPageContent() {
   const hasOrderId = Number.isInteger(orderId) && orderId > 0
   const transactionId = Number(searchParams.get("transactionId") ?? "")
   const hasTransactionId = Number.isInteger(transactionId) && transactionId > 0
+  const providerStatus = (searchParams.get("status") ?? "").toLowerCase()
+  const providerPaymentId = searchParams.get("payment_id")
+  const isProviderFailureReturn = [
+    "failed",
+    "failure",
+    "cancelled",
+    "canceled",
+  ].includes(providerStatus)
   const { data, isLoading, refetch } = useTransactions()
   const [hasSyncedCoinGate, setHasSyncedCoinGate] = useState(false)
+  const hasSyncedHostedReturnRef = useRef(false)
 
   useEffect(() => {
     setHasMounted(true)
@@ -76,6 +86,39 @@ function CheckoutSuccessPageContent() {
         void refetch()
       })
   }, [hasSyncedCoinGate, refetch, transaction])
+
+  useEffect(() => {
+    if (
+      !transaction ||
+      !isProviderFailureReturn ||
+      hasSyncedHostedReturnRef.current ||
+      transaction.status !== "pending"
+    ) {
+      return
+    }
+
+    hasSyncedHostedReturnRef.current = true
+
+    void clientApi(`/transactions/${transaction.id}/hosted-return`, {
+      method: "POST",
+      body: {
+        status: providerStatus,
+        paymentId: providerPaymentId,
+      },
+    })
+      .catch(() => {
+        // Keep the page readable; refetch below shows the authoritative state.
+      })
+      .finally(() => {
+        void refetch()
+      })
+  }, [
+    isProviderFailureReturn,
+    providerPaymentId,
+    providerStatus,
+    refetch,
+    transaction,
+  ])
 
   const dashboardUrl =
     process.env.NEXT_PUBLIC_DASHBOARD_URL ?? "http://localhost:3001"
@@ -134,18 +177,28 @@ function CheckoutSuccessPageContent() {
     )
   }
 
+  const isFailed = transaction.status === "failed" || isProviderFailureReturn
+  const title = isFailed
+    ? "Payment failed"
+    : transaction.status === "confirmed"
+      ? "Payment confirmed"
+      : "Transaction created successfully"
+  const description = isFailed
+    ? "The hosted checkout reported a failed payment. You can start a new order when ready."
+    : transaction.status === "confirmed"
+      ? "Your payment has been confirmed and your order is moving ahead."
+      : "Your order is now pending admin confirmation and manual provisioning."
+  const titleIcon = isFailed ? CreditCardIcon : CheckmarkCircle02Icon
+
   return (
     <main className="mx-auto w-full max-w-3xl px-6 py-12">
       <Card>
         <CardHeader>
           <CardTitle className="inline-flex items-center gap-2">
-            <HugeiconsIcon icon={CheckmarkCircle02Icon} strokeWidth={2} />
-            Transaction created successfully
+            <HugeiconsIcon icon={titleIcon} strokeWidth={2} />
+            {title}
           </CardTitle>
-          <CardDescription>
-            Your order is now pending admin confirmation and manual
-            provisioning.
-          </CardDescription>
+          <CardDescription>{description}</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-5">
           <div className="flex flex-wrap items-center gap-2">
@@ -153,7 +206,10 @@ function CheckoutSuccessPageContent() {
             {hasOrderId ? (
               <Badge variant="outline">Order #{orderId}</Badge>
             ) : null}
-            <Badge variant="outline" className="capitalize">
+            <Badge
+              variant={isFailed ? "destructive" : "outline"}
+              className="capitalize"
+            >
               {transaction.status}
             </Badge>
           </div>
@@ -198,8 +254,8 @@ function CheckoutSuccessPageContent() {
               </Button>
             </a>
             <Link href={webPaths.home}>
-              <Button variant="outline">
-                Start another order
+              <Button variant={isFailed ? "default" : "outline"}>
+                {isFailed ? "Choose another plan" : "Start another order"}
                 <HugeiconsIcon
                   icon={ArrowRight01Icon}
                   strokeWidth={2}

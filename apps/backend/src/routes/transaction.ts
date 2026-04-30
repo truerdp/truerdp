@@ -7,6 +7,7 @@ import { transactions } from "../schema.js"
 import {
   BillingError,
   createBillingTransaction,
+  failPendingTransactionForUser,
   listUserInvoices,
   listUserTransactions,
   supportedPaymentMethodSchema,
@@ -21,6 +22,11 @@ const createTransactionSchema = z.object({
 
 const transactionParamsSchema = z.object({
   transactionId: z.coerce.number().int().positive(),
+})
+
+const hostedReturnSchema = z.object({
+  status: z.string().trim().toLowerCase(),
+  paymentId: z.string().trim().min(1).max(255).optional().nullable(),
 })
 
 function readStringMetadata(metadata: unknown, key: string): string | null {
@@ -156,6 +162,54 @@ export async function transactionRoutes(server: FastifyInstance) {
         request.log.error(err)
         return reply.status(400).send({
           error: err.message || "Unable to sync CoinGate transaction",
+        })
+      }
+    }
+  )
+
+  server.post(
+    "/transactions/:transactionId/hosted-return",
+    { preHandler: verifyAuth },
+    async (request: any, reply) => {
+      try {
+        const { transactionId } = transactionParamsSchema.parse(request.params)
+        const body = hostedReturnSchema.parse(request.body ?? {})
+
+        if (!["failed", "failure", "cancelled", "canceled"].includes(body.status)) {
+          return reply.status(400).send({
+            error: "Only failed hosted checkout returns can be reconciled here",
+          })
+        }
+
+        const reason = body.paymentId
+          ? `Hosted checkout returned ${body.status} for payment ${body.paymentId}`
+          : `Hosted checkout returned ${body.status}`
+
+        const result = await failPendingTransactionForUser({
+          userId: request.user.userId,
+          transactionId,
+          reason,
+          source: "provider_return",
+        })
+
+        return {
+          message: result.changed
+            ? "Transaction marked as failed"
+            : "Transaction was already failed",
+          transactionId: result.transaction.id,
+          status: result.transaction.status,
+        }
+      } catch (err: any) {
+        request.log.error(err)
+
+        if (err instanceof BillingError) {
+          return reply.status(err.statusCode).send({
+            error: err.message,
+          })
+        }
+
+        return reply.status(400).send({
+          error: err.message || "Unable to reconcile hosted checkout return",
         })
       }
     }

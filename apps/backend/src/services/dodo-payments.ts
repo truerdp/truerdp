@@ -7,6 +7,7 @@ interface CheckoutSessionCreatePayload {
   product_cart: { product_id: string; quantity: number }[]
   return_url: string
   billing_currency?: string
+  discount_code?: string
   customer?: { email?: string; name?: string; phone_number?: string }
   billing_address?: {
     street?: string
@@ -15,6 +16,9 @@ interface CheckoutSessionCreatePayload {
     country: string
     zipcode?: string
   }
+  feature_flags?: {
+    allow_discount_code?: boolean
+  }
   metadata?: Record<string, string>
 }
 
@@ -22,6 +26,25 @@ interface CheckoutSessionResponse {
   checkout_url?: string
   url?: string
   session_id?: string
+}
+
+interface DodoDiscountInput {
+  code: string
+  type: "percent" | "flat"
+  value: number
+  maxUses?: number | null
+  expiresAt?: Date | null
+  isActive?: boolean
+  existingDodoDiscountId?: string | null
+}
+
+interface DodoDiscountRecord {
+  discount_id?: string
+  code?: string
+  amount?: number
+  type?: string
+  expires_at?: string | null
+  usage_limit?: number | null
 }
 
 type PlainHeaders = Record<string, string | string[] | undefined>
@@ -220,6 +243,89 @@ function buildReturnUrl(input: { orderId: number; transactionId: number }) {
   return u.toString()
 }
 
+function toDodoDiscountPayload(input: DodoDiscountInput) {
+  const code = input.code.trim().toUpperCase()
+
+  if (!code) {
+    throw new Error("Dodo discount code is required")
+  }
+
+  return {
+    code,
+    name: `TrueRDP ${code}`,
+    type: input.type === "percent" ? "percentage" : "flat",
+    amount: input.type === "percent" ? input.value * 100 : input.value,
+    expires_at:
+      input.isActive === false
+        ? new Date(0).toISOString()
+        : (input.expiresAt?.toISOString() ?? null),
+    usage_limit: input.maxUses ?? null,
+  }
+}
+
+async function findDodoDiscountByCode(code: string) {
+  const client = getDodoClient()
+  const normalizedCode = code.trim().toUpperCase()
+  const result = client.discounts.list({
+    code: normalizedCode,
+    page_size: 100,
+  })
+
+  if (
+    result &&
+    typeof result === "object" &&
+    Symbol.asyncIterator in result
+  ) {
+    for await (const discount of result as AsyncIterable<DodoDiscountRecord>) {
+      if (discount.code?.trim().toUpperCase() === normalizedCode) {
+        return discount
+      }
+    }
+
+    return null
+  }
+
+  const items = (await result) as { items?: DodoDiscountRecord[] }
+
+  return (
+    items.items?.find(
+      (discount) => discount.code?.trim().toUpperCase() === normalizedCode
+    ) ?? null
+  )
+}
+
+async function ensureDodoDiscount(input: DodoDiscountInput) {
+  const client = getDodoClient()
+  const payload = toDodoDiscountPayload(input)
+  const existing = input.existingDodoDiscountId
+    ? ({ discount_id: input.existingDodoDiscountId } satisfies DodoDiscountRecord)
+    : await findDodoDiscountByCode(payload.code)
+
+  if (!existing?.discount_id) {
+    const created = (await client.discounts.create(
+      payload
+    )) as DodoDiscountRecord
+
+    if (!created.discount_id) {
+      throw new Error(`Dodo discount create response missing discount_id`)
+    }
+
+    return created.discount_id
+  }
+
+  await client.discounts.update(existing.discount_id, payload)
+  return existing.discount_id
+}
+
+export async function syncDodoDiscountForCoupon(input: DodoDiscountInput) {
+  const dodoDiscountId = await ensureDodoDiscount(input)
+
+  return {
+    dodoDiscountId,
+    syncedAt: new Date(),
+  }
+}
+
 export async function createCheckoutSessionForTransaction(input: {
   planPricingId: number
   amountMinor: number
@@ -228,6 +334,7 @@ export async function createCheckoutSessionForTransaction(input: {
   invoiceId: number
   transactionId: number
   reference: string
+  discount?: DodoDiscountInput | null
   customer?: { email?: string; name?: string; phone_number?: string }
   billing?: {
     street?: string
@@ -262,6 +369,16 @@ export async function createCheckoutSessionForTransaction(input: {
     metadata,
   }
 
+  if (input.discount) {
+    await ensureDodoDiscount(input.discount)
+    const discountCode = input.discount.code.trim().toUpperCase()
+    payload.discount_code = discountCode
+    metadata.discount_code = discountCode
+    payload.feature_flags = {
+      allow_discount_code: true,
+    }
+  }
+
   const billingCountry = input.billing
     ? normalizeCountryToIso2(input.billing.country)
     : ""
@@ -291,8 +408,8 @@ export async function createCheckoutSessionForTransaction(input: {
     }
   }
 
-  // Note: Amounts in Dodo are derived from the product catalog when using product_cart.
-  // We still include amount/currency context in metadata for traceability.
+  // Amounts in Dodo are derived from the product catalog plus discount_code.
+  // We still include our invoice amount/currency context in metadata for traceability.
   metadata.amount_minor = String(input.amountMinor)
   metadata.currency = input.currency
 

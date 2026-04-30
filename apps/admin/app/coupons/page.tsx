@@ -42,6 +42,8 @@ type Coupon = {
   appliesTo: "all" | "new_purchase" | "renewal"
   maxUses: number | null
   expiresAt: string | null
+  dodoSyncStatus: "pending" | "synced" | "failed"
+  dodoSyncError: string | null
   isActive: boolean
   usageCount: number
 }
@@ -365,17 +367,18 @@ export default function CouponsPage() {
               <TableHead>Applies to</TableHead>
               <TableHead>Usage</TableHead>
               <TableHead>Status</TableHead>
+              <TableHead>Dodo</TableHead>
               <TableHead className="w-32">Action</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={6}>Loading coupons...</TableCell>
+                <TableCell colSpan={7}>Loading coupons...</TableCell>
               </TableRow>
             ) : coupons.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6}>No coupons created yet.</TableCell>
+                <TableCell colSpan={7}>No coupons created yet.</TableCell>
               </TableRow>
             ) : (
               coupons.map((coupon) => (
@@ -391,6 +394,26 @@ export default function CouponsPage() {
                     <Badge variant={coupon.isActive ? "default" : "outline"}>
                       {coupon.isActive ? "active" : "inactive"}
                     </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex flex-col gap-1">
+                      <Badge
+                        variant={
+                          coupon.dodoSyncStatus === "synced"
+                            ? "secondary"
+                            : coupon.dodoSyncStatus === "failed"
+                              ? "destructive"
+                              : "outline"
+                        }
+                      >
+                        {coupon.dodoSyncStatus}
+                      </Badge>
+                      {coupon.dodoSyncError ? (
+                        <span className="max-w-52 truncate text-xs text-muted-foreground">
+                          {coupon.dodoSyncError}
+                        </span>
+                      ) : null}
+                    </div>
                   </TableCell>
                   <TableCell>
                     <div className="flex gap-2">

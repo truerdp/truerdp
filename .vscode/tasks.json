@@ -4,7 +4,7 @@
     {
       "label": "docker: up detached",
       "type": "shell",
-      "command": "docker compose up -d",
+      "command": "docker compose -f docker-compose.yml up -d db backend",
       "presentation": {
         "reveal": "always",
         "panel": "dedicated",

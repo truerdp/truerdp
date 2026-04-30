@@ -120,6 +120,20 @@
       "when": 1777168800000,
       "tag": "0016_audit_notifications_cms",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1777248000000,
+      "tag": "0017_featured_plans",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1777334400000,
+      "tag": "0018_coupon_dodo_sync_fields",
+      "breakpoints": true
     }
   ]
 }

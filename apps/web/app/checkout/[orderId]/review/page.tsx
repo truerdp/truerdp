@@ -238,6 +238,10 @@ export default function CheckoutReviewPage() {
     }
   }, [hasValidOrderId, isProfileError, isProfileLoading, orderId, router])
 
+  useEffect(() => {
+    setCouponCode(order?.invoice?.couponCode ?? "")
+  }, [order?.invoice?.couponCode])
+
   const existingPendingTransaction = useMemo(() => {
     if (!transactions || !hasValidOrderId) {
       return null

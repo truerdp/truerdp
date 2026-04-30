@@ -46,6 +46,7 @@ export interface BillingOrder {
     totalAmount: number
     currency: string
     couponId: number | null
+    couponCode: string | null
     status: "unpaid" | "paid" | "expired"
     expiresAt: string
     paidAt: string | null

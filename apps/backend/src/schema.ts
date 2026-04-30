@@ -154,6 +154,7 @@ export const plans = pgTable("plans", {
   defaultPricingId: integer("default_pricing_id"),
 
   isActive: boolean("is_active").default(true).notNull(),
+  isFeatured: boolean("is_featured").default(false).notNull(),
 
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at")
@@ -282,6 +283,15 @@ export const coupons = pgTable(
 
     maxUses: integer("max_uses"),
     expiresAt: timestamp("expires_at"),
+
+    dodoDiscountId: text("dodo_discount_id"),
+    dodoSyncStatus: text("dodo_sync_status", {
+      enum: ["pending", "synced", "failed"],
+    })
+      .default("pending")
+      .notNull(),
+    dodoSyncError: text("dodo_sync_error"),
+    dodoSyncedAt: timestamp("dodo_synced_at"),
 
     isActive: boolean("is_active").default(true).notNull(),
 

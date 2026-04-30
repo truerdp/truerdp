@@ -20,6 +20,7 @@ interface PlanWithPricing {
   setupFees: number
   planLocation: string
   isActive: boolean
+  isFeatured: boolean
   defaultPricingId: number | null
   pricingOptions: Array<{
     id: number
@@ -53,6 +54,7 @@ function mapPlanRows(
       setupFees: number
       planLocation: string
       isActive: boolean
+      isFeatured: boolean
       defaultPricingId: number | null
     }
     pricing: {
@@ -91,6 +93,7 @@ function mapPlanRows(
           setupFees: row.plan.setupFees,
           planLocation: row.plan.planLocation,
           isActive: row.plan.isActive,
+          isFeatured: row.plan.isFeatured,
           defaultPricingId: row.plan.defaultPricingId,
           pricingOptions: [],
         }
@@ -155,6 +158,7 @@ export async function listActivePlansWithPricing() {
         setupFees: plans.setupFees,
         planLocation: plans.planLocation,
         isActive: plans.isActive,
+        isFeatured: plans.isFeatured,
         defaultPricingId: plans.defaultPricingId,
       },
       pricing: {
@@ -197,6 +201,7 @@ export async function listAdminPlansWithPricing() {
         setupFees: plans.setupFees,
         planLocation: plans.planLocation,
         isActive: plans.isActive,
+        isFeatured: plans.isFeatured,
         defaultPricingId: plans.defaultPricingId,
       },
       pricing: {

@@ -11,6 +11,7 @@ const dataset =
   process.env.NEXT_PUBLIC_SANITY_DATASET ??
   process.env.SANITY_DATASET ??
   "production"
+const studioUrl = process.env.NEXT_PUBLIC_SANITY_STUDIO_URL ?? "/studio"
 
 export const sanityApiVersion =
   process.env.SANITY_API_VERSION ?? "2026-03-01"
@@ -22,6 +23,9 @@ export const sanityClient = createClient({
   dataset,
   apiVersion: sanityApiVersion,
   useCdn: true,
+  stega: {
+    studioUrl,
+  },
 })
 
 export const { sanityFetch, SanityLive } = defineLive({

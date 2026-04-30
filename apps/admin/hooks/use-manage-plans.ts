@@ -29,6 +29,7 @@ export interface UpsertPlanInput {
   setupFees: number
   planLocation: string
   isActive: boolean
+  isFeatured: boolean
   defaultPricingId?: number | null
   pricingOptions: PlanPricingInput[]
 }
@@ -117,6 +118,39 @@ export function useTogglePlanStatus() {
     },
     onError: (error) => {
       toast.error(error.message || "Failed to update plan status")
+    },
+  })
+}
+
+export function useTogglePlanFeatured() {
+  const queryClient = useQueryClient()
+
+  return useMutation<
+    PlanMutationResponse,
+    Error,
+    {
+      planId: number
+      isFeatured: boolean
+    }
+  >({
+    mutationFn: ({ planId, isFeatured }) =>
+      clientApi(`/admin/plans/${planId}/featured`, {
+        method: "PATCH",
+        body: { isFeatured },
+      }),
+    onSuccess: async (_data, variables) => {
+      toast.success(
+        variables.isFeatured
+          ? "Plan added to featured plans"
+          : "Plan removed from featured plans"
+      )
+
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.plans(),
+      })
+    },
+    onError: (error) => {
+      toast.error(error.message || "Failed to update featured status")
     },
   })
 }

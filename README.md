@@ -34,8 +34,6 @@ truerdp/
 |-- .agents/
 |-- .continue/
 |-- .dockerignore
-|-- .env
-|-- .env.example
 |-- .eslintrc.js
 |-- .gitignore
 |-- .npmrc
@@ -51,6 +49,7 @@ truerdp/
 |   |-- dashboard/
 |   `-- web/
 |-- docker-compose.yml
+|-- docker-compose.prod.yml
 |-- ENHANCEMENT.md
 |-- FRONTEND_DEVELOPMENT.md
 |-- package.json
@@ -133,11 +132,11 @@ pnpm run dev:docker
 Equivalent expanded form:
 
 ```bash
-docker compose up -d --force-recreate backend db
+docker compose -f docker-compose.yml up -d --force-recreate backend db
 pnpm run dev:frontend
 ```
 
-`pnpm dev` starts backend too, so avoid running it together with `docker compose up -d` unless you intentionally stop one backend instance.
+`pnpm dev` starts backend too, so avoid running it together with `docker compose -f docker-compose.yml up -d` unless you intentionally stop one backend instance.
 
 If you change backend routes or server-only code and want to refresh only the
 Docker backend without touching the frontends, use:
@@ -154,8 +153,54 @@ If you want Docker and frontend dev in separate terminals with one action, run t
 
 This task is defined in `.vscode/tasks.json` and starts:
 
-- `docker compose up -d` in a dedicated Docker terminal
+- `docker compose -f docker-compose.yml up -d db backend` in a dedicated Docker terminal
 - `pnpm run dev:frontend` in a dedicated frontend terminal
+
+### Production Docker (VPS)
+
+Use `docker-compose.prod.yml` for production-like runs on a VPS.
+
+Detailed step-by-step VPS guide:
+
+- `docker-prod.md`
+
+1. Create a backend env file on the server (for example `apps/backend/.env.production.local`) with production values.
+   A template is available at `apps/backend/.env.production.example`.
+2. Export database/bootstrap vars:
+
+```bash
+export POSTGRES_PASSWORD="<strong-password>"
+export POSTGRES_USER="truerdp"
+export POSTGRES_DB="truerdp"
+export BACKEND_ENV_FILE="apps/backend/.env.production.local"
+export BACKEND_PORT="3003"
+export BACKEND_BIND_HOST="127.0.0.1"
+```
+
+3. Start the stack:
+
+```bash
+pnpm run docker:prod:up
+```
+
+For external managed databases (Neon/RDS/etc), start backend only:
+
+```bash
+pnpm run docker:prod:up:backend
+```
+
+4. Stop the stack:
+
+```bash
+pnpm run docker:prod:down
+```
+
+Notes:
+
+- The production stack builds with `apps/backend/Dockerfile.prod`.
+- It does not use bind mounts and runs `node dist/index.js`.
+- For external managed databases (Neon/RDS/etc), set `DATABASE_URL` in your backend env file and use `pnpm run docker:prod:up:backend`.
+- Backend binds to `127.0.0.1:3003` by default in production compose; front it with Nginx and TLS as described in `docker-prod.md`.
 
 Local URLs:
 
@@ -214,7 +259,8 @@ COINGATE_RECEIVE_CURRENCY=DO_NOT_CONVERT
 BACKEND_BASE_URL=http://localhost:3003
 ```
 
-Web CMS env values (set in repo root `.env` or shell for `apps/web`):
+Web CMS env values (set in `apps/web/.env` for dev, or
+`apps/web/.env.production.local` for local production runs):
 
 ```env
 NEXT_PUBLIC_SANITY_PROJECT_ID=
@@ -245,6 +291,12 @@ pnpm run dev:frontend
 pnpm run dev:docker
 pnpm run dev:backend:restart
 pnpm run dev:stop
+pnpm run docker:local:up
+pnpm run docker:local:down
+pnpm run docker:prod:up
+pnpm run docker:prod:up:backend
+pnpm run docker:prod:down
+pnpm run docker:prod:logs
 pnpm build
 pnpm lint
 pnpm format
@@ -290,5 +342,7 @@ Seeded local credentials:
 
 - Admin: `admin@truerdp.local` / `password123`
 - User: `user@truerdp.local` / `password123`
-- Plan: `Starter RDP`
-- Pricing options: `30 days / 500`, `90 days / 1299`
+- Plans: `Starter RDP`, `Business RDP`, `Performance RDP`,
+  `Residential Basic`, `Residential Pro`
+- Pricing options: monthly and multi-month options, plus weekly residential
+  options where available

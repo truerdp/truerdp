@@ -2,8 +2,12 @@
 
 import { useMemo, useState } from "react"
 import Link from "next/link"
+import type { Route } from "next"
 import { usePlans } from "@/hooks/use-plans"
-import { useTogglePlanStatus } from "@/hooks/use-manage-plans"
+import {
+  useTogglePlanFeatured,
+  useTogglePlanStatus,
+} from "@/hooks/use-manage-plans"
 import {
   Empty,
   EmptyDescription,
@@ -23,7 +27,6 @@ import {
 import { Badge } from "@workspace/ui/components/badge"
 import { Button } from "@workspace/ui/components/button"
 import { Input } from "@workspace/ui/components/input"
-import { Spinner } from "@workspace/ui/components/spinner"
 import {
   Select,
   SelectContent,
@@ -31,6 +34,29 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@workspace/ui/components/select"
+import { Switch } from "@workspace/ui/components/switch"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@workspace/ui/components/tooltip"
+import {
+  Popover,
+  PopoverContent,
+  PopoverHeader,
+  PopoverTitle,
+  PopoverTrigger,
+} from "@workspace/ui/components/popover"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@workspace/ui/components/alert-dialog"
 import {
   ToggleGroup,
   ToggleGroupItem,
@@ -38,7 +64,6 @@ import {
 import {
   Alert02Icon,
   Add01Icon,
-  PencilEdit02Icon,
   Package02Icon,
 } from "@hugeicons/core-free-icons"
 import { HugeiconsIcon } from "@hugeicons/react"
@@ -52,6 +77,23 @@ function formatPrice(priceUsdCents: number) {
     currency: "USD",
     minimumFractionDigits: 2,
   }).format(priceUsdCents / 100)
+}
+
+function getDefaultPricingOption(
+  pricingOptions: Array<{
+    id: number
+    durationDays: number
+    priceUsdCents: number
+    isActive: boolean
+  }>,
+  defaultPricingId: number | null
+) {
+  return (
+    pricingOptions.find((option) => option.id === defaultPricingId) ??
+    pricingOptions.find((option) => option.isActive) ??
+    pricingOptions[0] ??
+    null
+  )
 }
 
 function PlansSkeleton() {
@@ -120,10 +162,15 @@ function PlansEmpty() {
 export default function AdminPlansPage() {
   const { data, isLoading, isError, error } = usePlans()
   const togglePlanStatus = useTogglePlanStatus()
+  const togglePlanFeatured = useTogglePlanFeatured()
 
   const [searchValue, setSearchValue] = useState("")
   const [statusFilter, setStatusFilter] = useState<PlanStatusFilter>("all")
   const [sortBy, setSortBy] = useState<PlanSort>("name")
+  const [deactivateDialogOpen, setDeactivateDialogOpen] = useState(false)
+  const [selectedDeactivatePlanId, setSelectedDeactivatePlanId] = useState<
+    number | null
+  >(null)
 
   const plans = data ?? []
 
@@ -163,6 +210,28 @@ export default function AdminPlansPage() {
       return a.name.localeCompare(b.name)
     })
   }, [plans, searchValue, sortBy, statusFilter])
+
+  const handleDeactivatePlan = (planId: number) => {
+    setSelectedDeactivatePlanId(planId)
+    setDeactivateDialogOpen(true)
+  }
+
+  const confirmDeactivatePlan = async () => {
+    if (!selectedDeactivatePlanId) {
+      return
+    }
+
+    try {
+      await togglePlanStatus.mutateAsync({
+        planId: selectedDeactivatePlanId,
+        isActive: false,
+      })
+      setDeactivateDialogOpen(false)
+      setSelectedDeactivatePlanId(null)
+    } catch {
+      // Mutation hook handles errors.
+    }
+  }
 
   return (
     <section className="min-w-0 space-y-4">
@@ -256,10 +325,11 @@ export default function AdminPlansPage() {
               <TableRow>
                 <TableHead>Plan</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead>Featured</TableHead>
                 <TableHead>Category</TableHead>
                 <TableHead>Resources</TableHead>
                 <TableHead>Pricing Options</TableHead>
-                <TableHead className="w-48">Action</TableHead>
+                <TableHead className="w-28">Action</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -267,7 +337,12 @@ export default function AdminPlansPage() {
                 <TableRow key={plan.id}>
                   <TableCell>
                     <div className="flex flex-col gap-1">
-                      <span className="text-sm font-medium">{plan.name}</span>
+                      <Link
+                        href={`/plans/${plan.id}` as Route}
+                        className="text-sm font-semibold text-emerald-800 underline underline-offset-4 hover:text-emerald-950 focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:outline-none dark:text-emerald-300 dark:hover:text-emerald-200"
+                      >
+                        {plan.name}
+                      </Link>
                       <span className="text-xs text-muted-foreground">
                         ID #{plan.id}
                       </span>
@@ -277,6 +352,31 @@ export default function AdminPlansPage() {
                     <Badge variant={plan.isActive ? "secondary" : "outline"}>
                       {plan.isActive ? "Active" : "Inactive"}
                     </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <Tooltip>
+                      <TooltipTrigger>
+                        <Switch
+                          checked={plan.isFeatured}
+                          onCheckedChange={(checked) =>
+                            togglePlanFeatured.mutate({
+                              planId: plan.id,
+                              isFeatured: checked,
+                            })
+                          }
+                          disabled={
+                            togglePlanFeatured.isPending &&
+                            togglePlanFeatured.variables?.planId === plan.id
+                          }
+                          aria-label={`Toggle ${plan.name} featured status`}
+                        />
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        {plan.isFeatured
+                          ? "Shown in marketing homepage featured plans"
+                          : "Hidden from marketing homepage featured plans"}
+                      </TooltipContent>
+                    </Tooltip>
                   </TableCell>
                   <TableCell>
                     <div className="flex flex-col text-xs text-muted-foreground">
@@ -290,43 +390,87 @@ export default function AdminPlansPage() {
                     </span>
                   </TableCell>
                   <TableCell>
-                    <div className="flex flex-wrap gap-2">
-                      {plan.pricingOptions.map((pricing) => (
-                        <Badge
-                          key={pricing.id}
-                          variant={
-                            plan.defaultPricingId === pricing.id
-                              ? "secondary"
-                              : "outline"
-                          }
-                        >
-                          {pricing.durationDays}d -{" "}
-                          {formatPrice(pricing.priceUsdCents)}
-                          {!pricing.isActive ? " (inactive)" : ""}
-                        </Badge>
-                      ))}
-                    </div>
+                    {(() => {
+                      const defaultPricing = getDefaultPricingOption(
+                        plan.pricingOptions,
+                        plan.defaultPricingId
+                      )
+
+                      return (
+                        <Popover>
+                          <PopoverTrigger
+                            render={
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                className="h-auto justify-start gap-3 px-3 py-2"
+                              />
+                            }
+                          >
+                            <span className="flex flex-col items-start gap-0.5">
+                              <span className="text-sm font-medium">
+                                {defaultPricing
+                                  ? `${formatPrice(defaultPricing.priceUsdCents)} / ${defaultPricing.durationDays}d`
+                                  : "No pricing"}
+                              </span>
+                              <span className="text-xs text-muted-foreground">
+                                {plan.pricingOptions.length} option
+                                {plan.pricingOptions.length === 1 ? "" : "s"}
+                              </span>
+                            </span>
+                          </PopoverTrigger>
+                          <PopoverContent align="end" className="w-72">
+                            <PopoverHeader>
+                              <PopoverTitle>{plan.name} pricing</PopoverTitle>
+                            </PopoverHeader>
+                            <div className="flex flex-col gap-2">
+                              {plan.pricingOptions.map((pricing) => (
+                                <div
+                                  key={pricing.id}
+                                  className="flex items-center justify-between gap-3 rounded-xl border bg-muted/20 px-3 py-2"
+                                >
+                                  <div className="flex flex-col">
+                                    <span className="text-sm font-medium">
+                                      {pricing.durationDays} days
+                                    </span>
+                                    <span className="text-xs text-muted-foreground">
+                                      {pricing.isActive ? "Active" : "Inactive"}
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    {plan.defaultPricingId === pricing.id ? (
+                                      <Badge variant="secondary">Default</Badge>
+                                    ) : null}
+                                    <span className="text-sm font-semibold">
+                                      {formatPrice(pricing.priceUsdCents)}
+                                    </span>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </PopoverContent>
+                        </Popover>
+                      )
+                    })()}
                   </TableCell>
                   <TableCell>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <Link href={`/plans/${plan.id}` as any}>
-                        <Button size="sm" variant="outline">
-                          <HugeiconsIcon
-                            icon={PencilEdit02Icon}
-                            strokeWidth={2}
-                            data-icon="inline-start"
-                          />
-                          View
-                        </Button>
-                      </Link>
-
+                    {plan.isActive ? (
                       <Button
                         size="sm"
-                        variant={plan.isActive ? "outline" : "default"}
+                        variant="destructive"
+                        onClick={() => handleDeactivatePlan(plan.id)}
+                      >
+                        Deactivate
+                      </Button>
+                    ) : (
+                      <Button
+                        size="sm"
+                        variant="outline"
                         onClick={() =>
                           togglePlanStatus.mutate({
                             planId: plan.id,
-                            isActive: !plan.isActive,
+                            isActive: true,
                           })
                         }
                         disabled={
@@ -334,13 +478,9 @@ export default function AdminPlansPage() {
                           togglePlanStatus.variables?.planId === plan.id
                         }
                       >
-                        {togglePlanStatus.isPending &&
-                        togglePlanStatus.variables?.planId === plan.id ? (
-                          <Spinner data-icon="inline-start" />
-                        ) : null}
-                        {plan.isActive ? "Deactivate" : "Activate"}
+                        Activate
                       </Button>
-                    </div>
+                    )}
                   </TableCell>
                 </TableRow>
               ))}
@@ -348,6 +488,36 @@ export default function AdminPlansPage() {
           </Table>
         </div>
       )}
+
+      <AlertDialog
+        open={deactivateDialogOpen}
+        onOpenChange={setDeactivateDialogOpen}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Deactivate plan?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This removes the plan from public checkout and marketing catalog
+              views. Existing orders and instances keep their plan snapshots.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel
+              disabled={togglePlanStatus.isPending}
+              onClick={() => setSelectedDeactivatePlanId(null)}
+            >
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              variant="destructive"
+              disabled={togglePlanStatus.isPending}
+              onClick={confirmDeactivatePlan}
+            >
+              {togglePlanStatus.isPending ? "Deactivating..." : "Deactivate"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </section>
   )
 }

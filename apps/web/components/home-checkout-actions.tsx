@@ -1,11 +1,15 @@
 "use client"
 
+import type React from "react"
 import { useCallback, useEffect, useMemo, useRef } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { CreditCardIcon } from "@hugeicons/core-free-icons"
 import { clientApi } from "@workspace/api"
 import { Button } from "@workspace/ui/components/button"
+import { InteractiveHoverButton } from "@workspace/ui/components/interactive-hover-button"
+import { ShimmerButton } from "@workspace/ui/components/shimmer-button"
+import { cn } from "@workspace/ui/lib/utils"
 import { toast } from "sonner"
 
 import { useProfile } from "@/hooks/use-profile"
@@ -57,20 +61,61 @@ function useCheckoutStarter() {
 
 export function PlanCheckoutButton({
   planPricingId,
+  children = "Select",
+  className,
+  variant = "default",
 }: {
   planPricingId: number
+  children?: React.ReactNode
+  className?: string
+  variant?: "default" | "shimmer" | "interactive"
 }) {
   const { startCheckout } = useCheckoutStarter()
 
+  if (variant === "shimmer") {
+    return (
+      <ShimmerButton
+        type="button"
+        className={cn("h-9 gap-1.5 px-4 py-0 text-sm font-medium", className)}
+        background="linear-gradient(135deg, oklch(0.52 0.16 248), oklch(0.54 0.14 190))"
+        onClick={() => void startCheckout(planPricingId)}
+      >
+        <HugeiconsIcon
+          icon={CreditCardIcon}
+          size={16}
+          strokeWidth={2}
+          data-icon="inline-start"
+        />
+        {children}
+      </ShimmerButton>
+    )
+  }
+
+  if (variant === "interactive") {
+    return (
+      <InteractiveHoverButton
+        type="button"
+        className={cn("h-8 px-4 text-sm", className)}
+        onClick={() => void startCheckout(planPricingId)}
+      >
+        {children}
+      </InteractiveHoverButton>
+    )
+  }
+
   return (
-    <Button size="sm" onClick={() => void startCheckout(planPricingId)}>
+    <Button
+      size="sm"
+      className={className}
+      onClick={() => void startCheckout(planPricingId)}
+    >
       <HugeiconsIcon
         icon={CreditCardIcon}
         size={16}
         strokeWidth={2}
         data-icon="inline-start"
       />
-      Select
+      {children}
     </Button>
   )
 }

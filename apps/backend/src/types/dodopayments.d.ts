@@ -8,6 +8,11 @@ declare module "dodopayments" {
     checkoutSessions: {
       create(input: unknown): Promise<unknown>
     }
+    discounts: {
+      create(input: unknown): Promise<unknown>
+      update(id: string, input?: unknown): Promise<unknown>
+      list(input?: unknown): AsyncIterable<unknown> | Promise<unknown>
+    }
     products: {
       create(input: unknown): Promise<{ product_id?: string }>
       update(id: string, input: unknown): Promise<void>

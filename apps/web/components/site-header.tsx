@@ -2,9 +2,8 @@
 
 import { HugeiconsIcon } from "@hugeicons/react"
 import {
-  CreditCardIcon,
-  Invoice03Icon,
   Home03Icon,
+  Invoice03Icon,
   LoginSquare02Icon,
   Logout01Icon,
   Menu01Icon,
@@ -41,6 +40,7 @@ import {
 import { logout } from "@/lib/auth"
 import { useProfile } from "@/hooks/use-profile"
 import { webPaths } from "@/lib/paths"
+import ThemeToggle from "@/components/theme-toggle"
 
 interface MenuItem {
   title: string
@@ -50,7 +50,18 @@ interface MenuItem {
   items?: MenuItem[]
 }
 
-export default function SiteHeader() {
+type HeaderLink = {
+  label?: string
+  href?: string
+}
+
+export default function SiteHeader({
+  brandName = "TrueRDP",
+  headerLinks,
+}: {
+  brandName?: string
+  headerLinks?: HeaderLink[]
+}) {
   const router = useRouter()
   const pathname = usePathname()
   const queryClient = useQueryClient()
@@ -81,67 +92,49 @@ export default function SiteHeader() {
     }
   }
 
-  const menu: MenuItem[] = [
-    { title: "Home", url: webPaths.home },
+  // Intentionally keep menu empty so the header does not show the
+  // top-level navigation pills (Home / Plans / FAQ / Support).
+  const menu: MenuItem[] = (headerLinks ?? [])
+    .filter((item) => Boolean(item.label && item.href))
+    .map((item) => ({
+      title: item.label as string,
+      url: item.href as string,
+    }))
+
+  const mobileFeaturedLinks: MenuItem[] = [
     {
-      title: "Products",
-      url: "#",
-      items: [
-        {
-          title: "Plans",
-          description: "Choose a plan and start your checkout in minutes.",
-          icon: <HugeiconsIcon icon={ServerStack01Icon} strokeWidth={2} />,
-          url: webPaths.home,
-        },
-        {
-          title: "Checkout",
-          description: "Start by selecting a plan to create an order.",
-          icon: <HugeiconsIcon icon={CreditCardIcon} strokeWidth={2} />,
-          url: webPaths.home,
-        },
-      ],
+      title: "Browse Plans",
+      description: "Compare plans by type, location, and resources.",
+      icon: <HugeiconsIcon icon={ServerStack01Icon} strokeWidth={2} />,
+      url: webPaths.plans,
     },
     {
-      title: "Resources",
-      url: "#",
-      items: [
-        {
-          title: "FAQ",
-          description: "Answers about provisioning, renewals, and payments.",
-          icon: <HugeiconsIcon icon={Invoice03Icon} strokeWidth={2} />,
-          url: webPaths.faq,
-        },
-        {
-          title: "Contact & Support",
-          description: "Get help through support channels and ticketing.",
-          icon: <HugeiconsIcon icon={Invoice03Icon} strokeWidth={2} />,
-          url: webPaths.contact,
-        },
-      ],
+      title: "Billing FAQ",
+      description: "Answers about provisioning, renewals, and payments.",
+      icon: <HugeiconsIcon icon={Invoice03Icon} strokeWidth={2} />,
+      url: webPaths.faq,
     },
-    { title: "Pricing", url: webPaths.home },
-    { title: "Terms", url: webPaths.terms },
-    { title: "Privacy", url: webPaths.privacy },
-    { title: "Refund Policy", url: webPaths.refundPolicy },
   ]
 
   return (
-    <header className="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
+    <header className="sticky top-0 z-20 border-b border-white/70 bg-[oklch(0.99_0.018_84)]/88 shadow-sm shadow-[oklch(0.56_0.1_230)]/5 backdrop-blur dark:border-white/10 dark:bg-[oklch(0.17_0.035_255)]/88">
       <section className="py-4">
         <div className="mx-auto w-full max-w-6xl px-6">
           <nav className="hidden items-center justify-between lg:flex">
             <div className="flex items-center gap-6">
               <Link
                 href={webPaths.home}
-                className="inline-flex items-center gap-2 text-sm font-semibold"
+                className="inline-flex items-center gap-2 text-sm font-semibold text-[oklch(0.24_0.08_260)] dark:text-white"
               >
-                <HugeiconsIcon
-                  icon={Home03Icon}
-                  size={18}
-                  strokeWidth={2}
-                  data-icon="inline-start"
-                />
-                TrueRDP
+                <span className="inline-flex size-8 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,oklch(0.78_0.16_76),oklch(0.7_0.14_190))] text-[oklch(0.18_0.045_250)] shadow-sm">
+                  <HugeiconsIcon
+                    icon={Home03Icon}
+                    size={18}
+                    strokeWidth={2}
+                    data-icon="inline-start"
+                  />
+                </span>
+                {brandName}
               </Link>
 
               <NavigationMenu>
@@ -152,6 +145,7 @@ export default function SiteHeader() {
             </div>
 
             <div className="flex items-center gap-2">
+              <ThemeToggle />
               {!isAuthenticated ? (
                 <>
                   <Link href={webPaths.login}>
@@ -196,10 +190,12 @@ export default function SiteHeader() {
           <div className="flex items-center justify-between lg:hidden">
             <Link
               href={webPaths.home}
-              className="inline-flex items-center gap-2 text-sm font-semibold"
+              className="inline-flex items-center gap-2 text-sm font-semibold text-[oklch(0.24_0.08_260)] dark:text-white"
             >
-              <HugeiconsIcon icon={Home03Icon} size={18} strokeWidth={2} />
-              TrueRDP
+              <span className="inline-flex size-8 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,oklch(0.78_0.16_76),oklch(0.7_0.14_190))] text-[oklch(0.18_0.045_250)] shadow-sm">
+                <HugeiconsIcon icon={Home03Icon} size={18} strokeWidth={2} />
+              </span>
+              {brandName}
             </Link>
 
             <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
@@ -215,7 +211,7 @@ export default function SiteHeader() {
                       className="inline-flex items-center gap-2 text-sm font-semibold"
                       onClick={() => setMobileMenuOpen(false)}
                     >
-                      <span className="inline-flex size-9 items-center justify-center rounded-2xl bg-background shadow-sm ring-1 ring-border">
+                      <span className="inline-flex size-9 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,oklch(0.78_0.16_76),oklch(0.7_0.14_190))] text-[oklch(0.18_0.045_250)] shadow-sm">
                         <HugeiconsIcon
                           icon={Home03Icon}
                           size={18}
@@ -223,7 +219,7 @@ export default function SiteHeader() {
                         />
                       </span>
                       <span className="flex flex-col leading-tight">
-                        <span>TrueRDP</span>
+                        <span>{brandName}</span>
                         <span className="text-xs font-normal text-muted-foreground">
                           Fast setup. Clean provisioning.
                         </span>
@@ -238,8 +234,18 @@ export default function SiteHeader() {
                           Browse
                         </p>
                         <p className="text-xs text-muted-foreground">
-                          {menu.length} sections
+                          {menu.length} links
                         </p>
+                      </div>
+
+                      <div className="grid gap-2">
+                        {mobileFeaturedLinks.map((item) => (
+                          <MobileSubMenuLink
+                            key={item.title}
+                            item={item}
+                            onClick={() => setMobileMenuOpen(false)}
+                          />
+                        ))}
                       </div>
 
                       <Accordion className="divide-y divide-border/60 overflow-visible rounded-none border-0 bg-transparent">
@@ -255,6 +261,8 @@ export default function SiteHeader() {
                       <p className="text-xs font-semibold tracking-[0.18em] text-muted-foreground uppercase">
                         Account
                       </p>
+
+                      <ThemeToggle />
 
                       {!isAuthenticated ? (
                         <div className="grid grid-cols-1 gap-3">
