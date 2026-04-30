@@ -69,7 +69,7 @@ NEXT_PUBLIC_API_URL=https://api.truerdp.com
 NEXT_PUBLIC_WEB_URL=https://truerdp.com
 NEXT_PUBLIC_DASHBOARD_URL=https://dashboard.truerdp.com
 NEXT_PUBLIC_ADMIN_URL=https://admin.truerdp.com
-INTERNAL_API_URL=
+INTERNAL_API_URL=https://api.truerdp.com
 
 NEXT_PUBLIC_SANITY_PROJECT_ID=
 NEXT_PUBLIC_SANITY_DATASET=production
