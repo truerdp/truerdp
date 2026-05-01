@@ -290,37 +290,6 @@ async function upsertPlanPricing(
   const pricingOptions = []
 
   for (const option of pricingCatalog) {
-    const existingPricing = await db
-      .select({
-        id: planPricing.id,
-      })
-      .from(planPricing)
-      .where(
-        and(
-          eq(planPricing.planId, planId),
-          eq(planPricing.durationDays, option.durationDays)
-        )
-      )
-      .limit(1)
-
-    if (existingPricing[0]) {
-      const [pricing] = await db
-        .update(planPricing)
-        .set({
-          priceUsdCents: option.priceUsdCents,
-          isActive: true,
-        })
-        .where(eq(planPricing.id, existingPricing[0].id))
-        .returning({
-          id: planPricing.id,
-          durationDays: planPricing.durationDays,
-          priceUsdCents: planPricing.priceUsdCents,
-        })
-
-      pricingOptions.push(requireSeedRecord(pricing, "plan pricing"))
-      continue
-    }
-
     const [pricing] = await db
       .insert(planPricing)
       .values({
@@ -328,6 +297,13 @@ async function upsertPlanPricing(
         durationDays: option.durationDays,
         priceUsdCents: option.priceUsdCents,
         isActive: true,
+      })
+      .onConflictDoUpdate({
+        target: [planPricing.planId, planPricing.durationDays],
+        set: {
+          priceUsdCents: option.priceUsdCents,
+          isActive: true,
+        },
       })
       .returning({
         id: planPricing.id,

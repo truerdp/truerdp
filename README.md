@@ -328,6 +328,35 @@ For billing and transaction work, make sure the backend migrations are current b
 
 If you are updating payment or provisioning behavior, also review `BUSINESS_FLOW.md` and `architecture.md` because they describe the current lifecycle and runtime boundaries in more detail.
 
+## CI/CD Migrations
+
+Vercel and Railway can auto-deploy from `main`, but database migrations still
+need an explicit production step. The GitHub Actions workflow in
+`.github/workflows/migrate.yml` runs `pnpm --filter backend db:migrate` on every
+push to `main` and can also be triggered manually.
+
+Required GitHub secret:
+
+```bash
+PRODUCTION_DATABASE_URL="postgres://..."
+```
+
+Use the same production database connection string that Railway/backend uses.
+The workflow has a single concurrency group so production migrations run one at
+a time.
+
+If the Railway backend service auto-deploys directly from GitHub, also set the
+Railway service pre-deploy command to:
+
+```bash
+pnpm --filter backend db:migrate
+```
+
+Railway runs pre-deploy commands after build and before deployment, and a
+failing command stops that deployment. This gives the backend strict
+migrate-before-start ordering. See Railway's
+[pre-deploy command docs](https://docs.railway.com/guides/pre-deploy-command).
+
 ## Local DB Reset
 
 When the schema baseline changes and you intentionally want a clean local database:
