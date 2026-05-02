@@ -162,31 +162,34 @@ Use `docker-compose.prod.yml` for production-like runs on a VPS.
 
 Detailed step-by-step VPS guide:
 
-- `docker-prod.md`
+- `deploy/docker-prod.md`
+- Future DigitalOcean-to-Hetzner migration runbook:
+  `deploy/hetzner-migration.md`
 
 1. Create a backend env file on the server (for example `apps/backend/.env.production.local`) with production values.
    A template is available at `apps/backend/.env.production.example`.
-2. Export database/bootstrap vars:
+2. Create a root `.env` file for Docker Compose interpolation. For an external
+   managed database such as Neon, include:
 
-```bash
-export POSTGRES_PASSWORD="<strong-password>"
-export POSTGRES_USER="truerdp"
-export POSTGRES_DB="truerdp"
-export BACKEND_ENV_FILE="apps/backend/.env.production.local"
-export BACKEND_PORT="3003"
-export BACKEND_BIND_HOST="127.0.0.1"
+```env
+POSTGRES_PASSWORD=not-used-with-neon
+DATABASE_URL="postgresql://..."
+BACKEND_ENV_FILE=apps/backend/.env.production.local
+BACKEND_PORT=3003
+BACKEND_BIND_HOST=127.0.0.1
 ```
 
-3. Start the stack:
-
-```bash
-pnpm run docker:prod:up
-```
-
-For external managed databases (Neon/RDS/etc), start backend only:
+3. Start the backend:
 
 ```bash
 pnpm run docker:prod:up:backend
+```
+
+If running Postgres inside Compose instead of Neon, set real `POSTGRES_*`
+values and start the full stack:
+
+```bash
+pnpm run docker:prod:up
 ```
 
 4. Stop the stack:
@@ -200,7 +203,7 @@ Notes:
 - The production stack builds with `apps/backend/Dockerfile.prod`.
 - It does not use bind mounts and runs `node dist/index.js`.
 - For external managed databases (Neon/RDS/etc), set `DATABASE_URL` in your backend env file and use `pnpm run docker:prod:up:backend`.
-- Backend binds to `127.0.0.1:3003` by default in production compose; front it with Nginx and TLS as described in `docker-prod.md`.
+- Backend binds to `127.0.0.1:3003` by default in production compose; front it with Nginx and TLS as described in `deploy/docker-prod.md`.
 
 Local URLs:
 
