@@ -1,9 +1,6 @@
 name: Migrate database
 
 on:
-  push:
-    branches:
-      - main
   workflow_dispatch:
 
 concurrency:

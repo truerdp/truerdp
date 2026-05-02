@@ -300,7 +300,64 @@ Stop:
 docker compose -f docker-compose.prod.yml down
 ```
 
-## 14) Troubleshooting
+## 14) GitHub Actions deploys
+
+Backend deployments are automated by `.github/workflows/deploy-backend.yml`.
+The workflow runs on pushes to `main` that touch backend, package, Docker, or
+workflow files. It can also be run manually from the GitHub Actions tab.
+
+The deploy workflow does this in order:
+
+1. Installs dependencies with pnpm.
+2. Typechecks and builds the backend.
+3. Runs Drizzle migrations against Neon.
+4. SSHes into the VPS.
+5. Pulls `main`.
+6. Rebuilds and restarts the backend container.
+7. Checks `https://api.truerdp.com/`.
+
+Required GitHub environment or repository secrets:
+
+```txt
+PRODUCTION_DATABASE_URL
+DO_SSH_HOST
+DO_SSH_USER
+DO_SSH_PRIVATE_KEY
+```
+
+Recommended values:
+
+```txt
+PRODUCTION_DATABASE_URL=postgresql://USER:PASSWORD@HOST.neon.tech/DBNAME?sslmode=require
+DO_SSH_HOST=<vps-public-ip>
+DO_SSH_USER=root
+DO_SSH_PRIVATE_KEY=<private SSH key with access to the VPS>
+```
+
+Optional secret:
+
+```txt
+BACKEND_HEALTH_URL=https://api.truerdp.com/
+```
+
+If `BACKEND_HEALTH_URL` is not set, the workflow uses
+`https://api.truerdp.com/`.
+
+The VPS must already have the repo cloned at:
+
+```txt
+/opt/truerdp
+```
+
+The deploy command intentionally uses `git pull --ff-only`; if tracked files
+were edited directly on the VPS, the deployment fails instead of overwriting
+those changes. Keep production-only values in `.env` and
+`apps/backend/.env.production.local`, which are untracked.
+
+The standalone `.github/workflows/migrate.yml` workflow is manual-only and is
+kept for emergency migration runs.
+
+## 15) Troubleshooting
 
 If Compose says `POSTGRES_PASSWORD is required`, create or fix the root
 `/opt/truerdp/.env` file. Compose parses all services in

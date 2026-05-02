@@ -165,6 +165,7 @@ Detailed step-by-step VPS guide:
 - `deploy/docker-prod.md`
 - Future DigitalOcean-to-Hetzner migration runbook:
   `deploy/hetzner-migration.md`
+- Backend deploy workflow: `.github/workflows/deploy-backend.yml`
 
 1. Create a backend env file on the server (for example `apps/backend/.env.production.local`) with production values.
    A template is available at `apps/backend/.env.production.example`.
@@ -204,6 +205,7 @@ Notes:
 - It does not use bind mounts and runs `node dist/index.js`.
 - For external managed databases (Neon/RDS/etc), set `DATABASE_URL` in your backend env file and use `pnpm run docker:prod:up:backend`.
 - Backend binds to `127.0.0.1:3003` by default in production compose; front it with Nginx and TLS as described in `deploy/docker-prod.md`.
+- Pushes to `main` that touch backend-related files deploy through GitHub Actions after typecheck, build, and migrations. Required secrets are documented in `deploy/docker-prod.md`.
 
 Local URLs:
 
