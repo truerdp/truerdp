@@ -93,7 +93,12 @@ jobs:
         run: |
           set -euo pipefail
 
-          ssh -i ~/.ssh/deploy_key "$DEPLOY_USER@$DEPLOY_HOST" <<'SSH'
+          ssh \
+            -i ~/.ssh/deploy_key \
+            -o ServerAliveInterval=30 \
+            -o ServerAliveCountMax=20 \
+            -o TCPKeepAlive=yes \
+            "$DEPLOY_USER@$DEPLOY_HOST" <<'SSH'
             set -euo pipefail
 
             cd /opt/truerdp

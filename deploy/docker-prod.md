@@ -383,5 +383,19 @@ docker system prune -f
 docker compose -f docker-compose.prod.yml up -d --build --no-deps backend
 ```
 
+If GitHub Actions fails during the SSH deploy step with
+`client_loop: send disconnect: Broken pipe`, the remote Docker build likely
+went quiet long enough for the SSH connection to be dropped. The deploy workflow
+uses SSH keepalives for this. If it still happens, check whether the backend is
+healthy and whether the remote repo reached the target commit:
+
+```bash
+ssh root@<vps-public-ip>
+cd /opt/truerdp
+git rev-parse --short HEAD
+docker compose -f docker-compose.prod.yml ps
+curl http://127.0.0.1:3003/
+```
+
 If host `pnpm` warns about Node `<20`, either ignore it when using Docker or
 upgrade host Node later. The production container uses Node 20.
