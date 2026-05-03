@@ -3,6 +3,8 @@ import Fastify from "fastify"
 import { parse as parseQueryString } from "node:querystring"
 import cookie from "@fastify/cookie"
 import cors from "@fastify/cors"
+import swagger from "@fastify/swagger"
+import swaggerUi from "@fastify/swagger-ui"
 import { userRoutes } from "./routes/user.js"
 import { betterAuthRoutes } from "./routes/better-auth.js"
 import { transactionRoutes } from "./routes/transaction.js"
@@ -17,6 +19,62 @@ import fastifyRawBody from "fastify-raw-body"
 
 const server = Fastify({
   logger: true,
+})
+
+// ── OpenAPI / Swagger ────────────────────────────────────────────────────────
+server.register(swagger, {
+  openapi: {
+    openapi: "3.0.3",
+    info: {
+      title: "TrueRDP API",
+      description:
+        "Auto-generated OpenAPI spec for the TrueRDP backend. " +
+        "Re-import into Postman after adding new routes.",
+      version: "1.0.0",
+    },
+    servers: [
+      {
+        url: process.env.API_BASE_URL ?? "http://localhost:3003",
+        description: "Local dev server",
+      },
+    ],
+    components: {
+      securitySchemes: {
+        bearerAuth: {
+          type: "http",
+          scheme: "bearer",
+          bearerFormat: "JWT",
+        },
+        cookieAuth: {
+          type: "apiKey",
+          in: "cookie",
+          name: "better-auth.session_token",
+        },
+      },
+    },
+    security: [{ bearerAuth: [] }, { cookieAuth: [] }],
+    tags: [
+      { name: "Health", description: "Health check" },
+      { name: "User", description: "User profile management" },
+      { name: "Plans", description: "Public plan catalogue" },
+      { name: "Orders", description: "Billing orders" },
+      { name: "Instances", description: "RDP instance management" },
+      { name: "Transactions", description: "Payment transactions & invoices" },
+      { name: "Support", description: "Support tickets" },
+      { name: "Admin", description: "Admin-only operations" },
+      { name: "Content", description: "CMS pages & email templates" },
+      { name: "Webhooks", description: "Payment provider webhooks" },
+    ],
+  },
+})
+
+server.register(swaggerUi, {
+  routePrefix: "/docs",
+  uiConfig: {
+    docExpansion: "list",
+    deepLinking: true,
+  },
+  staticCSP: true,
 })
 
 // Expose request.rawBody for webhook signature verification (run before body parsing)
@@ -94,9 +152,27 @@ server.register(supportRoutes)
 server.register(contentRoutes)
 server.register(webhookRoutes)
 
-server.get("/", async () => {
-  return { status: "ok", message: "Truerdp API is running" }
-})
+server.get(
+  "/",
+  {
+    schema: {
+      tags: ["Health"],
+      summary: "Health check",
+      response: {
+        200: {
+          type: "object",
+          properties: {
+            status: { type: "string" },
+            message: { type: "string" },
+          },
+        },
+      },
+    },
+  },
+  async () => {
+    return { status: "ok", message: "Truerdp API is running" }
+  }
+)
 
 const start = async () => {
   try {

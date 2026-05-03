@@ -17,7 +17,20 @@ import {
 export function registerUserSupportRoutes(server: FastifyInstance) {
   server.get(
     "/support/tickets",
-    { preHandler: verifyAuth },
+    {
+      preHandler: verifyAuth,
+      schema: {
+        tags: ["Support"],
+        summary: "List user support tickets",
+        security: [{ bearerAuth: [] }],
+        response: {
+          200: {
+            type: "array",
+            items: { type: "object" },
+          },
+        },
+      },
+    },
     async (request: GenericRouteRequest, reply) => {
       try {
         const rows = await db
@@ -37,7 +50,31 @@ export function registerUserSupportRoutes(server: FastifyInstance) {
 
   server.post(
     "/support/tickets",
-    { preHandler: verifyAuth },
+    {
+      preHandler: verifyAuth,
+      schema: {
+        tags: ["Support"],
+        summary: "Create support ticket",
+        security: [{ bearerAuth: [] }],
+        body: {
+          type: "object",
+          required: ["subject", "message"],
+          properties: {
+            subject: { type: "string" },
+            message: { type: "string" },
+          },
+        },
+        response: {
+          201: {
+            type: "object",
+            properties: {
+              message: { type: "string" },
+              ticket: { type: "object" },
+            },
+          },
+        },
+      },
+    },
     async (request: GenericRouteRequest, reply) => {
       try {
         const body = createTicketSchema.parse(request.body ?? {})
@@ -85,7 +122,30 @@ export function registerUserSupportRoutes(server: FastifyInstance) {
 
   server.get(
     "/support/tickets/:id",
-    { preHandler: verifyAuth },
+    {
+      preHandler: verifyAuth,
+      schema: {
+        tags: ["Support"],
+        summary: "Get ticket with thread",
+        security: [{ bearerAuth: [] }],
+        params: {
+          type: "object",
+          required: ["id"],
+          properties: {
+            id: { type: "integer" },
+          },
+        },
+        response: {
+          200: {
+            type: "object",
+            properties: {
+              ticket: { type: "object" },
+              messages: { type: "array", items: { type: "object" } },
+            },
+          },
+        },
+      },
+    },
     async (request: GenericRouteRequest, reply) => {
       try {
         const params = ticketIdParamsSchema.parse(request.params)
@@ -108,7 +168,36 @@ export function registerUserSupportRoutes(server: FastifyInstance) {
 
   server.post(
     "/support/tickets/:id/reply",
-    { preHandler: verifyAuth },
+    {
+      preHandler: verifyAuth,
+      schema: {
+        tags: ["Support"],
+        summary: "Reply to ticket",
+        security: [{ bearerAuth: [] }],
+        params: {
+          type: "object",
+          required: ["id"],
+          properties: {
+            id: { type: "integer" },
+          },
+        },
+        body: {
+          type: "object",
+          required: ["message"],
+          properties: {
+            message: { type: "string" },
+          },
+        },
+        response: {
+          200: {
+            type: "object",
+            properties: {
+              message: { type: "string" },
+            },
+          },
+        },
+      },
+    },
     async (request: GenericRouteRequest, reply) => {
       try {
         const params = ticketIdParamsSchema.parse(request.params)
@@ -152,7 +241,29 @@ export function registerUserSupportRoutes(server: FastifyInstance) {
   for (const action of ["close", "reopen"] as const) {
     server.post(
       `/support/tickets/:id/${action}`,
-      { preHandler: verifyAuth },
+      {
+        preHandler: verifyAuth,
+        schema: {
+          tags: ["Support"],
+          summary: action === "close" ? "Close ticket" : "Reopen ticket",
+          security: [{ bearerAuth: [] }],
+          params: {
+            type: "object",
+            required: ["id"],
+            properties: {
+              id: { type: "integer" },
+            },
+          },
+          response: {
+            200: {
+              type: "object",
+              properties: {
+                message: { type: "string" },
+              },
+            },
+          },
+        },
+      },
       async (request: GenericRouteRequest, reply) => {
         try {
           const params = ticketIdParamsSchema.parse(request.params)

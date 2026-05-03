@@ -48,7 +48,8 @@ export default async function BlogSearchPage({ searchParams }: PageProps) {
 
       {q ? (
         <p className="mt-5 text-sm text-muted-foreground">
-          {posts.length} result{posts.length === 1 ? "" : "s"} for "{q}"
+          {posts.length} result{posts.length === 1 ? "" : "s"} for &quot;{q}
+          &quot;
         </p>
       ) : (
         <p className="mt-5 text-sm text-muted-foreground">

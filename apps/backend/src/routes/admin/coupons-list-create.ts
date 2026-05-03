@@ -1,69 +1,12 @@
 import { FastifyInstance } from "fastify"
-import { and, asc, desc, eq, gte, inArray, lt, ne, sql } from "drizzle-orm"
+import { desc, eq, sql } from "drizzle-orm"
 import { db } from "../../db.js"
-import {
-  coupons,
-  couponUsages,
-  instanceExtensions,
-  instanceStatusEvents,
-  instances,
-  invoices,
-  orders,
-  planPricing,
-  plans,
-  resources,
-  servers,
-  transactions,
-  users,
-} from "../../schema.js"
+import { coupons, couponUsages } from "../../schema.js"
 import { verifyAuth } from "../../middleware/auth.js"
 import { requireAdmin } from "../../middleware/require-admin.js"
 import type { GenericRouteRequest } from "../../types/requests.js"
-import {
-  BillingError,
-  listAdminInvoices,
-  confirmPendingTransaction,
-  listAdminTransactions,
-  listPendingTransactions,
-  sendExpiryReminderSweep,
-} from "../../services/billing.js"
-import { getAdminUser360, listAdminUsers } from "../../services/admin-user.js"
-import { syncDodoProductForPlanPricing } from "../../services/dodo-payments.js"
-import { encryptCredential } from "../../services/resource-credentials.js"
-import { listAdminPlansWithPricing } from "../../services/plan.js"
-import {
-  allocateServerToInstance,
-  AllocationError,
-  deallocateServer,
-} from "../../services/allocation.js"
-import { createAdminAuditLog, listAdminAuditLogs } from "../../services/admin-audit.js"
-import { sendProvisionedEmail } from "../../services/email.js"
 import { getErrorMessage } from "../../utils/error.js"
-import {
-  adminQuerySchemas,
-  couponInputSchema,
-  couponStatusSchema,
-  createPlanSchema,
-  extendInstanceSchema,
-  getEffectiveRestoreStatus,
-  optionalReasonSchema,
-  provisionSchema,
-  reasonSchema,
-  recordInstanceStatusEvent,
-  serverInputSchema,
-  serverStatusUpdateSchema,
-  syncCouponToDodo,
-  updatePlanFeaturedSchema,
-  updatePlanSchema,
-  updatePlanStatusSchema,
-} from "./shared.js"
-
-const {
-  adminListPaginationQuerySchema,
-  adminAuditLogQuerySchema,
-  expiryReminderRunSchema,
-  adminInvoiceListQuerySchema,
-} = adminQuerySchemas
+import { couponInputSchema, syncCouponToDodo } from "./shared.js"
 
 export async function registerAdminCouponsListCreateRoutes(server: FastifyInstance) {
 server.get(

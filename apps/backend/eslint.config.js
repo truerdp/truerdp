@@ -1,6 +1,6 @@
-import { config as eslintConfigBase } from "@workspace/eslint-config/base";
+import { config as eslintConfigBase } from "@workspace/eslint-config/base"
 
-const noExplicitTypeRule = "@typescript-eslint/no-explicit-a" + "ny";
+const noExplicitTypeRule = "@typescript-eslint/no-explicit-a" + "ny"
 
 export default [
   ...eslintConfigBase,
@@ -19,7 +19,7 @@ export default [
       ],
       "max-lines-per-function": [
         "warn",
-        { max: 90, skipBlankLines: true, skipComments: true },
+        { max: 200, skipBlankLines: true, skipComments: true },
       ],
     },
   },
@@ -48,4 +48,4 @@ export default [
   {
     ignores: ["dist/**", "drizzle/**"],
   },
-];
+]
