@@ -1,7 +1,5 @@
-import bcrypt from "bcrypt"
 import { db } from "../db.js"
 import { servers, users } from "../schema.js"
-import { DEFAULT_PASSWORD } from "./seed-data.js"
 
 function requireSeedRecord<T>(value: T | undefined, label: string): T {
   if (!value) {
@@ -17,13 +15,11 @@ export async function upsertUser(input: {
   lastName: string
   role: "admin" | "user"
 }) {
-  const passwordHash = await bcrypt.hash(DEFAULT_PASSWORD, 10)
-
   const [user] = await db
     .insert(users)
     .values({
       email: input.email,
-      passwordHash,
+      passwordHash: "",
       firstName: input.firstName,
       lastName: input.lastName,
       role: input.role,
@@ -31,7 +27,7 @@ export async function upsertUser(input: {
     .onConflictDoUpdate({
       target: users.email,
       set: {
-        passwordHash,
+        passwordHash: "",
         firstName: input.firstName,
         lastName: input.lastName,
         role: input.role,
@@ -82,4 +78,3 @@ export async function upsertServer() {
 }
 
 export { requireSeedRecord }
-

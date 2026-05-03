@@ -60,9 +60,12 @@ export function ResetPasswordForm({
 
     try {
       setIsSubmitting(true)
-      await clientApi("/auth/reset-password", {
+      await clientApi("/api/auth/reset-password", {
         method: "POST",
-        body: { token, password },
+        body: {
+          token,
+          newPassword: password,
+        },
       })
       setIsComplete(true)
       toast.success("Password reset successfully")

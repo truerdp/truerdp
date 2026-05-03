@@ -1,4 +1,4 @@
-import { clientApi } from "@workspace/api"
+import { authClient } from "@/lib/auth-client"
 
 export function buildLoginUrl(redirectTarget: string) {
   const loginUrl = new URL("/login", window.location.origin)
@@ -87,7 +87,9 @@ export function resolvePostAuthRedirect(redirectTarget: string | null) {
 }
 
 export async function logout() {
-  await clientApi("/auth/logout", {
-    method: "POST",
-  })
+  const { error } = await authClient.signOut()
+
+  if (error) {
+    throw new Error(error.message || "Unable to logout")
+  }
 }

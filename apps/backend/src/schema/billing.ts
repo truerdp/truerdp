@@ -17,10 +17,10 @@ import {
   invoiceStatusEnum,
   paymentMethodEnum,
   transactionStatusEnum,
-} from "./enums.js"
-import { instances } from "./instances.js"
-import { orders } from "./orders.js"
-import { users } from "./users.js"
+} from "./enums"
+import { instances } from "./instances"
+import { orders } from "./orders"
+import { users } from "./users"
 
 export const coupons = pgTable(
   "coupons",

@@ -4,7 +4,7 @@ import { parse as parseQueryString } from "node:querystring"
 import cookie from "@fastify/cookie"
 import cors from "@fastify/cors"
 import { userRoutes } from "./routes/user.js"
-import { authRoutes } from "./routes/auth.js"
+import { betterAuthRoutes } from "./routes/better-auth.js"
 import { transactionRoutes } from "./routes/transaction.js"
 import { adminRoutes } from "./routes/admin.js"
 import { instanceRoutes } from "./routes/instance.js"
@@ -84,7 +84,7 @@ server.addHook("onRequest", async (request, reply) => {
 })
 
 server.register(userRoutes)
-server.register(authRoutes)
+server.register(betterAuthRoutes)
 server.register(planRoutes)
 server.register(orderRoutes)
 server.register(transactionRoutes)

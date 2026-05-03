@@ -6,7 +6,6 @@ import { useForm, type SubmitHandler } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import z from "zod"
 import { toast } from "sonner"
-import { clientApi } from "@workspace/api"
 import { Button } from "@workspace/ui/components/button"
 import {
   Card,
@@ -24,7 +23,7 @@ import {
 } from "@workspace/ui/components/field"
 import { Input } from "@workspace/ui/components/input"
 import { Spinner } from "@workspace/ui/components/spinner"
-import { resolvePostAuthRedirect } from "@/lib/auth"
+import { authClient } from "@/lib/auth-client"
 import { webPaths } from "@/lib/paths"
 
 const signupSchema = z
@@ -79,28 +78,22 @@ export function SignupForm({ ...props }: React.ComponentProps<typeof Card>) {
     const lastName = nameParts.slice(1).join(" ") || "User"
 
     try {
-      await clientApi("/users", {
-        method: "POST",
-        body: {
-          email,
-          password,
-          firstName,
-          lastName,
-        },
+      const { error } = await authClient.signUp.email({
+        name: fullName,
+        email,
+        password,
+        firstName,
+        lastName,
       })
 
-      await clientApi("/auth/login", {
-        method: "POST",
-        body: { email, password },
-      })
-      toast.success("Account created")
-      const redirectTarget = resolvePostAuthRedirect(requestedRedirect)
-
-      if (redirectTarget.startsWith("/")) {
-        router.push(redirectTarget)
-      } else {
-        window.location.assign(redirectTarget)
+      if (error) {
+        throw new Error(error.message || "Unable to create account")
       }
+
+      toast.success("Account created. Verify your email to continue.")
+      router.push(
+        `${webPaths.verifyEmail}?email=${encodeURIComponent(email)}`
+      )
     } catch (submitError) {
       const message =
         submitError instanceof Error

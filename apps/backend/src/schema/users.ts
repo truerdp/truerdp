@@ -1,12 +1,15 @@
-import { index, integer, pgTable, serial, text, timestamp, uniqueIndex } from "drizzle-orm/pg-core"
+import { boolean, index, integer, pgTable, serial, text, timestamp, uniqueIndex } from "drizzle-orm/pg-core"
 
-import { roleEnum } from "./enums.js"
+import { roleEnum } from "./enums"
 
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
 
+  name: text("name").default("User").notNull(),
   email: text("email").notNull().unique(),
-  passwordHash: text("password_hash").notNull(),
+  emailVerified: boolean("email_verified").default(false).notNull(),
+  image: text("image"),
+  passwordHash: text("password_hash").default("").notNull(),
   firstName: text("first_name").notNull(),
   lastName: text("last_name").notNull(),
   role: roleEnum("role").default("user").notNull(),

@@ -1,8 +1,8 @@
 import { index, integer, jsonb, pgTable, serial, text, timestamp } from "drizzle-orm/pg-core"
 
-import { purchaseKindEnum, orderStatusEnum } from "./enums.js"
-import { planPricing, plans } from "./plans.js"
-import { users } from "./users.js"
+import { purchaseKindEnum, orderStatusEnum } from "./enums"
+import { planPricing, plans } from "./plans"
+import { users } from "./users"
 
 export type OrderBillingDetails = {
   firstName: string

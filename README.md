@@ -252,7 +252,15 @@ Backend env values (`apps/backend/.env.example`):
 DATABASE_URL="postgres://postgres:postgres@localhost:5432/truerdp"
 PORT=3003
 JWT_SECRET=change-this-in-production
+BETTER_AUTH_SECRET=change-this-in-production
+BETTER_AUTH_URL=http://localhost:3003
 RESOURCE_CREDENTIALS_SECRET=change-this-too
+AUTH_COOKIE_NAME=truerdp_session
+AUTH_COOKIE_DOMAIN=
+AUTH_COOKIE_SECURE=false
+AUTH_COOKIE_SAME_SITE=lax
+AUTH_COOKIE_MAX_AGE=604800
+CORS_ALLOWED_ORIGINS=http://localhost:3000,http://localhost:3001,http://localhost:3002
 RESEND_API_KEY=
 RESEND_FROM_EMAIL="TrueRDP <onboarding@resend.dev>"
 RESEND_REPLY_TO_EMAIL=
@@ -263,6 +271,10 @@ COINGATE_API_TOKEN=
 COINGATE_RECEIVE_CURRENCY=DO_NOT_CONVERT
 BACKEND_BASE_URL=http://localhost:3003
 ```
+
+Notes:
+- Better Auth (`/api/auth/*`) is now the primary auth path used by the web app.
+- Legacy JWT/cookie routes under `/auth/*` are still present during transition, so keep `JWT_SECRET` and `AUTH_COOKIE_*` configured.
 
 Web CMS env values (set in `apps/web/.env` for dev, or
 `apps/web/.env.production.local` for local production runs):

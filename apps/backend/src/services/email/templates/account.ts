@@ -28,6 +28,33 @@ export async function sendPasswordResetEmail(input: {
   })
 }
 
+export async function sendVerificationEmail(input: {
+  to: string
+  verificationUrl: string
+}) {
+  return sendManagedEmail({
+    templateKey: "email_verification",
+    to: input.to,
+    variables: {
+      verificationUrl: input.verificationUrl,
+    },
+    fallbackSubject: "Verify your TrueRDP email",
+    fallbackText: `Verify your email: ${input.verificationUrl}\n\nIf you did not create this account, you can ignore this email.`,
+    fallbackHtml: `
+      <div style="font-family: Arial, sans-serif; color: #10231b; line-height: 1.6;">
+        <h1 style="font-size: 22px;">Verify your email</h1>
+        <p>Please confirm your email address to activate your TrueRDP account.</p>
+        <p>
+          <a href="${escapeHtml(input.verificationUrl)}" style="display: inline-block; padding: 12px 18px; border-radius: 999px; background: #0f6b4f; color: #ffffff; text-decoration: none; font-weight: 700;">
+            Verify email
+          </a>
+        </p>
+      </div>
+    `,
+    tags: [{ name: "category", value: "email_verification" }],
+  })
+}
+
 export async function sendWelcomeEmail(input: { to: string; firstName: string }) {
   const safeName = escapeHtml(input.firstName)
 
@@ -80,4 +107,3 @@ export async function sendAdminAlertEmail(input: {
     tags: [{ name: "category", value: "admin_alert" }],
   })
 }
-

@@ -9,7 +9,6 @@ import z from "zod"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { ViewIcon, ViewOffIcon } from "@hugeicons/core-free-icons"
 import { toast } from "sonner"
-import { clientApi } from "@workspace/api"
 import { cn } from "@workspace/ui/lib/utils"
 import { Button } from "@workspace/ui/components/button"
 import {
@@ -35,6 +34,7 @@ import {
 } from "@workspace/ui/components/input-group"
 import { Spinner } from "@workspace/ui/components/spinner"
 import { resolvePostAuthRedirect } from "@/lib/auth"
+import { authClient } from "@/lib/auth-client"
 import { webPaths } from "@/lib/paths"
 
 const loginSchema = z.object({
@@ -77,10 +77,16 @@ export function LoginForm({
     const password = values.password
 
     try {
-      await clientApi("/auth/login", {
-        method: "POST",
-        body: { email, password },
+      const { error } = await authClient.signIn.email({
+        email,
+        password,
+        rememberMe: true,
       })
+
+      if (error) {
+        throw new Error(error.message || "Login failed")
+      }
+
       toast.success("Logged in successfully")
 
       const redirectTarget = resolvePostAuthRedirect(requestedRedirect)

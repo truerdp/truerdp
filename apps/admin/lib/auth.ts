@@ -1,7 +1,7 @@
 import { clientApi } from "@workspace/api"
 
 export async function logout() {
-  await clientApi("/auth/logout", {
+  await clientApi("/api/auth/sign-out", {
     method: "POST",
   })
 }

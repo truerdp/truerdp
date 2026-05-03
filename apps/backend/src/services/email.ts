@@ -4,9 +4,9 @@ export {
   sendExpiryReminderEmail,
   sendInvoiceCreatedEmail,
   sendPasswordResetEmail,
+  sendVerificationEmail,
   sendPaymentConfirmedEmail,
   sendPaymentFailedEmail,
   sendProvisionedEmail,
   sendWelcomeEmail,
 } from "./email/templates.js"
-

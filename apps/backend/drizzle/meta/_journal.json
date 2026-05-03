@@ -134,6 +134,20 @@
       "when": 1777334400000,
       "tag": "0018_coupon_dodo_sync_fields",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1777489200000,
+      "tag": "0019_better_auth_core",
+      "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1777795500000,
+      "tag": "0020_users_password_hash_default",
+      "breakpoints": true
     }
   ]
 }

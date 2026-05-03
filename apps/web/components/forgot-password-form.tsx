@@ -26,8 +26,8 @@ import { Spinner } from "@workspace/ui/components/spinner"
 import { webPaths } from "@/lib/paths"
 
 type ForgotPasswordResponse = {
+  status: boolean
   message: string
-  resetUrl?: string | null
 }
 
 export function ForgotPasswordForm({
@@ -54,14 +54,17 @@ export function ForgotPasswordForm({
     try {
       setIsSubmitting(true)
       const response = await clientApi<ForgotPasswordResponse>(
-        "/auth/forgot-password",
+        "/api/auth/request-password-reset",
         {
           method: "POST",
-          body: { email: email.trim() },
+          body: {
+            email: email.trim(),
+            redirectTo: `${window.location.origin}/reset-password`,
+          },
         }
       )
       setMessage(response.message)
-      setResetUrl(response.resetUrl ?? null)
+      setResetUrl(null)
       toast.success("Password reset requested")
     } catch (submitError) {
       const nextError =

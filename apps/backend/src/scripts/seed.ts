@@ -2,7 +2,7 @@ import "dotenv/config"
 import { and, eq, notInArray } from "drizzle-orm"
 import { closeDbConnection, db } from "../db.js"
 import { planPricing, plans } from "../schema.js"
-import { DEFAULT_PASSWORD, DEFAULT_PLANS, type SeedPlan } from "./seed-data.js"
+import { DEFAULT_PLANS, type SeedPlan } from "./seed-data.js"
 import { requireSeedRecord, upsertServer, upsertUser } from "./seed-core.js"
 
 async function upsertPlan(input: SeedPlan) {
@@ -171,7 +171,6 @@ async function seed() {
     normalUser,
     plans: seededPlans,
     server,
-    password: DEFAULT_PASSWORD,
   })
 }
 

@@ -1,6 +1,7 @@
 export {
   sendAdminAlertEmail,
   sendPasswordResetEmail,
+  sendVerificationEmail,
   sendWelcomeEmail,
 } from "./templates/account.js"
 export {
@@ -12,4 +13,3 @@ export {
   sendExpiryReminderEmail,
   sendProvisionedEmail,
 } from "./templates/instances.js"
-

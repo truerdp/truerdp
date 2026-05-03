@@ -7,6 +7,7 @@ export const webPaths = {
     `/plans/${encodeURIComponent(category.toLowerCase().replaceAll(" ", "-"))}` as Route,
   login: "/login" as Route,
   signup: "/signup" as Route,
+  verifyEmail: "/verify-email" as Route,
   forgotPassword: "/forgot-password" as Route,
   resetPassword: "/reset-password" as Route,
   checkoutReviewOrder: (orderId: number) =>

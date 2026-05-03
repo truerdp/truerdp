@@ -1,5 +1,3 @@
-export const DEFAULT_PASSWORD = "password123"
-
 const DEFAULT_PLAN_PRICING = [
   {
     durationDays: 30,
@@ -166,4 +164,3 @@ export const DEFAULT_PLANS = [
 ] as const
 
 export type SeedPlan = (typeof DEFAULT_PLANS)[number]
-

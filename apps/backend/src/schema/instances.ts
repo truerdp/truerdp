@@ -13,10 +13,10 @@ import {
   instanceStatusEnum,
   resourceStatusEnum,
   serverStatusEnum,
-} from "./enums.js"
-import { orders } from "./orders.js"
-import { plans } from "./plans.js"
-import { users } from "./users.js"
+} from "./enums"
+import { orders } from "./orders"
+import { plans } from "./plans"
+import { users } from "./users"
 
 export const instances = pgTable(
   "instances",

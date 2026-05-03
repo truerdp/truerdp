@@ -22,7 +22,6 @@ import {
   FieldLabel,
 } from "@workspace/ui/components/field"
 import { Input } from "@workspace/ui/components/input"
-import { Separator } from "@workspace/ui/components/separator"
 import { Spinner } from "@workspace/ui/components/spinner"
 type AccountFormProps = {
   profile: Profile
@@ -33,9 +32,6 @@ export function AccountForm({ profile }: AccountFormProps) {
   const [firstName, setFirstName] = useState("")
   const [lastName, setLastName] = useState("")
   const [email, setEmail] = useState("")
-  const [currentPassword, setCurrentPassword] = useState("")
-  const [newPassword, setNewPassword] = useState("")
-  const [confirmPassword, setConfirmPassword] = useState("")
   const [error, setError] = useState<string | null>(null)
   const [isSaving, setIsSaving] = useState(false)
 
@@ -53,23 +49,6 @@ export function AccountForm({ profile }: AccountFormProps) {
       return
     }
 
-    if (newPassword || confirmPassword || currentPassword) {
-      if (newPassword.length < 8) {
-        setError("New password must be at least 8 characters.")
-        return
-      }
-
-      if (newPassword !== confirmPassword) {
-        setError("New passwords do not match.")
-        return
-      }
-
-      if (!currentPassword) {
-        setError("Current password is required to change password.")
-        return
-      }
-    }
-
     try {
       setIsSaving(true)
       const updated = await clientApi<Profile>("/profile", {
@@ -78,16 +57,11 @@ export function AccountForm({ profile }: AccountFormProps) {
           firstName: firstName.trim(),
           lastName: lastName.trim(),
           email: email.trim(),
-          currentPassword: currentPassword || undefined,
-          newPassword: newPassword || undefined,
         },
       })
 
       queryClient.setQueryData(queryKeys.profile(), updated)
       await queryClient.invalidateQueries({ queryKey: queryKeys.profile() })
-      setCurrentPassword("")
-      setNewPassword("")
-      setConfirmPassword("")
       toast.success("Profile updated")
     } catch (submitError) {
       const message =
@@ -145,52 +119,6 @@ export function AccountForm({ profile }: AccountFormProps) {
                 This email is used for login and account communication.
               </FieldDescription>
             </Field>
-            <Separator />
-            <div className="space-y-1">
-              <h2 className="text-base font-semibold">Change password</h2>
-              <p className="text-sm text-muted-foreground">
-                Leave these fields blank if you only want to update profile
-                details.
-              </p>
-            </div>
-
-            <Field>
-              <FieldLabel htmlFor="current-password">Current password</FieldLabel>
-              <Input
-                id="current-password"
-                type="password"
-                value={currentPassword}
-                disabled={isSaving}
-                autoComplete="current-password"
-                onChange={(event) => setCurrentPassword(event.target.value)}
-              />
-            </Field>
-
-            <div className="grid gap-4 md:grid-cols-2">
-              <Field>
-                <FieldLabel htmlFor="new-password">New password</FieldLabel>
-                <Input
-                  id="new-password"
-                  type="password"
-                  value={newPassword}
-                  disabled={isSaving}
-                  autoComplete="new-password"
-                  onChange={(event) => setNewPassword(event.target.value)}
-                />
-              </Field>
-              <Field>
-                <FieldLabel htmlFor="confirm-password">Confirm new password</FieldLabel>
-                <Input
-                  id="confirm-password"
-                  type="password"
-                  value={confirmPassword}
-                  disabled={isSaving}
-                  autoComplete="new-password"
-                  onChange={(event) => setConfirmPassword(event.target.value)}
-                />
-              </Field>
-            </div>
-
             {error ? <FieldError>{error}</FieldError> : null}
 
             <div className="flex justify-end">
