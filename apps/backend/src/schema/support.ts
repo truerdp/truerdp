@@ -1,7 +1,7 @@
 import { integer, pgTable, serial, text, timestamp } from "drizzle-orm/pg-core"
 
-import { senderTypeEnum, ticketStatusEnum } from "./enums"
-import { users } from "./users"
+import { senderTypeEnum, ticketStatusEnum } from "./enums.js"
+import { users } from "./users.js"
 
 export const tickets = pgTable("tickets", {
   id: serial("id").primaryKey(),

@@ -1,8 +1,8 @@
 import { index, integer, pgTable, serial, text, timestamp } from "drizzle-orm/pg-core"
 
-import { instanceStatusActionEnum, instanceStatusEnum } from "./enums"
-import { instances } from "./instances"
-import { users } from "./users"
+import { instanceStatusActionEnum, instanceStatusEnum } from "./enums.js"
+import { instances } from "./instances.js"
+import { users } from "./users.js"
 
 export const instanceStatusEvents = pgTable(
   "instance_status_events",

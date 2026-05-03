@@ -1,6 +1,6 @@
 import { boolean, index, integer, pgTable, serial, text, timestamp, uniqueIndex } from "drizzle-orm/pg-core"
 
-import { roleEnum } from "./enums"
+import { roleEnum } from "./enums.js"
 
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
