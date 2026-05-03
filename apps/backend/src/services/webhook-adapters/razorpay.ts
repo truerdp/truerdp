@@ -18,7 +18,7 @@ export function verifyRazorpaySignature(input: {
   return computed === input.signature
 }
 
-export function normalizeRazorpayEvent(payload: Record<string, any>): {
+export function normalizeRazorpayEvent(payload: Record<string, unknown>): {
   eventType: "payment.succeeded" | "payment.failed"
   reference: string | null
 } {
@@ -33,16 +33,29 @@ export function normalizeRazorpayEvent(payload: Record<string, any>): {
     eventType = "payment.succeeded"
   }
 
-  const paymentData = payload.payload?.payment ?? payload.payment ?? {}
+  const payloadObject =
+    typeof payload === "object" && payload !== null ? payload : {}
+  const nestedPayload = (payloadObject as Record<string, unknown>).payload
+  const nestedPayloadObject =
+    typeof nestedPayload === "object" && nestedPayload !== null
+      ? (nestedPayload as Record<string, unknown>)
+      : {}
+
+  const paymentData =
+    nestedPayloadObject.payment ??
+    (payloadObject as Record<string, unknown>).payment ??
+    {}
   const paymentDataObj =
-    typeof paymentData === "object" && paymentData !== null ? paymentData : {}
+    typeof paymentData === "object" && paymentData !== null
+      ? (paymentData as Record<string, unknown>)
+      : {}
 
   const reference =
     String(
-      (paymentDataObj as any).receipt ??
-        (paymentDataObj as any).id ??
-        payload.receipt ??
-        payload.id ??
+      paymentDataObj.receipt ??
+        paymentDataObj.id ??
+        (payloadObject as Record<string, unknown>).receipt ??
+        (payloadObject as Record<string, unknown>).id ??
         ""
     ).trim() || null
 

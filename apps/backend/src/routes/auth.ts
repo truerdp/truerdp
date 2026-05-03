@@ -1,4 +1,4 @@
-import { createHash, randomBytes } from "node:crypto"
+import { randomBytes } from "node:crypto"
 import { FastifyInstance } from "fastify"
 import bcrypt from "bcrypt"
 import jwt from "jsonwebtoken"
@@ -12,50 +12,16 @@ import {
 } from "../validators/auth.js"
 import { verifyAuth } from "../middleware/auth.js"
 import { sendPasswordResetEmail } from "../services/email.js"
-
-const AUTH_COOKIE_NAME = process.env.AUTH_COOKIE_NAME ?? "truerdp_session"
-
-function getCookieSameSite() {
-  const value = (process.env.AUTH_COOKIE_SAME_SITE ?? "lax").toLowerCase()
-
-  if (value === "strict" || value === "none") {
-    return value
-  }
-
-  return "lax"
-}
-
-function getAuthCookieConfig() {
-  return {
-    path: "/",
-    domain: process.env.AUTH_COOKIE_DOMAIN || undefined,
-    httpOnly: true,
-    sameSite: getCookieSameSite() as "strict" | "lax" | "none",
-    secure:
-      process.env.AUTH_COOKIE_SECURE === "true" ||
-      process.env.NODE_ENV === "production",
-    maxAge: Number(process.env.AUTH_COOKIE_MAX_AGE ?? 60 * 60 * 24 * 7),
-  }
-}
-
-function hashResetToken(token: string) {
-  return createHash("sha256").update(token).digest("hex")
-}
-
-function buildResetPasswordUrl(token: string) {
-  const configured =
-    process.env.WEB_BASE_URL?.trim() || "http://localhost:3000"
-  const url = new URL("/reset-password", configured)
-  url.searchParams.set("token", token)
-  return url.toString()
-}
-
-function shouldExposeDevResetLink() {
-  return (
-    process.env.NODE_ENV !== "production" ||
-    process.env.PASSWORD_RESET_EXPOSE_LINK === "true"
-  )
-}
+import { getErrorMessage } from "../utils/error.js"
+import type { GenericRouteRequest } from "../types/requests.js"
+import {
+  AUTH_COOKIE_NAME,
+  buildResetPasswordUrl,
+  getAuthCookieClearConfig,
+  getAuthCookieConfig,
+  hashResetToken,
+  shouldExposeDevResetLink,
+} from "./auth/shared.js"
 
 export async function authRoutes(server: FastifyInstance) {
   server.post("/auth/login", async (request, reply) => {
@@ -104,23 +70,16 @@ export async function authRoutes(server: FastifyInstance) {
           role: user.role,
         },
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       server.log.error(err) // 👈 important
       return reply.status(400).send({
-        error: err.message || "Invalid request",
+        error: getErrorMessage(err),
       })
     }
   })
 
   server.post("/auth/logout", async (_request, reply) => {
-    reply.clearCookie(AUTH_COOKIE_NAME, {
-      path: "/",
-      domain: process.env.AUTH_COOKIE_DOMAIN || undefined,
-      sameSite: getCookieSameSite() as "strict" | "lax" | "none",
-      secure:
-        process.env.AUTH_COOKIE_SECURE === "true" ||
-        process.env.NODE_ENV === "production",
-    })
+    reply.clearCookie(AUTH_COOKIE_NAME, getAuthCookieClearConfig())
 
     return { success: true }
   })
@@ -176,10 +135,10 @@ export async function authRoutes(server: FastifyInstance) {
           "If an account exists for that email, a password reset link has been generated.",
         resetUrl: shouldExposeDevResetLink() ? resetUrl : undefined,
       })
-    } catch (err: any) {
+    } catch (err: unknown) {
       server.log.error(err)
       return reply.status(400).send({
-        error: err.message || "Invalid request",
+        error: getErrorMessage(err),
       })
     }
   })
@@ -223,15 +182,19 @@ export async function authRoutes(server: FastifyInstance) {
         .where(eq(passwordResetTokens.id, resetToken.id))
 
       return reply.send({ message: "Password has been reset" })
-    } catch (err: any) {
+    } catch (err: unknown) {
       server.log.error(err)
       return reply.status(400).send({
-        error: err.message || "Invalid request",
+        error: getErrorMessage(err),
       })
     }
   })
 
-  server.get("/auth/session", { preHandler: verifyAuth }, async (request) => {
-    return { user: request.user }
-  })
+  server.get(
+    "/auth/session",
+    { preHandler: verifyAuth },
+    async (request: GenericRouteRequest) => {
+      return { user: request.user }
+    }
+  )
 }

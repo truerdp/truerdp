@@ -1,14 +1,8 @@
 "use client"
 
 import { useState } from "react"
-import {
-  Controller,
-  useForm,
-  useWatch,
-  type SubmitHandler,
-} from "react-hook-form"
+import { useForm, useWatch, type SubmitHandler } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
-import z from "zod"
 import { Button } from "@workspace/ui/components/button"
 import {
   Dialog,
@@ -22,31 +16,24 @@ import { Input } from "@workspace/ui/components/input"
 import { Spinner } from "@workspace/ui/components/spinner"
 import {
   Field,
-  FieldGroup,
-  FieldLabel,
   FieldDescription,
   FieldError,
+  FieldGroup,
+  FieldLabel,
 } from "@workspace/ui/components/field"
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@workspace/ui/components/select"
+  SelectedServerDetails,
+} from "@/components/provision-instance-dialog/selected-server-details"
+import { ServerSelectField } from "@/components/provision-instance-dialog/server-select-field"
+import {
+  provisionSchema,
+  type ProvisionFormValues,
+} from "@/components/provision-instance-dialog/schema"
 import {
   useProvisionInstance,
   type ProvisionRequest,
 } from "@/hooks/use-provision-instance"
 import { useAvailableServers } from "@/hooks/use-available-servers"
-
-const provisionSchema = z.object({
-  serverId: z.string().min(1, "Please select a server"),
-  username: z.string().optional(),
-  password: z.string().optional(),
-})
-
-type ProvisionFormValues = z.infer<typeof provisionSchema>
 
 interface ProvisionInstanceDialogProps {
   open: boolean
@@ -83,9 +70,9 @@ export function ProvisionInstanceDialog({
     name: "serverId",
     defaultValue: "",
   })
-
-  const selectedServer = serversQuery.data?.find(
-    (s) => s.id === Number(selectedServerId)
+  const availableServers = serversQuery.data ?? []
+  const selectedServer = availableServers.find(
+    (server) => server.id === Number(selectedServerId)
   )
 
   const onSubmit: SubmitHandler<ProvisionFormValues> = async (values) => {
@@ -125,99 +112,18 @@ export function ProvisionInstanceDialog({
         >
           <div className="min-h-0 flex-1 overflow-y-auto px-6">
             <FieldGroup className="gap-3 pb-6">
-              <Field data-invalid={!!errors.serverId}>
-                <FieldLabel htmlFor="serverId">Select Server</FieldLabel>
-                {serversQuery.isLoading && (
-                  <div className="flex items-center gap-2">
-                    <Spinner data-icon="inline-start" />
-                    <span className="text-sm text-muted-foreground">
-                      Loading servers...
-                    </span>
-                  </div>
-                )}
+              <ServerSelectField
+                control={control}
+                errors={errors}
+                isSubmitting={isSubmitting}
+                isLoading={serversQuery.isLoading}
+                error={serversQuery.error}
+                servers={availableServers}
+              />
 
-                {!serversQuery.isLoading && (
-                  <Controller
-                    control={control}
-                    name="serverId"
-                    render={({ field }) => (
-                      <Select
-                        value={field.value}
-                        onValueChange={field.onChange}
-                        disabled={isSubmitting || serversQuery.isLoading}
-                      >
-                        <SelectTrigger
-                          id="serverId"
-                          aria-invalid={!!errors.serverId}
-                        >
-                          <SelectValue placeholder="Choose a server..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {serversQuery.data?.map((server) => (
-                            <SelectItem key={server.id} value={String(server.id)}>
-                              {server.ipAddress} - {server.cpu}vCPU, {server.ram}GB
-                              RAM, {server.storage}GB Storage
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    )}
-                  />
-                )}
-
-                <FieldDescription>
-                  {serversQuery.data?.length === 0
-                    ? "No servers available. Please add a server first."
-                    : "Choose from available servers in your infrastructure"}
-                </FieldDescription>
-
-                {serversQuery.error && (
-                  <FieldError>Failed to load servers</FieldError>
-                )}
-                {errors.serverId && (
-                  <FieldError>{errors.serverId.message}</FieldError>
-                )}
-              </Field>
-
-              {selectedServer && (
-                <Field className="rounded-lg bg-secondary/50 p-3">
-                  <FieldLabel className="text-sm font-medium">
-                    Selected Server Details
-                  </FieldLabel>
-                  <div className="mt-2 space-y-1 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Provider:</span>
-                      <span className="font-medium">
-                        {selectedServer.provider}
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">IP Address:</span>
-                      <span className="font-mono font-medium">
-                        {selectedServer.ipAddress}
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">CPU:</span>
-                      <span className="font-medium">
-                        {selectedServer.cpu} vCPU
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">RAM:</span>
-                      <span className="font-medium">
-                        {selectedServer.ram} GB
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Storage:</span>
-                      <span className="font-medium">
-                        {selectedServer.storage} GB
-                      </span>
-                    </div>
-                  </div>
-                </Field>
-              )}
+              {selectedServer ? (
+                <SelectedServerDetails server={selectedServer} />
+              ) : null}
 
               <Field data-invalid={!!errors.username}>
                 <FieldLabel htmlFor="username">Username (optional)</FieldLabel>
@@ -273,7 +179,7 @@ export function ProvisionInstanceDialog({
                 isSubmitting ||
                 !selectedServerId ||
                 serversQuery.isLoading ||
-                (serversQuery.data?.length ?? 0) === 0
+                availableServers.length === 0
               }
             >
               {isSubmitting && <Spinner data-icon="inline-start" />}

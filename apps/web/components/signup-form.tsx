@@ -49,7 +49,6 @@ const signupSchema = z
   })
 
 type SignupFormValues = z.infer<typeof signupSchema>
-
 export function SignupForm({ ...props }: React.ComponentProps<typeof Card>) {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -71,7 +70,6 @@ export function SignupForm({ ...props }: React.ComponentProps<typeof Card>) {
   const loginHref = requestedRedirect
     ? `${webPaths.login}?redirect=${encodeURIComponent(requestedRedirect)}`
     : webPaths.login
-
   const onSubmit: SubmitHandler<SignupFormValues> = async (values) => {
     const fullName = values.name.trim()
     const email = values.email.trim()
@@ -96,7 +94,6 @@ export function SignupForm({ ...props }: React.ComponentProps<typeof Card>) {
         body: { email, password },
       })
       toast.success("Account created")
-
       const redirectTarget = resolvePostAuthRedirect(requestedRedirect)
 
       if (redirectTarget.startsWith("/")) {
@@ -112,7 +109,6 @@ export function SignupForm({ ...props }: React.ComponentProps<typeof Card>) {
       setError("root", { message })
     }
   }
-
   return (
     <Card {...props}>
       <CardHeader>

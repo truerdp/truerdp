@@ -21,6 +21,7 @@
     "dev:backend:restart": "docker compose -f docker-compose.yml up -d --force-recreate backend",
     "dev:stop": "docker compose -f docker-compose.yml down && lsof -ti :3000,3001,3002,3003 | xargs kill 2>/dev/null || true",
     "ngrok:backend": "ngrok http 3003",
+    "refactor:audit": "node scripts/refactor-audit.mjs",
     "lint": "turbo lint",
     "format": "turbo format",
     "typecheck": "turbo typecheck"

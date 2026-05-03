@@ -1,6 +1,7 @@
 import { FastifyInstance } from "fastify"
 import { z } from "zod"
 import { verifyAuth } from "../middleware/auth.js"
+import type { GenericRouteRequest, RouteReply } from "../types/requests.js"
 import {
   BillingError,
   applyCouponToBillingOrder,
@@ -9,6 +10,7 @@ import {
   removeCouponFromBillingOrder,
   updateBillingDetailsForUser,
 } from "../services/billing.js"
+import { getErrorMessage } from "../utils/error.js"
 
 const createOrderSchema = z.object({
   planPricingId: z.number().int().positive(),
@@ -58,10 +60,10 @@ export async function orderRoutes(server: FastifyInstance) {
   server.post(
     "/orders",
     { preHandler: verifyAuth },
-    async (request: any, reply) => {
+    async (request: GenericRouteRequest, reply: RouteReply) => {
       try {
         const body = createOrderSchema.parse(request.body ?? {})
-        const userId = request.user.userId
+        const userId = request.user!.userId
         const order = await createBillingOrder({
           userId,
           planPricingId: body.planPricingId,
@@ -71,7 +73,7 @@ export async function orderRoutes(server: FastifyInstance) {
         return reply.status(201).send({
           orderId: order.orderId,
         })
-      } catch (err: any) {
+      } catch (err: unknown) {
         request.log.error(err)
 
         if (err instanceof BillingError) {
@@ -81,7 +83,7 @@ export async function orderRoutes(server: FastifyInstance) {
         }
 
         return reply.status(400).send({
-          error: err.message || "Invalid request",
+          error: getErrorMessage(err),
         })
       }
     }
@@ -90,12 +92,12 @@ export async function orderRoutes(server: FastifyInstance) {
   server.get(
     "/orders/:id",
     { preHandler: verifyAuth },
-    async (request: any, reply) => {
+    async (request: GenericRouteRequest, reply: RouteReply) => {
       try {
         const params = orderIdParamsSchema.parse(request.params)
-        const userId = request.user.userId
+        const userId = request.user!.userId
         return await getBillingOrderForUser(userId, params.id)
-      } catch (err: any) {
+      } catch (err: unknown) {
         request.log.error(err)
 
         if (err instanceof BillingError) {
@@ -105,7 +107,7 @@ export async function orderRoutes(server: FastifyInstance) {
         }
 
         return reply.status(400).send({
-          error: err.message || "Invalid request",
+          error: getErrorMessage(err),
         })
       }
     }
@@ -114,11 +116,11 @@ export async function orderRoutes(server: FastifyInstance) {
   server.patch(
     "/orders/:id/billing",
     { preHandler: verifyAuth },
-    async (request: any, reply) => {
+    async (request: GenericRouteRequest, reply: RouteReply) => {
       try {
         const params = orderIdParamsSchema.parse(request.params)
         const billingDetails = billingDetailsSchema.parse(request.body ?? {})
-        const userId = request.user.userId
+        const userId = request.user!.userId
 
         const updated = await updateBillingDetailsForUser({
           userId,
@@ -131,7 +133,7 @@ export async function orderRoutes(server: FastifyInstance) {
           orderId: updated.orderId,
           billingDetails: updated.billingDetails,
         })
-      } catch (err: any) {
+      } catch (err: unknown) {
         request.log.error(err)
 
         if (err instanceof BillingError) {
@@ -141,7 +143,7 @@ export async function orderRoutes(server: FastifyInstance) {
         }
 
         return reply.status(400).send({
-          error: err.message || "Invalid request",
+          error: getErrorMessage(err),
         })
       }
     }
@@ -150,11 +152,11 @@ export async function orderRoutes(server: FastifyInstance) {
   server.patch(
     "/orders/:id/coupon",
     { preHandler: verifyAuth },
-    async (request: any, reply) => {
+    async (request: GenericRouteRequest, reply: RouteReply) => {
       try {
         const params = orderIdParamsSchema.parse(request.params)
         const body = couponSchema.parse(request.body ?? {})
-        const userId = request.user.userId
+        const userId = request.user!.userId
 
         const updated =
           body.code && body.code.trim()
@@ -175,7 +177,7 @@ export async function orderRoutes(server: FastifyInstance) {
               : "Coupon removed",
           order: updated,
         })
-      } catch (err: any) {
+      } catch (err: unknown) {
         request.log.error(err)
 
         if (err instanceof BillingError) {
@@ -185,7 +187,7 @@ export async function orderRoutes(server: FastifyInstance) {
         }
 
         return reply.status(400).send({
-          error: err.message || "Invalid request",
+          error: getErrorMessage(err),
         })
       }
     }

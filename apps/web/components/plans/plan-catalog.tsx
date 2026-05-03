@@ -12,6 +12,7 @@ import { Button } from "@workspace/ui/components/button"
 import { PlanCheckoutButton } from "@/components/home-checkout-actions"
 import { formatAmount } from "@/lib/format"
 import { webPaths } from "@/lib/paths"
+import { getLowestPricingOption, groupPlansBy } from "./plan-utils"
 
 export interface PlanPricingOption {
   id: number
@@ -41,35 +42,7 @@ export interface MarketingPlan {
   pricingOptions: PlanPricingOption[]
 }
 
-export function getLowestPricingOption(
-  plan: MarketingPlan
-): PlanPricingOption | null {
-  if (plan.pricingOptions.length === 0) {
-    return null
-  }
-
-  return (
-    [...plan.pricingOptions].sort(
-      (a, b) => a.priceUsdCents - b.priceUsdCents
-    )[0] ?? null
-  )
-}
-
-export function groupPlansBy(
-  plans: MarketingPlan[],
-  getKey: (plan: MarketingPlan) => string
-) {
-  return plans.reduce<Record<string, MarketingPlan[]>>((acc, plan) => {
-    const key = getKey(plan)
-
-    if (!acc[key]) {
-      acc[key] = []
-    }
-
-    acc[key].push(plan)
-    return acc
-  }, {})
-}
+export { getLowestPricingOption, groupPlansBy }
 
 const catalogCardTones = {
   blue: "border-[oklch(0.8_0.08_205)]/70 bg-[linear-gradient(150deg,oklch(0.995_0.012_205),oklch(0.95_0.04_205))] dark:bg-[linear-gradient(150deg,oklch(0.23_0.055_218),oklch(0.17_0.035_250))]",
@@ -126,7 +99,6 @@ export function PlanGrid({ plans }: { plans: MarketingPlan[] }) {
       {plans.map((plan, index) => {
         const lowestOption = getLowestPricingOption(plan)
         const tone = toneKeys[index % toneKeys.length] ?? "blue"
-
         return (
           <article
             key={plan.id}
@@ -148,7 +120,6 @@ export function PlanGrid({ plans }: { plans: MarketingPlan[] }) {
                 </Badge>
               ) : null}
             </div>
-
             <div className="mt-5 grid grid-cols-3 gap-2 text-sm">
               <div className="rounded-xl border border-white/70 bg-white/60 p-3 dark:border-white/10 dark:bg-white/7">
                 <p className="text-xs text-muted-foreground">CPU</p>

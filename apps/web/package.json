@@ -28,6 +28,7 @@
     "@tanstack/react-query-devtools": "^5.96.1",
     "@workspace/api": "workspace:*",
     "@workspace/ui": "workspace:*",
+    "canvas-confetti": "^1.9.4",
     "cmdk": "^1.1.1",
     "date-fns": "^4.1.0",
     "embla-carousel-react": "^8.6.0",
@@ -50,6 +51,7 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.1.18",
+    "@types/canvas-confetti": "^1.9.0",
     "@types/node": "^25.1.0",
     "@types/react": "^19.2.10",
     "@types/react-dom": "^19.2.3",

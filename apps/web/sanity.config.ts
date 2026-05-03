@@ -7,6 +7,11 @@ import {
 import { structureTool } from "sanity/structure"
 import { visionTool } from "@sanity/vision"
 import { schemaTypes } from "./sanity/schemaTypes"
+import { blogAuthorTypeName } from "./sanity/schemaTypes/blogAuthor"
+import { blogCategoryTypeName } from "./sanity/schemaTypes/blogCategory"
+import { blogPostTypeName } from "./sanity/schemaTypes/blogPost"
+import { blogSettingsTypeName } from "./sanity/schemaTypes/blogSettings"
+import { blogTagTypeName } from "./sanity/schemaTypes/blogTag"
 import { faqPageTypeName } from "./sanity/schemaTypes/faqPage"
 import { homePageTypeName } from "./sanity/schemaTypes/homePage"
 import { legalPageTypeName } from "./sanity/schemaTypes/legalPage"
@@ -55,6 +60,15 @@ export default defineConfig({
             type: faqPageTypeName,
           },
           {
+            route: "/blog",
+            type: blogSettingsTypeName,
+          },
+          {
+            route: "/blog/:slug",
+            filter: `_type == "${blogPostTypeName}" && slug.current == $slug`,
+            params: ({ params }) => ({ slug: params.slug ?? "" }),
+          },
+          {
             route: "/:slug",
             filter: `_type == "${legalPageTypeName}" && slug.current == $slug`,
             params: ({ params }) => ({ slug: params.slug ?? "" }),
@@ -69,6 +83,35 @@ export default defineConfig({
           }),
           [faqPageTypeName]: defineLocations({
             locations: [{ title: "FAQ", href: "/faq" }],
+          }),
+          [blogSettingsTypeName]: defineLocations({
+            locations: [{ title: "Blog", href: "/blog" }],
+          }),
+          [blogPostTypeName]: defineLocations({
+            select: {
+              title: "title",
+              slug: "slug.current",
+            },
+            resolve: (document) => {
+              const title = document?.title as string | undefined
+              const slug = document?.slug as string | undefined
+
+              if (!slug) {
+                return {
+                  message: "Add a slug to preview this post.",
+                  tone: "caution",
+                }
+              }
+
+              return {
+                locations: [
+                  {
+                    title: title || "Blog post",
+                    href: `/blog/${slug}`,
+                  },
+                ],
+              }
+            },
           }),
           [legalPageTypeName]: defineLocations({
             select: {
@@ -111,6 +154,26 @@ export default defineConfig({
                   .schemaType(siteSettingsTypeName)
                   .documentId(siteSettingsTypeName)
               ),
+            S.divider(),
+            S.listItem()
+              .title("Blog Settings")
+              .child(
+                S.document()
+                  .schemaType(blogSettingsTypeName)
+                  .documentId(blogSettingsTypeName)
+              ),
+            S.listItem()
+              .title("Blog Posts")
+              .child(S.documentTypeList(blogPostTypeName)),
+            S.listItem()
+              .title("Blog Authors")
+              .child(S.documentTypeList(blogAuthorTypeName)),
+            S.listItem()
+              .title("Blog Categories")
+              .child(S.documentTypeList(blogCategoryTypeName)),
+            S.listItem()
+              .title("Blog Tags")
+              .child(S.documentTypeList(blogTagTypeName)),
             S.divider(),
             S.listItem()
               .title("Homepage")

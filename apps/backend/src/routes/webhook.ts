@@ -4,13 +4,17 @@ import { ingestPaymentWebhook } from "../services/payment-webhooks.js"
 import { verifyRazorpaySignature } from "../services/webhook-adapters/razorpay.js"
 import { verifyAndUnwrapDodoWebhook } from "../services/dodo-payments.js"
 import { verifyAndNormalizeCoinGateWebhook } from "../services/coingate-payments.js"
+import { getErrorMessage } from "../utils/error.js"
+import type { GenericRouteRequest, RouteReply } from "../types/requests.js"
 
 const webhookParamsSchema = z.object({
   provider: z.string().trim().min(1),
 })
 
 export async function webhookRoutes(server: FastifyInstance) {
-  server.post("/webhooks/payments/:provider", async (request: any, reply) => {
+  server.post(
+    "/webhooks/payments/:provider",
+    async (request: GenericRouteRequest, reply: RouteReply) => {
     try {
       const { provider } = webhookParamsSchema.parse(request.params)
 
@@ -25,7 +29,9 @@ export async function webhookRoutes(server: FastifyInstance) {
             "RAZORPAY_WEBHOOK_SECRET not configured; skipping signature verification"
           )
         } else {
-          const signature = request.headers["x-razorpay-signature"]
+          const signatureHeader = request.headers["x-razorpay-signature"]
+          const signature =
+            typeof signatureHeader === "string" ? signatureHeader : undefined
           const isValid = verifyRazorpaySignature({
             body: request.rawBody ?? JSON.stringify(request.body),
             signature,
@@ -40,12 +46,12 @@ export async function webhookRoutes(server: FastifyInstance) {
         }
       } else if (provider === "dodo") {
         // Dodo Payments webhook verification requires exact raw body bytes
-        const rawBodyBuf: Buffer | undefined = request.rawBody
+        const rawBodyValue = request.rawBody
         const rawBody =
-          typeof rawBodyBuf === "string"
-            ? rawBodyBuf
-            : Buffer.isBuffer(rawBodyBuf)
-              ? rawBodyBuf.toString("utf8")
+          typeof rawBodyValue === "string"
+            ? rawBodyValue
+            : Buffer.isBuffer(rawBodyValue)
+              ? rawBodyValue.toString("utf8")
               : JSON.stringify(request.body)
 
         try {
@@ -53,7 +59,7 @@ export async function webhookRoutes(server: FastifyInstance) {
             rawBody,
             request.headers as Record<string, string | string[] | undefined>
           )
-        } catch (e: any) {
+        } catch (e: unknown) {
           request.log.error(e)
           return reply.status(401).send({ error: "Invalid Dodo signature" })
         }
@@ -63,10 +69,10 @@ export async function webhookRoutes(server: FastifyInstance) {
             payload: request.body,
             rawBody: request.rawBody,
           })
-        } catch (e: any) {
+        } catch (e: unknown) {
           request.log.error(e)
           return reply.status(401).send({
-            error: e?.message || "Invalid CoinGate webhook",
+            error: getErrorMessage(e, "Invalid CoinGate webhook"),
           })
         }
       }
@@ -80,10 +86,10 @@ export async function webhookRoutes(server: FastifyInstance) {
         message: "Webhook received",
         ...result,
       })
-    } catch (err: any) {
+    } catch (err: unknown) {
       request.log.error(err)
       return reply.status(400).send({
-        error: err.message || "Invalid webhook request",
+        error: getErrorMessage(err, "Invalid webhook request"),
       })
     }
   })

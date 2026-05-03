@@ -6,6 +6,8 @@ import { createUserSchema, updateProfileSchema } from "../validators/user.js"
 import { verifyAuth } from "../middleware/auth.js"
 import { eq } from "drizzle-orm"
 import { sendWelcomeEmail } from "../services/email.js"
+import type { GenericRouteRequest, RouteReply } from "../types/requests.js"
+import { getErrorMessage } from "../utils/error.js"
 
 export async function userRoutes(server: FastifyInstance) {
   // Public signup route
@@ -60,24 +62,27 @@ export async function userRoutes(server: FastifyInstance) {
       }
 
       return reply.status(201).send(createdUser)
-    } catch (err: any) {
+    } catch (err: unknown) {
       return reply.status(400).send({
-        error: err.message || "Invalid request",
+        error: getErrorMessage(err),
       })
     }
   })
 
   // Get current user
-  server.get("/me", { preHandler: verifyAuth }, async (request: any) => {
+  server.get(
+    "/me",
+    { preHandler: verifyAuth },
+    async (request: GenericRouteRequest) => {
     return { user: request.user }
   }) // Get current user profile
 
   server.get(
     "/profile",
     { preHandler: verifyAuth },
-    async (request: any, reply) => {
+    async (request: GenericRouteRequest, reply: RouteReply) => {
       try {
-        const userId = request.user.userId
+        const userId = request.user!.userId
 
         const result = await db
           .select({
@@ -99,7 +104,7 @@ export async function userRoutes(server: FastifyInstance) {
         }
 
         return user
-      } catch (err: any) {
+      } catch (err: unknown) {
         server.log.error(err)
         return reply.status(500).send({
           error: "Internal server error",
@@ -111,10 +116,10 @@ export async function userRoutes(server: FastifyInstance) {
   server.patch(
     "/profile",
     { preHandler: verifyAuth },
-    async (request: any, reply) => {
+    async (request: GenericRouteRequest, reply: RouteReply) => {
       try {
         const body = updateProfileSchema.parse(request.body ?? {})
-        const userId = request.user.userId
+        const userId = request.user!.userId
         const normalizedEmail = body.email.trim().toLowerCase()
 
         const [currentUser] = await db
@@ -177,10 +182,10 @@ export async function userRoutes(server: FastifyInstance) {
           })
 
         return updatedUser
-      } catch (err: any) {
+      } catch (err: unknown) {
         server.log.error(err)
         return reply.status(400).send({
-          error: err.message || "Invalid request",
+          error: getErrorMessage(err),
         })
       }
     }

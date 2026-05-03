@@ -19,3 +19,13 @@ export const webPaths = {
   refundPolicy: "/refund-policy" as Route,
   contact: "/contact" as Route,
 } as const
+
+export const blogPaths = {
+  index: "/blog" as Route,
+  post: (slug: string) => `/blog/${encodeURIComponent(slug)}` as Route,
+  category: (slug: string) =>
+    `/blog/category/${encodeURIComponent(slug)}` as Route,
+  tag: (slug: string) => `/blog/tag/${encodeURIComponent(slug)}` as Route,
+  search: "/blog/search" as Route,
+  rss: "/blog/rss.xml" as Route,
+} as const

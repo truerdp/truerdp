@@ -1,6 +1,8 @@
 import jwt from "jsonwebtoken"
 import { FastifyRequest, FastifyReply } from "fastify"
 
+import { parseAuthUser } from "../types/auth.js"
+
 const AUTH_COOKIE_NAME = process.env.AUTH_COOKIE_NAME ?? "truerdp_session"
 
 function extractBearerToken(authHeader?: string) {
@@ -19,7 +21,7 @@ function extractBearerToken(authHeader?: string) {
 
 declare module "fastify" {
   interface FastifyRequest {
-    user?: any
+    user?: import("../types/auth.js").AuthUser
   }
 }
 
@@ -45,9 +47,14 @@ export async function verifyAuth(request: FastifyRequest, reply: FastifyReply) {
     }
 
     const decoded = jwt.verify(token, jwtSecret)
+    const parsedUser = parseAuthUser(decoded)
 
-    request.user = decoded
-  } catch (err) {
+    if (!parsedUser.success) {
+      return reply.status(401).send({ error: "Invalid token payload" })
+    }
+
+    request.user = parsedUser.data
+  } catch {
     return reply.status(401).send({ error: "Invalid token" })
   }
 }

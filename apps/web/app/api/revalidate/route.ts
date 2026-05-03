@@ -9,9 +9,25 @@ type SanityWebhookBody = {
   }
 }
 
-function resolvePathForSlug(slug?: string | null) {
+function resolvePathForSlug(input: {
+  slug?: string | null
+  type?: string | null
+}) {
+  const slug = input.slug
   if (!slug) {
     return null
+  }
+
+  if (input.type === "blogPost") {
+    return `/blog/${slug}`
+  }
+
+  if (input.type === "blogCategory") {
+    return `/blog/category/${slug}`
+  }
+
+  if (input.type === "blogTag") {
+    return `/blog/tag/${slug}`
   }
 
   if (slug === "homepage") {
@@ -73,7 +89,44 @@ export async function POST(request: NextRequest) {
     revalidateTag(`cms:${slug}`, "max")
   }
 
-  const path = resolvePathForSlug(slug ?? null)
+  if (typeTag === "blogPost") {
+    revalidateTag("blog", "max")
+    revalidateTag("blog:post", "max")
+    if (slug) {
+      revalidateTag(`blog:slug:${slug}`, "max")
+    }
+    revalidatePath("/blog")
+    revalidatePath("/blog/search")
+  }
+
+  if (typeTag === "blogCategory") {
+    revalidateTag("blog", "max")
+    revalidateTag("blog:category", "max")
+    if (slug) {
+      revalidateTag(`blog:category:${slug}`, "max")
+    }
+    revalidatePath("/blog")
+    revalidatePath("/blog/search")
+  }
+
+  if (typeTag === "blogTag") {
+    revalidateTag("blog", "max")
+    revalidateTag("blog:tag", "max")
+    if (slug) {
+      revalidateTag(`blog:tag:${slug}`, "max")
+    }
+    revalidatePath("/blog")
+    revalidatePath("/blog/search")
+  }
+
+  if (typeTag === "blogSettings") {
+    revalidateTag("blog", "max")
+    revalidateTag("blog:settings", "max")
+    revalidatePath("/blog")
+    revalidatePath("/blog/search")
+  }
+
+  const path = resolvePathForSlug({ slug: slug ?? null, type: typeTag ?? null })
 
   if (path) {
     revalidatePath(path)

@@ -1,8 +1,8 @@
 import { FastifyInstance } from "fastify"
 import { eq } from "drizzle-orm"
-import { z } from "zod"
 import { db } from "../db.js"
 import { verifyAuth } from "../middleware/auth.js"
+import type { GenericRouteRequest, RouteReply } from "../types/requests.js"
 import { transactions } from "../schema.js"
 import {
   BillingError,
@@ -10,51 +10,25 @@ import {
   failPendingTransactionForUser,
   listUserInvoices,
   listUserTransactions,
-  supportedPaymentMethodSchema,
 } from "../services/billing.js"
 import { normalizeCoinGateOrderStatus } from "../services/coingate-payments.js"
 import { ingestPaymentWebhook } from "../services/payment-webhooks.js"
-
-const createTransactionSchema = z.object({
-  orderId: z.number().int().positive(),
-  method: supportedPaymentMethodSchema,
-})
-
-const transactionParamsSchema = z.object({
-  transactionId: z.coerce.number().int().positive(),
-})
-
-const hostedReturnSchema = z.object({
-  status: z.string().trim().toLowerCase(),
-  paymentId: z.string().trim().min(1).max(255).optional().nullable(),
-})
-
-function readStringMetadata(metadata: unknown, key: string): string | null {
-  if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) {
-    return null
-  }
-
-  const value = (metadata as Record<string, unknown>)[key]
-
-  if (typeof value === "string" && value.trim()) {
-    return value.trim()
-  }
-
-  if (typeof value === "number" && Number.isFinite(value)) {
-    return String(value)
-  }
-
-  return null
-}
+import { getErrorMessage } from "../utils/error.js"
+import {
+  createTransactionSchema,
+  hostedReturnSchema,
+  readStringMetadata,
+  transactionParamsSchema,
+} from "./transaction/shared.js"
 
 export async function transactionRoutes(server: FastifyInstance) {
   server.post(
     "/transactions",
     { preHandler: verifyAuth },
-    async (request: any, reply) => {
+    async (request: GenericRouteRequest, reply: RouteReply) => {
       try {
         const body = createTransactionSchema.parse(request.body)
-        const userId = request.user.userId
+        const userId = request.user!.userId
 
         const transaction = await createBillingTransaction({
           userId,
@@ -64,7 +38,7 @@ export async function transactionRoutes(server: FastifyInstance) {
         })
 
         return reply.status(201).send(transaction)
-      } catch (err: any) {
+      } catch (err: unknown) {
         server.log.error(err)
 
         if (err instanceof BillingError) {
@@ -74,7 +48,7 @@ export async function transactionRoutes(server: FastifyInstance) {
         }
 
         return reply.status(400).send({
-          error: err.message || "Invalid request",
+          error: getErrorMessage(err),
         })
       }
     }
@@ -83,10 +57,10 @@ export async function transactionRoutes(server: FastifyInstance) {
   server.get(
     "/transactions",
     { preHandler: verifyAuth },
-    async (request: any, reply) => {
+    async (request: GenericRouteRequest, reply: RouteReply) => {
       try {
-        return await listUserTransactions(request.user.userId)
-      } catch (err: any) {
+        return await listUserTransactions(request.user!.userId)
+      } catch (err: unknown) {
         request.log.error(err)
         return reply.status(500).send({
           error: "Internal server error",
@@ -98,10 +72,10 @@ export async function transactionRoutes(server: FastifyInstance) {
   server.post(
     "/transactions/:transactionId/sync-coingate",
     { preHandler: verifyAuth },
-    async (request: any, reply) => {
+    async (request: GenericRouteRequest, reply: RouteReply) => {
       try {
         const { transactionId } = transactionParamsSchema.parse(request.params)
-        const userId = request.user.userId
+        const userId = request.user!.userId
 
         const [transaction] = await db
           .select({
@@ -158,10 +132,10 @@ export async function transactionRoutes(server: FastifyInstance) {
           message: "CoinGate transaction sync complete",
           ...result,
         }
-      } catch (err: any) {
+      } catch (err: unknown) {
         request.log.error(err)
         return reply.status(400).send({
-          error: err.message || "Unable to sync CoinGate transaction",
+          error: getErrorMessage(err, "Unable to sync CoinGate transaction"),
         })
       }
     }
@@ -170,7 +144,7 @@ export async function transactionRoutes(server: FastifyInstance) {
   server.post(
     "/transactions/:transactionId/hosted-return",
     { preHandler: verifyAuth },
-    async (request: any, reply) => {
+    async (request: GenericRouteRequest, reply: RouteReply) => {
       try {
         const { transactionId } = transactionParamsSchema.parse(request.params)
         const body = hostedReturnSchema.parse(request.body ?? {})
@@ -186,7 +160,7 @@ export async function transactionRoutes(server: FastifyInstance) {
           : `Hosted checkout returned ${body.status}`
 
         const result = await failPendingTransactionForUser({
-          userId: request.user.userId,
+          userId: request.user!.userId,
           transactionId,
           reason,
           source: "provider_return",
@@ -199,7 +173,7 @@ export async function transactionRoutes(server: FastifyInstance) {
           transactionId: result.transaction.id,
           status: result.transaction.status,
         }
-      } catch (err: any) {
+      } catch (err: unknown) {
         request.log.error(err)
 
         if (err instanceof BillingError) {
@@ -209,7 +183,10 @@ export async function transactionRoutes(server: FastifyInstance) {
         }
 
         return reply.status(400).send({
-          error: err.message || "Unable to reconcile hosted checkout return",
+          error: getErrorMessage(
+            err,
+            "Unable to reconcile hosted checkout return"
+          ),
         })
       }
     }
@@ -218,10 +195,10 @@ export async function transactionRoutes(server: FastifyInstance) {
   server.get(
     "/invoices",
     { preHandler: verifyAuth },
-    async (request: any, reply) => {
+    async (request: GenericRouteRequest, reply: RouteReply) => {
       try {
-        return await listUserInvoices(request.user.userId)
-      } catch (err: any) {
+        return await listUserInvoices(request.user!.userId)
+      } catch (err: unknown) {
         request.log.error(err)
         return reply.status(500).send({
           error: "Internal server error",

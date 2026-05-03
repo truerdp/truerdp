@@ -13,48 +13,12 @@ import {
   TableHeader,
   TableRow,
 } from "@workspace/ui/components/table"
+import {
+  buildAuditLogSearchParams,
+  toPrettyJson,
+  type AuditLogResponse,
+} from "@/app/audit-logs/models"
 import { queryKeys } from "@/lib/query-keys"
-
-type AuditLogItem = {
-  id: number
-  adminUserId: number | null
-  action: string
-  entityType: string
-  entityId: number | null
-  reason: string
-  beforeState: Record<string, unknown> | null
-  afterState: Record<string, unknown> | null
-  metadata: Record<string, unknown> | null
-  createdAt: string
-  admin: {
-    id: number | null
-    firstName: string | null
-    lastName: string | null
-    email: string | null
-  } | null
-}
-
-type AuditLogResponse = {
-  items: AuditLogItem[]
-  pagination: {
-    page: number
-    pageSize: number
-    totalCount: number
-    totalPages: number
-  }
-}
-
-function toPrettyJson(value: unknown) {
-  if (!value) {
-    return "-"
-  }
-
-  try {
-    return JSON.stringify(value)
-  } catch {
-    return "-"
-  }
-}
 
 export default function AdminAuditLogsPage() {
   const [page, setPage] = useState(1)
@@ -76,22 +40,7 @@ export default function AdminAuditLogsPage() {
   const query = useQuery<AuditLogResponse>({
     queryKey: queryKeys.auditLogs(params),
     queryFn: async () => {
-      const searchParams = new URLSearchParams()
-      searchParams.set("page", String(params.page))
-      searchParams.set("pageSize", "20")
-
-      if (params.action) {
-        searchParams.set("action", params.action)
-      }
-
-      if (params.entityType) {
-        searchParams.set("entityType", params.entityType)
-      }
-
-      if (params.adminUserId) {
-        searchParams.set("adminUserId", params.adminUserId)
-      }
-
+      const searchParams = buildAuditLogSearchParams(params)
       return clientApi(`/admin/audit-logs?${searchParams.toString()}`)
     },
   })

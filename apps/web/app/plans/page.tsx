@@ -1,7 +1,6 @@
 import type { Metadata } from "next"
 import Link from "next/link"
 import { Plus_Jakarta_Sans } from "next/font/google"
-
 import { serverApi } from "@workspace/api"
 import {
   Alert,
@@ -22,7 +21,6 @@ import {
 import { webPaths } from "@/lib/paths"
 import { formatAmount } from "@/lib/format"
 import { Button } from "@workspace/ui/components/button"
-
 const displayFont = Plus_Jakarta_Sans({
   subsets: ["latin"],
   weight: ["700", "800"],
@@ -35,7 +33,6 @@ export const metadata: Metadata = {
   description:
     "Browse TrueRDP plans by location or type, then choose the right RDP configuration for checkout.",
 }
-
 async function getPlans() {
   try {
     const plans = await serverApi<MarketingPlan[]>("/plans", {
@@ -50,7 +47,6 @@ async function getPlans() {
     }
   }
 }
-
 export default async function PlansPage() {
   const { plans, error } = await getPlans()
   const plansByType = groupPlansBy(plans, (plan) => plan.planType)
