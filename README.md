@@ -273,6 +273,7 @@ BACKEND_BASE_URL=http://localhost:3003
 ```
 
 Notes:
+
 - Better Auth (`/api/auth/*`) is now the primary auth path used by the web app.
 - Legacy JWT/cookie routes under `/auth/*` are still present during transition, so keep `JWT_SECRET` and `AUTH_COOKIE_*` configured.
 
@@ -392,3 +393,20 @@ Seeded local credentials:
   `Residential Basic`, `Residential Pro`
 - Pricing options: monthly and multi-month options, plus weekly residential
   options where available
+
+## Neon DB Reset
+
+To wipe the Neon database configured in `apps/backend/.env.production.local`:
+
+```bash
+pnpm db:reset:neon
+```
+
+If you want to preview the tables first, run:
+
+```bash
+pnpm --filter backend db:reset:neon -- --dry-run
+```
+
+This truncates every `public` table except `__drizzle_migrations` and resets
+identities with `CASCADE`.

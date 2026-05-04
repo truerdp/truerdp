@@ -78,12 +78,15 @@ export function SignupForm({ ...props }: React.ComponentProps<typeof Card>) {
     const lastName = nameParts.slice(1).join(" ") || "User"
 
     try {
+      const callbackURL = `${window.location.origin}${webPaths.verifyEmailSuccess}`
+
       const { error } = await authClient.signUp.email({
         name: fullName,
         email,
         password,
         firstName,
         lastName,
+        callbackURL,
       })
 
       if (error) {
@@ -91,9 +94,7 @@ export function SignupForm({ ...props }: React.ComponentProps<typeof Card>) {
       }
 
       toast.success("Account created. Verify your email to continue.")
-      router.push(
-        `${webPaths.verifyEmail}?email=${encodeURIComponent(email)}`
-      )
+      router.push(`${webPaths.verifyEmail}?email=${encodeURIComponent(email)}`)
     } catch (submitError) {
       const message =
         submitError instanceof Error

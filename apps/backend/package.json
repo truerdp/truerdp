@@ -12,6 +12,7 @@
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",
     "db:seed": "tsx src/scripts/seed.ts",
+    "db:reset": "tsx src/scripts/reset-db.ts",
     "db:studio": "drizzle-kit studio",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",

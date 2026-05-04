@@ -6,7 +6,6 @@ import {
   siteSettingsQuery,
 } from "@/lib/cms-queries"
 import {
-  fallbackPages,
   fallbackSiteSettings,
   getFallbackCmsPagesForImport,
   getFallbackPage,

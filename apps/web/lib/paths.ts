@@ -8,6 +8,7 @@ export const webPaths = {
   login: "/login" as Route,
   signup: "/signup" as Route,
   verifyEmail: "/verify-email" as Route,
+  verifyEmailSuccess: "/verify-email/success" as Route,
   forgotPassword: "/forgot-password" as Route,
   resetPassword: "/reset-password" as Route,
   checkoutReviewOrder: (orderId: number) =>

@@ -2,7 +2,47 @@ import { betterAuth } from "better-auth"
 import { drizzleAdapter } from "better-auth/adapters/drizzle"
 import { db } from "./db.js"
 import * as schema from "./schema.js"
-import { sendPasswordResetEmail, sendVerificationEmail } from "./services/email.js"
+import {
+  sendPasswordResetEmail,
+  sendVerificationEmail,
+} from "./services/email.js"
+
+function ensureFrontendCallback(urlString: string) {
+  try {
+    const webBase = (
+      process.env.WEB_BASE_URL || "http://localhost:3000"
+    ).replace(/\/$/, "")
+    const url = new URL(urlString)
+
+    const cbKey = url.searchParams.has("callbackURL")
+      ? "callbackURL"
+      : url.searchParams.has("redirectTo")
+        ? "redirectTo"
+        : "callbackURL"
+
+    const cb = url.searchParams.get(cbKey)
+
+    if (cb) {
+      try {
+        new URL(cb)
+        // absolute URL — leave as-is
+      } catch {
+        // relative path — make absolute to frontend
+        const newCb = cb.startsWith("/")
+          ? `${webBase}${cb}`
+          : `${webBase}/${cb}`
+        url.searchParams.set(cbKey, newCb)
+      }
+    } else {
+      // ensure there's at least a root callback to the frontend
+      url.searchParams.set("callbackURL", `${webBase}/`)
+    }
+
+    return url.toString()
+  } catch {
+    return urlString
+  }
+}
 
 function getTrustedOrigins() {
   const configuredOrigins = (process.env.CORS_ALLOWED_ORIGINS ?? "")
@@ -81,7 +121,7 @@ export const auth = betterAuth({
     sendResetPassword: async ({ user, url }) => {
       await sendPasswordResetEmail({
         to: user.email,
-        resetUrl: url,
+        resetUrl: ensureFrontendCallback(url),
       })
     },
   },
@@ -91,7 +131,7 @@ export const auth = betterAuth({
     sendVerificationEmail: async ({ user, url }) => {
       await sendVerificationEmail({
         to: user.email,
-        verificationUrl: url,
+        verificationUrl: ensureFrontendCallback(url),
       })
     },
   },

@@ -35,7 +35,7 @@ export function VerifyEmailCard() {
       setIsResending(true)
       const { error } = await authClient.sendVerificationEmail({
         email,
-        callbackURL: `${window.location.origin}${webPaths.login}`,
+        callbackURL: `${window.location.origin}${webPaths.verifyEmailSuccess}`,
       })
 
       if (error) {
