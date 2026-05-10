@@ -1,20 +1,13 @@
 "use client"
 
-import { useEffect, useState } from "react"
-import { useTheme } from "next-themes"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { Moon02Icon, Sun02Icon } from "@hugeicons/core-free-icons"
 import { Button } from "@workspace/ui/components/button"
+import { useTheme } from "@/components/theme-provider"
 
 function ThemeToggle() {
   const { resolvedTheme, setTheme } = useTheme()
-  const [mounted, setMounted] = useState(false)
-
-  useEffect(() => {
-    setMounted(true)
-  }, [])
-
-  const isDark = mounted ? resolvedTheme === "dark" : false
+  const isDark = resolvedTheme === "dark"
 
   return (
     <Button

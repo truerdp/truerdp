@@ -5,6 +5,51 @@ export const errorResponse = {
   },
 }
 
+const planPricingOptionSchema = {
+  type: "object",
+  properties: {
+    id: { type: "integer" },
+    durationDays: { type: "integer" },
+    priceUsdCents: { type: "integer" },
+    isActive: { type: "boolean" },
+    dodoProductId: { type: ["string", "null"] },
+    dodoSyncStatus: { type: "string" },
+    dodoSyncError: { type: ["string", "null"] },
+    dodoSyncedAt: { type: ["string", "null"], format: "date-time" },
+  },
+  required: ["id", "durationDays", "priceUsdCents", "isActive"],
+}
+
+const planWithPricingSchema = {
+  type: "object",
+  properties: {
+    id: { type: "integer" },
+    name: { type: "string" },
+    cpu: { type: "integer" },
+    cpuName: { type: "string" },
+    cpuThreads: { type: "integer" },
+    ram: { type: "integer" },
+    ramType: { type: "string" },
+    storage: { type: "integer" },
+    storageType: { type: "string" },
+    bandwidth: { type: "string" },
+    os: { type: "string" },
+    osVersion: { type: "string" },
+    planType: { type: "string" },
+    portSpeed: { type: "string" },
+    setupFees: { type: "integer" },
+    planLocation: { type: "string" },
+    isActive: { type: "boolean" },
+    isFeatured: { type: "boolean" },
+    defaultPricingId: { type: ["integer", "null"] },
+    pricingOptions: {
+      type: "array",
+      items: planPricingOptionSchema,
+    },
+  },
+  required: ["id", "name", "pricingOptions"],
+}
+
 export const listPlansQuerySchema = {
   type: "object",
   properties: {
@@ -20,7 +65,7 @@ export const listPlansSchema = {
   response: {
     200: {
       type: "array",
-      items: { type: "object" },
+      items: planWithPricingSchema,
     },
     400: errorResponse,
     500: errorResponse,

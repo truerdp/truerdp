@@ -1,5 +1,6 @@
 import type { FastifyInstance } from "fastify"
 import { fromNodeHeaders } from "better-auth/node"
+import { client } from "../db.js"
 import { auth } from "../auth.js"
 
 function resolveProtocol(headers: Record<string, unknown>) {
@@ -12,10 +13,7 @@ function resolveProtocol(headers: Record<string, unknown>) {
   return "http"
 }
 
-function buildRequestBody(request: {
-  method: string
-  body?: unknown
-}) {
+function buildRequestBody(request: { method: string; body?: unknown }) {
   if (request.method === "GET" || request.method === "HEAD") {
     return undefined
   }
@@ -40,6 +38,43 @@ function buildRequestBody(request: {
   return JSON.stringify(request.body)
 }
 
+function appendQueryParam(urlString: string, key: string, value: string) {
+  const url = new URL(urlString)
+  url.searchParams.set(key, value)
+  return url.toString()
+}
+
+async function isEmailAlreadyVerified(token: string) {
+  try {
+    const payloadPart = token.split(".")[1]
+
+    if (!payloadPart) {
+      return false
+    }
+
+    const payload = JSON.parse(
+      Buffer.from(payloadPart, "base64url").toString("utf8")
+    ) as { email?: unknown }
+
+    const email = payload.email
+
+    if (typeof email !== "string" || !email) {
+      return false
+    }
+
+    const rows = (await client`
+      select email_verified as "emailVerified"
+      from users
+      where email = ${email}
+      limit 1
+    `) as Array<{ emailVerified: boolean }>
+
+    return rows[0]?.emailVerified === true
+  } catch {
+    return false
+  }
+}
+
 export async function betterAuthRoutes(server: FastifyInstance) {
   const handler = async (
     request: {
@@ -62,6 +97,21 @@ export async function betterAuthRoutes(server: FastifyInstance) {
         request.headers as Record<string, string | string[] | undefined>
       )
       const body = buildRequestBody(request)
+
+      if (
+        request.method === "GET" &&
+        url.pathname === "/api/auth/verify-email"
+      ) {
+        const token = url.searchParams.get("token")
+        const callbackURL = url.searchParams.get("callbackURL")
+
+        if (token && callbackURL && (await isEmailAlreadyVerified(token))) {
+          const location = appendQueryParam(callbackURL, "alreadyVerified", "1")
+          reply.status(302)
+          reply.header("location", location)
+          return reply.send()
+        }
+      }
 
       if (body && !headers.has("content-type")) {
         headers.set("content-type", "application/json")

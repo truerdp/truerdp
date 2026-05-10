@@ -12,6 +12,8 @@ import { DotPattern } from "@workspace/ui/components/dot-pattern"
 import { TextAnimate } from "@workspace/ui/components/text-animate"
 import { statCardClass } from "./styles"
 import type { HeroContent, PlanPricingOption } from "./types"
+import Image from "next/image"
+import serverImage from "@/assets/images/server.png"
 
 interface HeroSectionProps {
   displayClassName: string
@@ -113,7 +115,9 @@ export function HeroSection({
               Starts At
             </p>
             <p className="mt-1 text-lg font-semibold text-[oklch(0.28_0.12_166)] dark:text-white">
-              {cheapestOption ? formatAmount(cheapestOption.priceUsdCents) : "-"}
+              {cheapestOption
+                ? formatAmount(cheapestOption.priceUsdCents)
+                : "-"}
             </p>
           </div>
         </div>
@@ -128,6 +132,7 @@ export function HeroSection({
             cr={1.1}
             className="text-white/12"
           />
+
           <div className="relative flex items-center justify-between gap-4 border-b border-white/15 pb-4">
             <div className="flex items-center gap-2">
               <span className="inline-flex size-9 items-center justify-center rounded-2xl border border-white/15 bg-white/12">
@@ -157,7 +162,13 @@ export function HeroSection({
                 {uniqueLocations || 0} regions
               </Badge>
             </div>
-
+            <Image
+              unoptimized
+              fill
+              src={serverImage}
+              alt="Hero image"
+              className="object-cover"
+            />
             <div className="absolute inset-x-4 bottom-4 z-10 grid gap-3 sm:grid-cols-3">
               <div className="rounded-2xl border border-white/18 bg-white/14 p-3 shadow-lg shadow-black/10 backdrop-blur-lg">
                 <p className="text-xs text-white/50">Plans</p>

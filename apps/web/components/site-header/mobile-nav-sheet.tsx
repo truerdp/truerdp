@@ -90,7 +90,9 @@ export function MobileNavSheet({
                 <p className="text-xs font-semibold tracking-[0.18em] text-muted-foreground uppercase">
                   Browse
                 </p>
-                <p className="text-xs text-muted-foreground">{menu.length} links</p>
+                <p className="text-xs text-muted-foreground">
+                  {menu.length} links
+                </p>
               </div>
 
               <div className="grid gap-2">
@@ -115,11 +117,14 @@ export function MobileNavSheet({
                 Account
               </p>
 
-              <ThemeToggle />
+              {/* <ThemeToggle /> */}
 
               {!isAuthenticated ? (
                 <div className="grid grid-cols-1 gap-3">
-                  <Link href={webPaths.login} onClick={() => setMobileMenuOpen(false)}>
+                  <Link
+                    href={webPaths.login}
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
                     <Button variant="outline" className="w-full">
                       <HugeiconsIcon
                         icon={LoginSquare02Icon}
@@ -129,7 +134,10 @@ export function MobileNavSheet({
                       Login
                     </Button>
                   </Link>
-                  <Link href={webPaths.signup} onClick={() => setMobileMenuOpen(false)}>
+                  <Link
+                    href={webPaths.signup}
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
                     <Button className="w-full">
                       <HugeiconsIcon
                         icon={UserAdd01Icon}

@@ -19,7 +19,6 @@ export async function upsertUser(input: {
     .insert(users)
     .values({
       email: input.email,
-      passwordHash: "",
       firstName: input.firstName,
       lastName: input.lastName,
       role: input.role,
@@ -27,7 +26,6 @@ export async function upsertUser(input: {
     .onConflictDoUpdate({
       target: users.email,
       set: {
-        passwordHash: "",
         firstName: input.firstName,
         lastName: input.lastName,
         role: input.role,

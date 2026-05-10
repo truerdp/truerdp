@@ -5,13 +5,6 @@ export const errorResponse = {
   },
 }
 
-export const getCurrentUserResponseSchema = {
-  type: "object",
-  properties: {
-    user: { type: "object" },
-  },
-}
-
 export const userProfileProperties = {
   id: { type: "integer" },
   email: { type: "string" },
@@ -19,6 +12,16 @@ export const userProfileProperties = {
   lastName: { type: "string" },
   role: { type: "string" },
   createdAt: { type: "string", format: "date-time" },
+}
+
+export const getCurrentUserResponseSchema = {
+  type: "object",
+  properties: {
+    user: {
+      type: "object",
+      properties: userProfileProperties,
+    },
+  },
 }
 
 export const getUserProfileResponseSchema = {

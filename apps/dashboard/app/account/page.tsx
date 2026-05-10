@@ -2,6 +2,7 @@
 
 import { useProfile } from "@/hooks/use-profile"
 import { AccountForm } from "@/components/account-page/account-form"
+import { ChangePasswordForm } from "@/components/account-page/change-password-form"
 import { ProfileSkeleton } from "@/components/account-page/profile-skeleton"
 
 export default function AccountPage() {
@@ -29,7 +30,10 @@ export default function AccountPage() {
           Manage your dashboard profile and sign-in password.
         </p>
       </div>
-      <AccountForm profile={profile} />
+      <div className="space-y-6">
+        <AccountForm profile={profile} />
+        <ChangePasswordForm />
+      </div>
     </div>
   )
 }

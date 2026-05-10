@@ -18,7 +18,10 @@ import ThemeToggle from "@/components/theme-toggle"
 import { useProfile } from "@/hooks/use-profile"
 import { webPaths } from "@/lib/paths"
 import { Button } from "@workspace/ui/components/button"
-import { NavigationMenu, NavigationMenuList } from "@workspace/ui/components/navigation-menu"
+import {
+  NavigationMenu,
+  NavigationMenuList,
+} from "@workspace/ui/components/navigation-menu"
 import { renderDesktopMenuItem } from "@/components/site-header/menu-items"
 import { MobileNavSheet } from "@/components/site-header/mobile-nav-sheet"
 import type { HeaderLink, MenuItem } from "@/components/site-header/types"
@@ -126,15 +129,18 @@ export default function SiteHeader({
 
           <div className="flex items-center justify-between lg:hidden">
             <BrandLink brandName={brandName} />
-            <MobileNavSheet
-              brandName={brandName}
-              menu={menu}
-              mobileMenuOpen={mobileMenuOpen}
-              setMobileMenuOpen={setMobileMenuOpen}
-              isAuthenticated={isAuthenticated}
-              isLoggingOut={isLoggingOut}
-              onLogout={onLogout}
-            />
+            <div className="flex gap-3">
+              <ThemeToggle />
+              <MobileNavSheet
+                brandName={brandName}
+                menu={menu}
+                mobileMenuOpen={mobileMenuOpen}
+                setMobileMenuOpen={setMobileMenuOpen}
+                isAuthenticated={isAuthenticated}
+                isLoggingOut={isLoggingOut}
+                onLogout={onLogout}
+              />
+            </div>
           </div>
         </div>
       </section>
