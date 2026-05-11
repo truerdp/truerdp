@@ -14,7 +14,7 @@ export class AllocationError extends Error {
 /**
  * Allocate a server to an instance (after payment confirmed)
  * Spec: Allocation ONLY after invoice is paid, instance in provisioning, server available
- * Transactional, locks server row
+ * Transactional with atomic server claim to prevent double assignment
  */
 export async function allocateServerToInstance(
   instanceId: number,
@@ -41,54 +41,78 @@ export async function allocateServerToInstance(
       )
     }
 
-    // 2. Fetch server with row lock (FOR UPDATE SKIP LOCKED)
-    const serverResult = await tx
-      .select()
-      .from(servers)
-      .where(eq(servers.id, serverId))
-      .limit(1)
-
-    const server = serverResult[0]
-    if (!server) {
-      throw new AllocationError(404, "Server not found")
-    }
-
-    if (server.status !== "available") {
-      throw new AllocationError(
-        400,
-        `Server must be available, but is ${server.status}`
-      )
-    }
-
     const now = new Date()
 
-    // 3. Create resource (binding)
-    const [resource] = await tx
-      .insert(resources)
-      .values({
-        instanceId,
-        serverId,
-        username: credentials?.username,
-        passwordEncrypted: credentials?.passwordEncrypted,
-        status: "active",
-        assignedAt: now,
-      })
-      .returning()
-
-    if (!resource) {
-      throw new AllocationError(500, "Failed to create resource")
-    }
-
-    // 4. Update server status to assigned
-    await tx
+    // 2. Atomically claim server iff it's still available.
+    const [server] = await tx
       .update(servers)
       .set({
         status: "assigned",
         lastAssignedAt: now,
       })
-      .where(eq(servers.id, server.id))
+      .where(and(eq(servers.id, serverId), eq(servers.status, "available")))
+      .returning()
 
-    // 5. Update instance status to active
+    if (!server) {
+      const existingServerResult = await tx
+        .select({
+          status: servers.status,
+        })
+        .from(servers)
+        .where(eq(servers.id, serverId))
+        .limit(1)
+
+      const existingServer = existingServerResult[0]
+
+      if (!existingServer) {
+        throw new AllocationError(404, "Server not found")
+      }
+
+      throw new AllocationError(
+        400,
+        `Server must be available, but is ${existingServer.status}`
+      )
+    }
+
+    // 3. Create resource (binding)
+    let resource: typeof resources.$inferSelect | undefined
+    try {
+      const createdResources = await tx
+        .insert(resources)
+        .values({
+          instanceId,
+          serverId,
+          username: credentials?.username,
+          passwordEncrypted: credentials?.passwordEncrypted,
+          status: "active",
+          assignedAt: now,
+        })
+        .returning()
+
+      resource = createdResources[0]
+    } catch (error: unknown) {
+      const message =
+        error instanceof Error ? error.message : "Failed to create resource"
+
+      if (message.includes("resources_instance_id_unique")) {
+        throw new AllocationError(
+          409,
+          "Instance already has an active server resource"
+        )
+      }
+
+      if (message.includes("resources_server_id_unique")) {
+        throw new AllocationError(409, "Server was allocated concurrently")
+      }
+
+      throw error
+    }
+
+    if (!resource) {
+      throw new AllocationError(500, "Failed to create resource")
+    }
+
+    // 4. Update instance status to active
     const [updatedInstance] = await tx
       .update(instances)
       .set({

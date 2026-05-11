@@ -1,3 +1,5 @@
+import { supportedPaymentMethodSchema } from "../services/billing.js"
+
 export const errorResponse = {
   type: "object",
   properties: {
@@ -12,7 +14,7 @@ export const createTransactionBodySchema = {
     orderId: { type: "integer" },
     method: {
       type: "string",
-      enum: ["razorpay", "coingate_checkout", "manual"],
+      enum: supportedPaymentMethodSchema.options,
     },
   },
 }

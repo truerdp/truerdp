@@ -5,7 +5,8 @@ as a DigitalOcean Droplet. It assumes:
 
 - `api.truerdp.com` points to the VPS public IP.
 - Postgres is hosted externally in Neon.
-- The VPS runs only Docker, the backend container, Nginx, and Certbot.
+- The VPS runs only Docker, the backend container, and Caddy.
+- Cloudflare is the public DNS/edge TLS provider and should use Full (strict).
 - Frontend apps remain deployed separately, for example on Vercel.
 
 The production backend uses `docker-compose.prod.yml` and
@@ -48,7 +49,13 @@ Update Ubuntu and install basic tools:
 
 ```bash
 apt update && apt upgrade -y
-apt install -y git curl ufw nginx certbot python3-certbot-nginx
+apt install -y git curl gpg ufw debian-keyring debian-archive-keyring apt-transport-https
+curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | \
+  gpg --dearmor --yes -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
+curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | \
+  tee /etc/apt/sources.list.d/caddy-stable.list
+apt update
+apt install -y caddy
 ```
 
 Install Docker Engine and the Compose plugin:
@@ -187,23 +194,25 @@ Expected response:
 {"status":"ok","message":"Truerdp API is running"}
 ```
 
-## 8) Nginx reverse proxy
+## 8) Caddy reverse proxy
 
-Install the Nginx site config from this repo:
+If this VPS already has the old Nginx/Certbot setup, stop and disable Nginx
+first so only one process owns ports `80` and `443`:
 
 ```bash
-cp deploy/nginx/api.truerdp.com.conf /etc/nginx/sites-available/api.truerdp.com.conf
-ln -s /etc/nginx/sites-available/api.truerdp.com.conf /etc/nginx/sites-enabled/api.truerdp.com.conf
-nginx -t
-systemctl reload nginx
+systemctl stop nginx || true
+systemctl disable nginx || true
+systemctl disable --now certbot.timer || true
+systemctl restart caddy
 ```
 
-If the default Nginx site conflicts, remove it:
+Install the Caddy config from this repo:
 
 ```bash
-rm -f /etc/nginx/sites-enabled/default
-nginx -t
-systemctl reload nginx
+cp deploy/caddy/Caddyfile /etc/caddy/Caddyfile
+caddy fmt --overwrite /etc/caddy/Caddyfile
+caddy validate --config /etc/caddy/Caddyfile
+systemctl restart caddy
 ```
 
 Verify HTTP:
@@ -212,18 +221,27 @@ Verify HTTP:
 curl http://api.truerdp.com/
 ```
 
-## 9) TLS with Certbot
+## 9) TLS with Caddy and Cloudflare
 
-Once DNS resolves to the VPS, issue a certificate:
-
-```bash
-certbot --nginx -d api.truerdp.com --redirect
-```
+Cloudflare should be set to SSL/TLS mode `Full (strict)`. In that mode,
+Cloudflare still requires the VPS origin to serve a valid certificate for
+`api.truerdp.com`. Caddy replaces both Nginx and Certbot here: it obtains and
+renews the origin certificate automatically.
 
 Verify HTTPS:
 
 ```bash
 curl https://api.truerdp.com/
+```
+
+If first-time certificate issuance fails while the `api` DNS record is proxied
+through Cloudflare, temporarily set only `api.truerdp.com` to DNS-only, restart
+Caddy, wait for issuance to complete, and then proxy it through Cloudflare
+again:
+
+```bash
+journalctl -u caddy -f
+systemctl restart caddy
 ```
 
 ## 10) Firewall
@@ -232,13 +250,14 @@ Allow SSH, HTTP, and HTTPS:
 
 ```bash
 ufw allow OpenSSH
-ufw allow 'Nginx Full'
+ufw allow 80/tcp
+ufw allow 443/tcp
 ufw enable
 ufw status
 ```
 
 Do not expose port `3003` publicly. The backend is bound to `127.0.0.1:3003`
-and should be reached through Nginx.
+and should be reached through Caddy.
 
 ## 11) Migrations
 

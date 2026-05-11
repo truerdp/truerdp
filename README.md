@@ -204,7 +204,7 @@ Notes:
 - The production stack builds with `apps/backend/Dockerfile.prod`.
 - It does not use bind mounts and runs `node dist/index.js`.
 - For external managed databases (Neon/RDS/etc), set `DATABASE_URL` in your backend env file and use `pnpm run docker:prod:up:backend`.
-- Backend binds to `127.0.0.1:3003` by default in production compose; front it with Nginx and TLS as described in `deploy/docker-prod.md`.
+- Backend binds to `127.0.0.1:3003` by default in production compose; front it with Caddy and Cloudflare Full (strict) TLS as described in `deploy/docker-prod.md`.
 - Pushes to `main` that touch backend-related files deploy through GitHub Actions after typecheck, build, and migrations. Required secrets are documented in `deploy/docker-prod.md`.
 
 Local URLs:

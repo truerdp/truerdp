@@ -41,7 +41,28 @@
                   "type": "object",
                   "properties": {
                     "user": {
-                      "type": "object"
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "integer"
+                        },
+                        "email": {
+                          "type": "string"
+                        },
+                        "firstName": {
+                          "type": "string"
+                        },
+                        "lastName": {
+                          "type": "string"
+                        },
+                        "role": {
+                          "type": "string"
+                        },
+                        "createdAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        }
+                      }
                     }
                   }
                 }
@@ -331,7 +352,122 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "type": "object"
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "integer"
+                      },
+                      "name": {
+                        "type": "string"
+                      },
+                      "cpu": {
+                        "type": "integer"
+                      },
+                      "cpuName": {
+                        "type": "string"
+                      },
+                      "cpuThreads": {
+                        "type": "integer"
+                      },
+                      "ram": {
+                        "type": "integer"
+                      },
+                      "ramType": {
+                        "type": "string"
+                      },
+                      "storage": {
+                        "type": "integer"
+                      },
+                      "storageType": {
+                        "type": "string"
+                      },
+                      "bandwidth": {
+                        "type": "string"
+                      },
+                      "os": {
+                        "type": "string"
+                      },
+                      "osVersion": {
+                        "type": "string"
+                      },
+                      "planType": {
+                        "type": "string"
+                      },
+                      "portSpeed": {
+                        "type": "string"
+                      },
+                      "setupFees": {
+                        "type": "integer"
+                      },
+                      "planLocation": {
+                        "type": "string"
+                      },
+                      "isActive": {
+                        "type": "boolean"
+                      },
+                      "isFeatured": {
+                        "type": "boolean"
+                      },
+                      "defaultPricingId": {
+                        "type": [
+                          "null",
+                          "integer"
+                        ]
+                      },
+                      "pricingOptions": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "integer"
+                            },
+                            "durationDays": {
+                              "type": "integer"
+                            },
+                            "priceUsdCents": {
+                              "type": "integer"
+                            },
+                            "isActive": {
+                              "type": "boolean"
+                            },
+                            "dodoProductId": {
+                              "type": [
+                                "null",
+                                "string"
+                              ]
+                            },
+                            "dodoSyncStatus": {
+                              "type": "string"
+                            },
+                            "dodoSyncError": {
+                              "type": [
+                                "null",
+                                "string"
+                              ]
+                            },
+                            "dodoSyncedAt": {
+                              "type": [
+                                "null",
+                                "string"
+                              ],
+                              "format": "date-time"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "durationDays",
+                            "priceUsdCents",
+                            "isActive"
+                          ]
+                        }
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "name",
+                      "pricingOptions"
+                    ]
                   }
                 }
               }
@@ -770,9 +906,10 @@
                   "method": {
                     "type": "string",
                     "enum": [
-                      "razorpay",
-                      "coingate_checkout",
-                      "manual"
+                      "upi",
+                      "usdt_trc20",
+                      "dodo_checkout",
+                      "coingate_checkout"
                     ]
                   }
                 }
@@ -1835,6 +1972,114 @@
         "responses": {
           "200": {
             "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/support/contact": {
+      "post": {
+        "summary": "Submit public contact form",
+        "tags": [
+          "Support"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "name",
+                  "email",
+                  "subject",
+                  "message",
+                  "topic"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "email": {
+                    "type": "string",
+                    "format": "email"
+                  },
+                  "subject": {
+                    "type": "string"
+                  },
+                  "message": {
+                    "type": "string"
+                  },
+                  "topic": {
+                    "type": "string",
+                    "enum": [
+                      "plan_guidance",
+                      "billing",
+                      "provisioning",
+                      "technical_issue",
+                      "other"
+                    ]
+                  },
+                  "companyName": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "orderReference": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "website": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
           }
         }
       }

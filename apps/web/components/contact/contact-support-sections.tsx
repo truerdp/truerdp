@@ -1,10 +1,17 @@
 import Link from "next/link"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { CheckmarkBadgeIcon } from "@hugeicons/core-free-icons"
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@workspace/ui/components/accordion"
 import { Button } from "@workspace/ui/components/button"
 
 import { TawkChatButton } from "@/components/tawk-chat-button"
 import { webPaths } from "@/lib/paths"
+import { ContactFormCard } from "./contact-form-card"
 import { quickAnswers, supportTopics } from "./page-data"
 
 export function ContactSupportSections() {
@@ -99,28 +106,33 @@ export function ContactSupportSections() {
               </Button>
             </Link>
           </div>
+
+          <div className="mt-6">
+            <Accordion
+              defaultValue={
+                quickAnswers[0]?.question ? [quickAnswers[0].question] : []
+              }
+              className="w-full space-y-2 border-0"
+            >
+              {quickAnswers.map((item) => (
+                <AccordionItem
+                  key={item.question}
+                  value={item.question}
+                  className="rounded-2xl border bg-white/70 px-4 dark:border-white/10 dark:bg-white/7"
+                >
+                  <AccordionTrigger className="text-sm font-semibold hover:no-underline">
+                    {item.question}
+                  </AccordionTrigger>
+                  <AccordionContent className="text-sm leading-6 text-muted-foreground">
+                    {item.answer}
+                  </AccordionContent>
+                </AccordionItem>
+              ))}
+            </Accordion>
+          </div>
         </div>
 
-        <div className="grid gap-3">
-          {quickAnswers.map((item) => (
-            <details
-              key={item.question}
-              className="group rounded-2xl border border-white/70 bg-white/70 p-4 shadow-sm dark:border-white/10 dark:bg-white/7"
-            >
-              <summary className="cursor-pointer list-none text-sm font-semibold">
-                <span className="flex items-center justify-between gap-4">
-                  {item.question}
-                  <span className="text-lg text-muted-foreground transition-transform group-open:rotate-45">
-                    +
-                  </span>
-                </span>
-              </summary>
-              <p className="mt-3 text-sm leading-6 text-muted-foreground">
-                {item.answer}
-              </p>
-            </details>
-          ))}
-        </div>
+        <ContactFormCard />
       </section>
     </>
   )

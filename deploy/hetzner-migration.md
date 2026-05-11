@@ -79,7 +79,13 @@ Update and install base packages:
 
 ```bash
 apt update && apt upgrade -y
-apt install -y git curl ufw nginx certbot python3-certbot-nginx
+apt install -y git curl gpg ufw debian-keyring debian-archive-keyring apt-transport-https
+curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | \
+  gpg --dearmor --yes -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
+curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | \
+  tee /etc/apt/sources.list.d/caddy-stable.list
+apt update
+apt install -y caddy
 ```
 
 Install Docker:
@@ -166,23 +172,21 @@ docker compose -f docker-compose.prod.yml logs -f backend
 curl http://127.0.0.1:3003/
 ```
 
-## 5) Configure Nginx on Hetzner
+## 5) Configure Caddy on Hetzner
 
-Install the site config:
+Install the Caddy config:
 
 ```bash
-cp deploy/nginx/api.truerdp.com.conf /etc/nginx/sites-available/api.truerdp.com.conf
-ln -s /etc/nginx/sites-available/api.truerdp.com.conf /etc/nginx/sites-enabled/api.truerdp.com.conf
-rm -f /etc/nginx/sites-enabled/default
-nginx -t
-systemctl reload nginx
+cp deploy/caddy/Caddyfile /etc/caddy/Caddyfile
+caddy fmt --overwrite /etc/caddy/Caddyfile
+caddy validate --config /etc/caddy/Caddyfile
+systemctl restart caddy
 ```
 
-Before changing DNS, test the new server by sending the right Host header
-directly to the Hetzner IP:
+Before changing DNS, verify the backend directly on the Hetzner server:
 
 ```bash
-curl -H "Host: api.truerdp.com" http://<hetzner-ip>/
+curl http://127.0.0.1:3003/
 ```
 
 This should return the backend health response.
@@ -204,10 +208,11 @@ Watch propagation:
 dig api.truerdp.com
 ```
 
-Once `api.truerdp.com` resolves to the Hetzner IP, issue TLS on Hetzner:
+Once `api.truerdp.com` resolves to the Hetzner IP, watch Caddy obtain and serve
+the origin certificate:
 
 ```bash
-certbot --nginx -d api.truerdp.com --redirect
+journalctl -u caddy -f
 ```
 
 Verify:
@@ -222,7 +227,8 @@ Enable only SSH, HTTP, and HTTPS:
 
 ```bash
 ufw allow OpenSSH
-ufw allow 'Nginx Full'
+ufw allow 80/tcp
+ufw allow 443/tcp
 ufw enable
 ufw status
 ```

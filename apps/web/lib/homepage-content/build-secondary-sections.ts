@@ -8,12 +8,15 @@ export function buildSecondaryHomeSections(
     ? (cmsTestimonialsSection.items as Array<Record<string, unknown>>)
     : []
   const testimonialsSection = {
-    eyebrow: readText(cmsTestimonialsSection.eyebrow, "5 star rated experience"),
+    eyebrow: readText(cmsTestimonialsSection.eyebrow, "Recent buyer feedback"),
     headline: readText(
       cmsTestimonialsSection.headline,
       "Trusted by buyers who need clear specs and quick checkout"
     ),
-    ratingLabel: readText(cmsTestimonialsSection.ratingLabel, "Rated 5.0 by customers"),
+    ratingLabel: readText(
+      cmsTestimonialsSection.ratingLabel,
+      "Feedback from recent support and onboarding conversations"
+    ),
     items:
       cmsTestimonialsItems.length > 0
         ? cmsTestimonialsItems
@@ -73,6 +76,11 @@ export function buildSecondaryHomeSections(
               question: "How quickly can I place an order?",
               answer:
                 "Choose a plan duration, start checkout, and the order is created in the same flow. Provisioning follows the current admin confirmation process.",
+            },
+            {
+              question: "What happens after payment confirmation?",
+              answer:
+                "Your order moves to provisioning. If matching inventory is available, setup is usually fast; otherwise support follows up with the expected provisioning window.",
             },
             {
               question: "Can I compare plans by location?",

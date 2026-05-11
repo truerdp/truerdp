@@ -53,12 +53,22 @@ export const quickAnswers = [
       "Share your account email, order or transaction context, selected plan, and a short description of what you need help with.",
   },
   {
+    question: "How fast will I get a response?",
+    answer:
+      "New contact requests are reviewed in order. Pre-sales and billing questions are typically answered the same day, while infrastructure issues are prioritized by impact.",
+  },
+  {
     question: "Where should active customers report issues?",
     answer:
       "Use dashboard support tickets for tracked service issues. Live chat is best for quick guidance and pre-sale questions.",
   },
   {
-    question: "Can support help me choose a location?",
+    question: "What happens after payment confirmation?",
+    answer:
+      "Your order moves to provisioning. If matching inventory is available, setup is usually fast; if not, support follows up with the expected provisioning window.",
+  },
+  {
+    question: "Can support help me choose a location and plan?",
     answer:
       "Yes. Tell support where your workload runs and what latency or region preference matters most.",
   },

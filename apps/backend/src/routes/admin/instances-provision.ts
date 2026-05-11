@@ -2,6 +2,7 @@ import { FastifyInstance } from "fastify"
 import { eq } from "drizzle-orm"
 import { db } from "../../db.js"
 import {
+  invoices,
   instances,
   orders,
   plans,
@@ -65,8 +66,11 @@ server.post(
           id: orders.id,
           durationDays: orders.durationDays,
           status: orders.status,
+          invoiceId: invoices.id,
+          invoiceStatus: invoices.status,
         })
         .from(orders)
+        .leftJoin(invoices, eq(invoices.orderId, orders.id))
         .where(eq(orders.id, instance.originOrderId))
         .limit(1)
 
@@ -76,6 +80,33 @@ server.post(
         return reply.status(400).send({
           error: "Instance is missing its originating order",
         })
+      }
+
+      const requiresProvisioningActivationGuard =
+        instance.status === "pending" || instance.status === "failed"
+
+      if (requiresProvisioningActivationGuard) {
+        if (!linkedOrder.invoiceId) {
+          return reply.status(400).send({
+            error:
+              "Cannot provision this instance before a valid paid invoice exists",
+          })
+        }
+
+        if (linkedOrder.invoiceStatus !== "paid") {
+          return reply.status(400).send({
+            error: `Cannot provision this instance while invoice is ${linkedOrder.invoiceStatus}`,
+          })
+        }
+
+        if (
+          linkedOrder.status !== "processing" &&
+          linkedOrder.status !== "completed"
+        ) {
+          return reply.status(400).send({
+            error: `Cannot provision this instance while order is ${linkedOrder.status}`,
+          })
+        }
       }
 
       const now = new Date()
