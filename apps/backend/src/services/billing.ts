@@ -33,6 +33,9 @@ export {
   listAdminInvoices,
 } from "./billing/admin-invoices.js"
 export { confirmPendingTransaction } from "./billing/transaction-confirm.js"
-export { failPendingTransactionForUser } from "./billing/transaction-fail.js"
+export {
+  failPendingTransactionByAdmin,
+  failPendingTransactionForUser,
+} from "./billing/transaction-fail.js"
 export { notifyPaymentFailureForInvoice } from "./billing/notifications.js"
 export { sendExpiryReminderSweep } from "./billing/reminders.js"

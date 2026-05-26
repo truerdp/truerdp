@@ -9,7 +9,7 @@ Focus: prevent hallucinations by forcing technology-accurate skills/tools.
 - Frontend apps: Next.js 16 + React 19 (`apps/web`, `apps/dashboard`, `apps/admin`)
 - Backend: Fastify 5 + Better Auth + Drizzle ORM + Postgres (`apps/backend`)
 - Shared libs: `@workspace/api`, `@workspace/ui`
-- Payments/providers in code: Dodo Payments, CoinGate, Razorpay
+- Payments/providers in code: Dodo Payments, CoinGate
 - Email in code: Resend integration
 - MCP configured in repo: Better Auth (`mcp.json`)
 
@@ -93,7 +93,7 @@ Avoid ad-hoc `fetch` unless there is a strong reason.
   - Misconfigured `CORS_ALLOWED_ORIGINS` can produce `403 Forbidden origin` even when CORS plugin is enabled.
 - Webhook signature verification depends on exact raw body:
   - `fastify-raw-body` is registered with `runFirst: true` in `apps/backend/src/index.ts`
-  - `apps/backend/src/routes/webhook.ts` relies on `request.rawBody` for Razorpay/Dodo/CoinGate verification.
+  - `apps/backend/src/routes/webhook.ts` relies on `request.rawBody` for Dodo/CoinGate verification.
   - Do not refactor this into parsed-body-only verification.
 
 ## Auth/Session Conventions

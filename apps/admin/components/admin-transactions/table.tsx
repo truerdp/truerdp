@@ -23,14 +23,16 @@ import {
 
 type AdminTransactionsTableProps = {
   transactions: AdminTransaction[]
-  isConfirming: boolean
+  isUpdating: boolean
   onConfirm: (transactionId: number) => void
+  onFail: (transactionId: number) => void
 }
 
 export function AdminTransactionsTable({
   transactions,
-  isConfirming,
+  isUpdating,
   onConfirm,
+  onFail,
 }: AdminTransactionsTableProps) {
   return (
     <div className="rounded-lg border">
@@ -96,12 +98,13 @@ export function AdminTransactionsTable({
                 {transaction.status === "pending" &&
                   transaction.method !== "dodo_checkout" &&
                   transaction.method !== "coingate_checkout" && (
-                    <Button
-                      size="sm"
-                      onClick={() => onConfirm(transaction.id)}
-                      disabled={isConfirming}
+                    <div className="flex items-center gap-2">
+                      <Button
+                        size="sm"
+                        onClick={() => onConfirm(transaction.id)}
+                        disabled={isUpdating}
                     >
-                      {isConfirming ? (
+                      {isUpdating ? (
                         <Spinner data-icon="inline-start" />
                       ) : (
                         <HugeiconsIcon
@@ -112,13 +115,32 @@ export function AdminTransactionsTable({
                       )}
                       Confirm
                     </Button>
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={() => onFail(transaction.id)}
+                        disabled={isUpdating}
+                      >
+                        Mark failed
+                      </Button>
+                    </div>
                   )}
                 {transaction.status === "pending" &&
                   (transaction.method === "dodo_checkout" ||
                     transaction.method === "coingate_checkout") && (
-                    <Badge variant="outline" className="uppercase">
-                      Auto via webhook
-                    </Badge>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline" className="uppercase">
+                        Auto via webhook
+                      </Badge>
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={() => onFail(transaction.id)}
+                        disabled={isUpdating}
+                      >
+                        Mark failed
+                      </Button>
+                    </div>
                   )}
               </TableCell>
             </TableRow>

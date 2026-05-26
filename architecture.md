@@ -113,16 +113,16 @@ Health endpoint:
 ### 5.1 Authentication and User Endpoints
 
 - POST /users: public signup
-- POST /auth/login: credential login, sets auth cookie
-- POST /auth/logout: clears auth cookie
-- GET /auth/session: returns active user session (auth required)
+- POST /api/auth/sign-in/email: credential login, sets auth cookie
+- POST /api/auth/sign-out: clears auth cookie
+- GET /api/auth/get-session: returns active user session (auth required)
 - GET /me: quick current user lookup (auth required)
 - GET /profile: current user profile details (auth required)
 
 Token handling:
 
-- Auth accepts either session cookie or Bearer token.
-- JWT secret is mandatory at runtime.
+- Better Auth session cookies are the primary session transport.
+- `BETTER_AUTH_SECRET` is mandatory at runtime.
 
 ### 5.2 Plan and Catalog Endpoints
 
@@ -156,7 +156,7 @@ Supported payment methods in current schema:
 
 Current provider-specific behavior:
 
-- Razorpay signature verification via x-razorpay-signature when secret is configured
+- Dodo and CoinGate signature verification before normalization
 - Event normalization and deduplication before billing mutation
 
 ### 5.6 Admin Endpoints
@@ -361,8 +361,8 @@ Deallocation behavior:
 
 ### 8.4 Webhook Integrity
 
-- Razorpay signature verification is supported and enforced when secret exists.
-- If secret is absent, backend logs warning and accepts payload.
+- Dodo and CoinGate webhook signatures are validated before processing.
+- Unknown providers are rejected by route validation.
 
 ## 9. Configuration and Environment Model
 
@@ -370,7 +370,7 @@ Key backend environment variables observed:
 
 - DATABASE_URL
 - PORT
-- JWT_SECRET
+- BETTER_AUTH_SECRET
 - RESOURCE_CREDENTIALS_SECRET
 - AUTH_COOKIE_NAME
 - AUTH_COOKIE_DOMAIN
@@ -378,10 +378,13 @@ Key backend environment variables observed:
 - AUTH_COOKIE_SAME_SITE
 - AUTH_COOKIE_MAX_AGE
 - CORS_ALLOWED_ORIGINS
+- EXPIRY_REMINDER_SWEEP_INTERVAL_MINUTES
+- EXPIRY_REMINDER_SWEEP_DAYS_AHEAD
 
-Provider-specific optional variable:
+Provider-specific optional variables:
 
-- RAZORPAY_WEBHOOK_SECRET
+- DODO_PAYMENTS_WEBHOOK_KEY
+- COINGATE_API_TOKEN
 
 ## 10. Operational Notes
 
@@ -409,7 +412,7 @@ Root scripts orchestrate:
 
 ## 12. Current Architectural Gaps and Risks
 
-- Webhook signature validation can be bypassed when secret is unset in non-hardened environments.
+- Local-only mock webhook mode should stay disabled in production environments.
 - Single backend process and single database instance imply vertical scaling limits in current local topology.
 - Long-running workflows are synchronous in API paths, with no message broker or worker tier.
 - Observability depth is currently log-centric; no explicit traces/metrics pipeline is present in the reviewed code.

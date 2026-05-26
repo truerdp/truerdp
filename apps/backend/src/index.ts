@@ -16,6 +16,7 @@ import { orderRoutes } from "./routes/order.js"
 import { supportRoutes } from "./routes/support.js"
 import { contentRoutes } from "./routes/content.js"
 import fastifyRawBody from "fastify-raw-body"
+import { startExpiryReminderScheduler } from "./services/billing/reminder-scheduler.js"
 
 const server = Fastify({
   logger: true,
@@ -182,6 +183,8 @@ const start = async () => {
       port,
       host: "0.0.0.0",
     })
+
+    startExpiryReminderScheduler(server.log)
 
     console.log(`Server listening at http://0.0.0.0:${port}`)
   } catch (err) {

@@ -5,6 +5,7 @@ import { HugeiconsIcon } from "@hugeicons/react"
 import { Alert02Icon } from "@hugeicons/core-free-icons"
 import { useTransactions } from "@/hooks/use-transactions"
 import { useConfirmTransaction } from "@/hooks/use-confirm-transaction"
+import { useFailTransaction } from "@/hooks/use-fail-transaction"
 import { ProvisionInstanceDialog } from "@/components/provision-instance-dialog"
 import { AdminPaginationControls } from "@/components/admin-pagination-controls"
 import { PendingTransactionsSkeleton, TransactionsEmpty } from "@/components/admin-transactions/states"
@@ -18,6 +19,7 @@ export default function AdminTransactionsPage() {
     pageSize,
   })
   const confirmMutation = useConfirmTransaction()
+  const failMutation = useFailTransaction()
   const [provisionDialogOpen, setProvisionDialogOpen] = useState(false)
   const [selectedInstanceId, setSelectedInstanceId] = useState<number | null>(
     null
@@ -44,6 +46,14 @@ export default function AdminTransactionsPage() {
         setSelectedInstanceId(response.instance.id)
         setProvisionDialogOpen(true)
       }
+    } catch {
+      // Error toast is handled in the mutation hook
+    }
+  }
+
+  const handleFailTransaction = async (transactionId: number) => {
+    try {
+      await failMutation.mutateAsync(transactionId)
     } catch {
       // Error toast is handled in the mutation hook
     }
@@ -79,8 +89,9 @@ export default function AdminTransactionsPage() {
         <div className="space-y-3">
           <AdminTransactionsTable
             transactions={transactions}
-            isConfirming={confirmMutation.isPending}
+            isUpdating={confirmMutation.isPending || failMutation.isPending}
             onConfirm={handleConfirmTransaction}
+            onFail={handleFailTransaction}
           />
 
           <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">

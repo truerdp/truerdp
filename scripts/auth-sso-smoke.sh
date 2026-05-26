@@ -5,7 +5,7 @@ API_BASE_URL="${API_BASE_URL:-https://api.truerdp.com}"
 WEB_ORIGIN="${WEB_ORIGIN:-https://truerdp.com}"
 DASHBOARD_ORIGIN="${DASHBOARD_ORIGIN:-https://dashboard.truerdp.com}"
 ADMIN_ORIGIN="${ADMIN_ORIGIN:-https://admin.truerdp.com}"
-AUTH_COOKIE_NAME="${AUTH_COOKIE_NAME:-truerdp_session}"
+AUTH_COOKIE_NAME="${AUTH_COOKIE_NAME:-better-auth.session_token}"
 COOKIE_JAR="${COOKIE_JAR:-/tmp/truerdp-sso-cookie-jar.txt}"
 EMAIL="${EMAIL:-}"
 PASSWORD="${PASSWORD:-}"
@@ -35,12 +35,12 @@ rm -f "$COOKIE_JAR"
 
 echo "1) Logging in from WEB origin: $WEB_ORIGIN"
 login_code="$(curl -sS \
-    -X POST "$API_BASE_URL/auth/login" \
+    -X POST "$API_BASE_URL/api/auth/sign-in/email" \
     -H "Origin: $WEB_ORIGIN" \
     -H "Content-Type: application/json" \
     --cookie-jar "$COOKIE_JAR" \
     --cookie "$COOKIE_JAR" \
-    --data "{\"email\":\"$EMAIL\",\"password\":\"$PASSWORD\"}" \
+    --data "{\"email\":\"$EMAIL\",\"password\":\"$PASSWORD\",\"rememberMe\":true}" \
     -D "$login_headers" \
     -o "$login_body" \
     -w "%{http_code}")"
@@ -75,7 +75,7 @@ check_session_from_origin() {
 
   local code
   code="$(curl -sS \
-      "$API_BASE_URL/auth/session" \
+      "$API_BASE_URL/api/auth/get-session" \
       -H "Origin: $origin" \
       --cookie "$COOKIE_JAR" \
       -D "$headers_file" \
@@ -113,7 +113,7 @@ check_session_from_origin "$ADMIN_ORIGIN" "admin"
 
 echo "3) Logging out"
 logout_code="$(curl -sS \
-    -X POST "$API_BASE_URL/auth/logout" \
+    -X POST "$API_BASE_URL/api/auth/sign-out" \
     -H "Origin: $WEB_ORIGIN" \
     -H "Content-Type: application/json" \
     --cookie "$COOKIE_JAR" \
@@ -131,7 +131,7 @@ fi
 
 echo "4) Verifying session is gone"
 post_logout_code="$(curl -sS \
-    "$API_BASE_URL/auth/session" \
+    "$API_BASE_URL/api/auth/get-session" \
     -H "Origin: $DASHBOARD_ORIGIN" \
     --cookie "$COOKIE_JAR" \
     -o "$tmpdir/post-logout-session-body.json" \
