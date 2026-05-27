@@ -5,7 +5,7 @@ import { Spinner } from "@workspace/ui/components/spinner"
 import { useProfile } from "@/hooks/use-profile"
 import { buildWebLoginUrl } from "@/lib/auth"
 
-const allowedRoles = new Set(["admin", "superadmin", "manager", "support"])
+const allowedRoles = new Set(["admin"])
 
 export function AuthGuard({ children }: { children: React.ReactNode }) {
   const profileQuery = useProfile()

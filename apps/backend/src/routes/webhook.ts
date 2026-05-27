@@ -1,14 +1,13 @@
 import { FastifyInstance } from "fastify"
 import z from "zod"
 import { ingestPaymentWebhook } from "../services/payment-webhooks.js"
-import { verifyRazorpaySignature } from "../services/webhook-adapters/razorpay.js"
 import { verifyAndUnwrapDodoWebhook } from "../services/dodo-payments.js"
 import { verifyAndNormalizeCoinGateWebhook } from "../services/coingate-payments.js"
 import { getErrorMessage } from "../utils/error.js"
 import type { GenericRouteRequest, RouteReply } from "../types/requests.js"
 
 const webhookParamsSchema = z.object({
-  provider: z.string().trim().min(1),
+  provider: z.enum(["dodo", "coingate", "mock"]),
 })
 
 export async function webhookRoutes(server: FastifyInstance) {
@@ -21,30 +20,7 @@ export async function webhookRoutes(server: FastifyInstance) {
       let payloadToIngest: unknown = request.body
 
       // Verify signature based on provider
-      if (provider === "razorpay") {
-        const secret = process.env.RAZORPAY_WEBHOOK_SECRET
-
-        if (!secret) {
-          request.log.warn(
-            "RAZORPAY_WEBHOOK_SECRET not configured; skipping signature verification"
-          )
-        } else {
-          const signatureHeader = request.headers["x-razorpay-signature"]
-          const signature =
-            typeof signatureHeader === "string" ? signatureHeader : undefined
-          const isValid = verifyRazorpaySignature({
-            body: request.rawBody ?? JSON.stringify(request.body),
-            signature,
-            secret,
-          })
-
-          if (!isValid) {
-            return reply.status(401).send({
-              error: "Invalid signature",
-            })
-          }
-        }
-      } else if (provider === "dodo") {
+      if (provider === "dodo") {
         // Dodo Payments webhook verification requires exact raw body bytes
         const rawBodyValue = request.rawBody
         const rawBody =
@@ -75,6 +51,8 @@ export async function webhookRoutes(server: FastifyInstance) {
             error: getErrorMessage(e, "Invalid CoinGate webhook"),
           })
         }
+      } else if (provider === "mock" && process.env.NODE_ENV === "production") {
+        return reply.status(404).send({ error: "Unknown provider" })
       }
 
       const result = await ingestPaymentWebhook({

@@ -62,7 +62,6 @@ truerdp/
 |-- pnpm-workspace.yaml
 |-- postman/
 |-- progress.md
-|-- RAZORPAY_WEBHOOKS.md
 |-- skills/
 |-- skills-lock.json
 |-- tsconfig.json
@@ -270,12 +269,14 @@ COINGATE_ENVIRONMENT=sandbox
 COINGATE_API_TOKEN=
 COINGATE_RECEIVE_CURRENCY=DO_NOT_CONVERT
 BACKEND_BASE_URL=http://localhost:3003
+EXPIRY_REMINDER_SWEEP_INTERVAL_MINUTES=0
+EXPIRY_REMINDER_SWEEP_DAYS_AHEAD=3
 ```
 
 Notes:
 
 - Better Auth (`/api/auth/*`) is now the primary auth path used by the web app.
-- Legacy JWT/cookie routes under `/auth/*` are still present during transition, so keep `JWT_SECRET` and `AUTH_COOKIE_*` configured.
+- Keep `BETTER_AUTH_*`, `CORS_ALLOWED_ORIGINS`, and cookie-related auth env values aligned across web/dashboard/admin origins.
 
 Web CMS env values (set in `apps/web/.env` for dev, or
 `apps/web/.env.production.local` for local production runs):

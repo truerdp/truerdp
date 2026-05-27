@@ -1,7 +1,7 @@
 import { FastifyInstance } from "fastify"
-import { eq } from "drizzle-orm"
+import { and, eq, sql } from "drizzle-orm"
 import { db } from "../../db.js"
-import { servers } from "../../schema.js"
+import { resources, servers } from "../../schema.js"
 import { verifyAuth } from "../../middleware/auth.js"
 import { requireAdmin } from "../../middleware/require-admin.js"
 import type { GenericRouteRequest } from "../../types/requests.js"
@@ -95,6 +95,44 @@ export async function registerAdminServersMutationRoutes(
         if (!currentServer) {
           return reply.status(404).send({
             error: "Server not found",
+          })
+        }
+
+        const [activeResourceSummary] = await db
+          .select({
+            activeResourceCount: sql<number>`count(*)::int`,
+          })
+          .from(resources)
+          .where(
+            and(
+              eq(resources.serverId, serverId),
+              eq(resources.status, "active")
+            )
+          )
+
+        const activeResourceCount = activeResourceSummary?.activeResourceCount ?? 0
+
+        if (body.status === "available" && activeResourceCount > 0) {
+          return reply.status(400).send({
+            error:
+              "Cannot mark server as available while an active resource is attached",
+          })
+        }
+
+        if (body.status === "assigned" && activeResourceCount !== 1) {
+          return reply.status(400).send({
+            error:
+              "Assigned server status requires exactly one active resource binding",
+          })
+        }
+
+        if (
+          (body.status === "cleaning" || body.status === "retired") &&
+          activeResourceCount > 0
+        ) {
+          return reply.status(400).send({
+            error:
+              "Cannot move server to cleaning/retired while an active resource is attached",
           })
         }
 

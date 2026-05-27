@@ -46,7 +46,8 @@ COINGATE_RECEIVE_CURRENCY=DO_NOT_CONVERT
 COINGATE_PENDING_STATUS_POLL_ATTEMPTS=4
 COINGATE_PENDING_STATUS_POLL_DELAY_MS=500
 
-RAZORPAY_WEBHOOK_SECRET=
+EXPIRY_REMINDER_SWEEP_INTERVAL_MINUTES=0
+EXPIRY_REMINDER_SWEEP_DAYS_AHEAD=3
 ```
 
 Backend notes:
@@ -57,7 +58,7 @@ Backend notes:
   `truerdp.com`, `dashboard.truerdp.com`, and `admin.truerdp.com` are all live.
 - `CORS_ALLOWED_ORIGINS` must contain exact frontend origins, comma-separated,
   with `https://` and no trailing path.
-- Set Dodo, CoinGate, Razorpay, and Resend values before enabling those flows in
+- Set Dodo, CoinGate, and Resend values before enabling those flows in
   production.
 
 ## Web - Vercel

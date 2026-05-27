@@ -15,8 +15,8 @@ Assumption:
 Set these in backend production environment.
 
 ```env
-JWT_SECRET=<strong-random-secret>
-AUTH_COOKIE_NAME=truerdp_session
+BETTER_AUTH_SECRET=<strong-random-secret>
+BETTER_AUTH_URL=https://api.truerdp.com
 AUTH_COOKIE_DOMAIN=.truerdp.com
 AUTH_COOKIE_SECURE=true
 AUTH_COOKIE_SAME_SITE=lax
@@ -54,6 +54,7 @@ API_BASE_URL='https://api.truerdp.com' \
 WEB_ORIGIN='https://truerdp.com' \
 DASHBOARD_ORIGIN='https://dashboard.truerdp.com' \
 ADMIN_ORIGIN='https://admin.truerdp.com' \
+AUTH_COOKIE_NAME='better-auth.session_token' \
 EXPECT_COOKIE_DOMAIN='.truerdp.com' \
 ./scripts/auth-sso-smoke.sh
 ```

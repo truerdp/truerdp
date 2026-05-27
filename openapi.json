@@ -1343,6 +1343,25 @@
         }
       }
     },
+    "/admin/transactions/{id}/fail": {
+      "post": {
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
     "/admin/instances/{id}/provision": {
       "post": {
         "parameters": [

@@ -124,9 +124,9 @@ export const resources = pgTable(
       .notNull(),
   },
   (table) => ({
-    instanceUnique: uniqueIndex("resources_instance_id_unique").on(
-      table.instanceId
-    ),
+    instanceUnique: uniqueIndex("resources_instance_id_unique")
+      .on(table.instanceId)
+      .where(sql`${table.status} = 'active'`),
     serverUnique: uniqueIndex("resources_server_id_unique")
       .on(table.serverId)
       .where(sql`${table.status} = 'active'`),

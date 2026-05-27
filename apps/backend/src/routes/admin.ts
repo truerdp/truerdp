@@ -6,6 +6,7 @@ import { registerAdminPlansFlagsRoutes } from "./admin/plans-flags.js"
 import { registerAdminCouponsListCreateRoutes } from "./admin/coupons-list-create.js"
 import { registerAdminCouponsUpdateStatusRoutes } from "./admin/coupons-update-status.js"
 import { registerAdminTransactionsConfirmRoutes } from "./admin/transactions-confirm.js"
+import { registerAdminTransactionsFailRoutes } from "./admin/transactions-fail.js"
 import { registerAdminInstancesProvisionRoutes } from "./admin/instances-provision.js"
 import { registerAdminInstancesTerminateRoutes } from "./admin/instances-terminate.js"
 import { registerAdminInstancesSuspendUnsuspendRoutes } from "./admin/instances-suspend-unsuspend.js"
@@ -21,6 +22,7 @@ export async function adminRoutes(server: FastifyInstance) {
   await registerAdminCouponsListCreateRoutes(server)
   await registerAdminCouponsUpdateStatusRoutes(server)
   await registerAdminTransactionsConfirmRoutes(server)
+  await registerAdminTransactionsFailRoutes(server)
   await registerAdminInstancesProvisionRoutes(server)
   await registerAdminInstancesTerminateRoutes(server)
   await registerAdminInstancesSuspendUnsuspendRoutes(server)
