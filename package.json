@@ -17,9 +17,9 @@
     "docker:prod:up:backend": "docker compose -f docker-compose.prod.yml up -d --build --no-deps backend",
     "docker:prod:down": "docker compose -f docker-compose.prod.yml down",
     "docker:prod:logs": "docker compose -f docker-compose.prod.yml logs -f backend db",
-    "dev:docker": "docker compose -f docker-compose.yml up -d --force-recreate backend db && pnpm run dev:frontend",
-    "dev:backend:restart": "docker compose -f docker-compose.yml up -d --force-recreate backend",
-    "dev:stop": "docker compose -f docker-compose.yml down && lsof -ti :3000,3001,3002,3003 | xargs kill 2>/dev/null || true",
+    "dev:docker": "docker compose -f docker-compose.yml up -d --build backend db && pnpm run dev:frontend",
+    "dev:backend:restart": "docker compose -f docker-compose.yml up -d --build backend",
+    "dev:stop": "docker compose -f docker-compose.yml down && kill-port 3000 3001 3002 3003 || true",
     "ngrok:backend": "ngrok http 3003",
     "db:reset": "pnpm --filter backend db:reset -- --yes",
     "refactor:audit": "node scripts/refactor-audit.mjs",
@@ -33,7 +33,8 @@
     "prettier": "^3.8.1",
     "prettier-plugin-tailwindcss": "^0.7.2",
     "turbo": "^2.8.8",
-    "typescript": "5.9.3"
+    "typescript": "5.9.3",
+    "kill-port": "^2.0.1"
   },
   "packageManager": "pnpm@10.29.3",
   "engines": {
