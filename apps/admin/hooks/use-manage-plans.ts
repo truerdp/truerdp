@@ -154,3 +154,30 @@ export function useTogglePlanFeatured() {
     },
   })
 }
+
+export function useSyncPlanDodoProducts() {
+  const queryClient = useQueryClient()
+
+  return useMutation<
+    PlanMutationResponse,
+    Error,
+    {
+      planId: number
+    }
+  >({
+    mutationFn: ({ planId }) =>
+      clientApi(`/admin/plans/${planId}/sync-dodo`, {
+        method: "POST",
+      }),
+    onSuccess: async (data) => {
+      toast.success(data.message || "Dodo product sync completed")
+
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.plans(),
+      })
+    },
+    onError: (error) => {
+      toast.error(error.message || "Failed to sync Dodo products")
+    },
+  })
+}

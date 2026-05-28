@@ -22,8 +22,14 @@ function getResendApiKey() {
   return process.env.RESEND_API_KEY?.trim() ?? ""
 }
 
+function getResendBaseUrl() {
+  return process.env.RESEND_BASE_URL?.trim().replace(/\/$/, "") ?? ""
+}
+
 function getFromEmail() {
-  return process.env.RESEND_FROM_EMAIL?.trim() || "TrueRDP <onboarding@resend.dev>"
+  return (
+    process.env.RESEND_FROM_EMAIL?.trim() || "TrueRDP <onboarding@resend.dev>"
+  )
 }
 
 function getReplyToEmail() {
@@ -50,7 +56,10 @@ export function escapeHtml(value: string) {
     .replaceAll("'", "&#039;")
 }
 
-function interpolateTemplate(template: string, variables: Record<string, string>) {
+function interpolateTemplate(
+  template: string,
+  variables: Record<string, string>
+) {
   return template.replaceAll(/{{\s*([a-zA-Z0-9_]+)\s*}}/g, (_, key: string) => {
     return variables[key] ?? ""
   })
@@ -73,7 +82,10 @@ export async function sendManagedEmail(input: {
     })
     .from(emailTemplates)
     .where(
-      and(eq(emailTemplates.key, input.templateKey), eq(emailTemplates.isActive, true))
+      and(
+        eq(emailTemplates.key, input.templateKey),
+        eq(emailTemplates.isActive, true)
+      )
     )
     .limit(1)
 
@@ -93,13 +105,55 @@ export async function sendManagedEmail(input: {
   })
 }
 
-export async function sendEmail(input: SendEmailInput): Promise<SendEmailResult> {
+export async function sendEmail(
+  input: SendEmailInput
+): Promise<SendEmailResult> {
   const apiKey = getResendApiKey()
 
   if (!apiKey) {
     return {
       sent: false,
       skippedReason: "RESEND_API_KEY is not configured",
+    }
+  }
+
+  const baseUrl = getResendBaseUrl()
+
+  if (baseUrl) {
+    const response = await fetch(`${baseUrl}/emails`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        from: getFromEmail(),
+        to: input.to,
+        subject: input.subject,
+        html: input.html,
+        text: input.text,
+        reply_to: input.replyTo ?? getReplyToEmail(),
+        tags: input.tags,
+      }),
+    })
+
+    const payload = (await response.json().catch(() => null)) as {
+      id?: string | null
+      message?: string
+      error?: string
+    } | null
+
+    if (!response.ok) {
+      throw new Error(
+        payload?.message ||
+          payload?.error ||
+          `Resend email request failed (${response.status})`
+      )
+    }
+
+    return {
+      sent: true,
+      id: payload?.id ?? null,
     }
   }
 
@@ -123,4 +177,3 @@ export async function sendEmail(input: SendEmailInput): Promise<SendEmailResult>
     id: data?.id ?? null,
   }
 }
-

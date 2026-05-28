@@ -1,10 +1,7 @@
 import z from "zod"
-import { eq } from "drizzle-orm"
-
 import { db } from "../../db.js"
-import { coupons, instanceStatusEvents, instances } from "../../schema.js"
+import { instanceStatusEvents, instances } from "../../schema.js"
 import { createAdminAuditLog } from "../../services/admin-audit.js"
-import { syncDodoDiscountForCoupon } from "../../services/dodo-payments.js"
 
 export const provisionSchema = z.object({
   serverId: z.number().int().positive(),
@@ -150,38 +147,19 @@ const adminInvoiceListQuerySchema = z.object({
     .optional(),
 })
 
+const adminWebhookEventListQuerySchema = z.object({
+  page: z.coerce.number().int().min(1).default(1),
+  pageSize: z.coerce.number().int().min(1).max(100).default(20),
+  status: z.enum(["received", "processed", "ignored", "failed"]).optional(),
+  provider: z.enum(["dodo", "coingate", "mock"]).optional(),
+})
+
 export const adminQuerySchemas = {
   adminListPaginationQuerySchema,
   adminAuditLogQuerySchema,
   expiryReminderRunSchema,
   adminInvoiceListQuerySchema,
-}
-
-type CouponSyncTarget = typeof coupons.$inferSelect
-
-export async function syncCouponToDodo(
-  tx: Parameters<Parameters<typeof db.transaction>[0]>[0],
-  coupon: CouponSyncTarget
-) {
-  const syncResult = await syncDodoDiscountForCoupon({
-    code: coupon.code,
-    type: coupon.type,
-    value: coupon.value,
-    maxUses: coupon.maxUses,
-    expiresAt: coupon.expiresAt,
-    isActive: coupon.isActive,
-    existingDodoDiscountId: coupon.dodoDiscountId,
-  })
-
-  await tx
-    .update(coupons)
-    .set({
-      dodoDiscountId: syncResult.dodoDiscountId,
-      dodoSyncStatus: "synced",
-      dodoSyncError: null,
-      dodoSyncedAt: syncResult.syncedAt,
-    })
-    .where(eq(coupons.id, coupon.id))
+  adminWebhookEventListQuerySchema,
 }
 
 export function getEffectiveRestoreStatus(expiryDate: Date | null) {

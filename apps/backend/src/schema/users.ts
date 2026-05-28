@@ -1,4 +1,4 @@
-import { boolean, index, integer, pgTable, serial, text, timestamp, uniqueIndex } from "drizzle-orm/pg-core"
+import { boolean, pgTable, serial, text, timestamp } from "drizzle-orm/pg-core"
 
 import { roleEnum } from "./enums.js"
 
@@ -19,26 +19,3 @@ export const users = pgTable("users", {
     .$onUpdateFn(() => new Date())
     .notNull(),
 })
-
-export const passwordResetTokens = pgTable(
-  "password_reset_tokens",
-  {
-    id: serial("id").primaryKey(),
-
-    userId: integer("user_id")
-      .notNull()
-      .references(() => users.id),
-
-    tokenHash: text("token_hash").notNull(),
-    expiresAt: timestamp("expires_at").notNull(),
-    usedAt: timestamp("used_at"),
-
-    createdAt: timestamp("created_at").defaultNow().notNull(),
-  },
-  (table) => ({
-    userIdIdx: index("password_reset_tokens_user_id_idx").on(table.userId),
-    tokenHashUnique: uniqueIndex("password_reset_tokens_hash_unique").on(
-      table.tokenHash
-    ),
-  })
-)

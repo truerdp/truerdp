@@ -254,11 +254,6 @@ JWT_SECRET=change-this-in-production
 BETTER_AUTH_SECRET=change-this-in-production
 BETTER_AUTH_URL=http://localhost:3003
 RESOURCE_CREDENTIALS_SECRET=change-this-too
-AUTH_COOKIE_NAME=truerdp_session
-AUTH_COOKIE_DOMAIN=
-AUTH_COOKIE_SECURE=false
-AUTH_COOKIE_SAME_SITE=lax
-AUTH_COOKIE_MAX_AGE=604800
 CORS_ALLOWED_ORIGINS=http://localhost:3000,http://localhost:3001,http://localhost:3002
 RESEND_API_KEY=
 RESEND_FROM_EMAIL="TrueRDP <onboarding@resend.dev>"
@@ -276,7 +271,7 @@ EXPIRY_REMINDER_SWEEP_DAYS_AHEAD=3
 Notes:
 
 - Better Auth (`/api/auth/*`) is now the primary auth path used by the web app.
-- Keep `BETTER_AUTH_*`, `CORS_ALLOWED_ORIGINS`, and cookie-related auth env values aligned across web/dashboard/admin origins.
+- Keep `BETTER_AUTH_*` and `CORS_ALLOWED_ORIGINS` aligned across web/dashboard/admin origins.
 
 Web CMS env values (set in `apps/web/.env` for dev, or
 `apps/web/.env.production.local` for local production runs):

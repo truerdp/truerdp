@@ -1,7 +1,12 @@
 "use client"
 
 import { useRouter } from "next/navigation"
-import { useFieldArray, useForm, type SubmitHandler } from "react-hook-form"
+import {
+  useFieldArray,
+  useForm,
+  useWatch,
+  type SubmitHandler,
+} from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { Button } from "@workspace/ui/components/button"
 import { Spinner } from "@workspace/ui/components/spinner"
@@ -37,7 +42,6 @@ export function PlanForm({
     register,
     control,
     handleSubmit,
-    watch,
     setValue,
     formState: { errors },
   } = useForm<PlanFormValues>({
@@ -55,6 +59,10 @@ export function PlanForm({
   }
 
   const isEditMode = mode === "edit"
+  const defaultPricingId = useWatch({
+    control,
+    name: "defaultPricingId",
+  })
 
   return (
     <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6">
@@ -100,7 +108,7 @@ export function PlanForm({
         errors={errors}
         append={append}
         isPending={isPending}
-        defaultPricingId={watch("defaultPricingId")}
+        defaultPricingId={defaultPricingId}
         onSelectDefaultPricingId={
           isEditMode
             ? (pricingId) => {

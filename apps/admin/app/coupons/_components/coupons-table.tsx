@@ -15,6 +15,8 @@ type CouponsTableProps = {
   coupons: Coupon[]
   onEdit: (coupon: Coupon) => void
   onToggle: (coupon: Coupon) => void
+  onSyncDodo: (coupon: Coupon) => void
+  isSyncingDodo: boolean
 }
 
 export function CouponsTable({
@@ -22,6 +24,8 @@ export function CouponsTable({
   coupons,
   onEdit,
   onToggle,
+  onSyncDodo,
+  isSyncingDodo,
 }: CouponsTableProps) {
   return (
     <div className="rounded-lg border">
@@ -83,7 +87,11 @@ export function CouponsTable({
                 </TableCell>
                 <TableCell>
                   <div className="flex gap-2">
-                    <Button size="sm" variant="outline" onClick={() => onEdit(coupon)}>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => onEdit(coupon)}
+                    >
                       Edit
                     </Button>
                     <Button
@@ -93,6 +101,16 @@ export function CouponsTable({
                     >
                       {coupon.isActive ? "Disable" : "Enable"}
                     </Button>
+                    {coupon.dodoSyncStatus === "failed" ? (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => onSyncDodo(coupon)}
+                        disabled={isSyncingDodo}
+                      >
+                        Sync Dodo
+                      </Button>
+                    ) : null}
                   </div>
                 </TableCell>
               </TableRow>

@@ -14,18 +14,10 @@ PORT=3003
 JWT_SECRET=replace-with-long-random-secret
 RESOURCE_CREDENTIALS_SECRET=replace-with-long-random-secret
 
-AUTH_COOKIE_NAME=truerdp_session
-AUTH_COOKIE_DOMAIN=.truerdp.com
-AUTH_COOKIE_SECURE=true
-AUTH_COOKIE_SAME_SITE=lax
-AUTH_COOKIE_MAX_AGE=604800
-
 CORS_ALLOWED_ORIGINS=https://truerdp.com,https://dashboard.truerdp.com,https://admin.truerdp.com
 WEB_BASE_URL=https://truerdp.com
 DASHBOARD_BASE_URL=https://dashboard.truerdp.com
 BACKEND_BASE_URL=https://api.truerdp.com
-
-PASSWORD_RESET_EXPOSE_LINK=false
 
 RESEND_API_KEY=
 RESEND_FROM_EMAIL=TrueRDP <support@YOUR_DOMAIN>
@@ -38,7 +30,6 @@ DODO_PAYMENTS_API_KEY=
 DODO_PAYMENTS_WEBHOOK_KEY=
 DODO_DEFAULT_CURRENCY=USD
 DODO_TAX_CATEGORY=
-DODO_PRODUCT_MAP=
 
 COINGATE_ENVIRONMENT=sandbox
 COINGATE_API_TOKEN=
@@ -54,8 +45,6 @@ Backend notes:
 
 - Use the Neon pooled connection string for `DATABASE_URL` when available.
 - Keep `?sslmode=require` in the Neon URL.
-- Use `AUTH_COOKIE_DOMAIN=.truerdp.com` after `api.truerdp.com`,
-  `truerdp.com`, `dashboard.truerdp.com`, and `admin.truerdp.com` are all live.
 - `CORS_ALLOWED_ORIGINS` must contain exact frontend origins, comma-separated,
   with `https://` and no trailing path.
 - Set Dodo, CoinGate, and Resend values before enabling those flows in

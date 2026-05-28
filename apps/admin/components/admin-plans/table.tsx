@@ -25,7 +25,10 @@ import {
 } from "@workspace/ui/components/tooltip"
 
 import type { Plan } from "@/hooks/use-plans"
-import { formatPrice, getDefaultPricingOption } from "@/components/plans-page-parts"
+import {
+  formatPrice,
+  getDefaultPricingOption,
+} from "@/components/plans-page-parts"
 
 type AdminPlansTableProps = {
   plans: Plan[]
@@ -34,6 +37,8 @@ type AdminPlansTableProps = {
   onToggleFeatured: (planId: number, isFeatured: boolean) => void
   onActivate: (planId: number) => void
   onDeactivate: (planId: number) => void
+  isSyncingDodo: (planId: number) => boolean
+  onSyncDodo: (planId: number) => void
 }
 
 export function AdminPlansTable({
@@ -43,6 +48,8 @@ export function AdminPlansTable({
   onToggleFeatured,
   onActivate,
   onDeactivate,
+  isSyncingDodo,
+  onSyncDodo,
 }: AdminPlansTableProps) {
   return (
     <div className="rounded-lg border">
@@ -69,7 +76,9 @@ export function AdminPlansTable({
                   >
                     {plan.name}
                   </Link>
-                  <span className="text-xs text-muted-foreground">ID #{plan.id}</span>
+                  <span className="text-xs text-muted-foreground">
+                    ID #{plan.id}
+                  </span>
                 </div>
               </TableCell>
               <TableCell>
@@ -111,24 +120,38 @@ export function AdminPlansTable({
                 <PlanPricingPopover plan={plan} />
               </TableCell>
               <TableCell>
-                {plan.isActive ? (
-                  <Button
-                    size="sm"
-                    variant="destructive"
-                    onClick={() => onDeactivate(plan.id)}
-                  >
-                    Deactivate
-                  </Button>
-                ) : (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => onActivate(plan.id)}
-                    disabled={isTogglingStatus(plan.id)}
-                  >
-                    Activate
-                  </Button>
-                )}
+                <div className="flex flex-wrap gap-2">
+                  {plan.pricingOptions.some(
+                    (pricing) => pricing.dodoSyncStatus === "failed"
+                  ) ? (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => onSyncDodo(plan.id)}
+                      disabled={isSyncingDodo(plan.id)}
+                    >
+                      Sync Dodo
+                    </Button>
+                  ) : null}
+                  {plan.isActive ? (
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      onClick={() => onDeactivate(plan.id)}
+                    >
+                      Deactivate
+                    </Button>
+                  ) : (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => onActivate(plan.id)}
+                      disabled={isTogglingStatus(plan.id)}
+                    >
+                      Activate
+                    </Button>
+                  )}
+                </div>
               </TableCell>
             </TableRow>
           ))}
@@ -179,7 +202,9 @@ function PlanPricingPopover({ plan }: { plan: Plan }) {
               className="flex items-center justify-between gap-3 rounded-xl border bg-muted/20 px-3 py-2"
             >
               <div className="flex flex-col">
-                <span className="text-sm font-medium">{pricing.durationDays} days</span>
+                <span className="text-sm font-medium">
+                  {pricing.durationDays} days
+                </span>
                 <span className="text-xs text-muted-foreground">
                   {pricing.isActive ? "Active" : "Inactive"}
                 </span>

@@ -66,6 +66,11 @@ const navMain = [
     icon: <HugeiconsIcon icon={Audit01Icon} strokeWidth={2} />,
   },
   {
+    title: "Webhooks",
+    url: adminPaths.webhookEvents,
+    icon: <HugeiconsIcon icon={CreditCardIcon} strokeWidth={2} />,
+  },
+  {
     title: "Coupons",
     url: adminPaths.coupons,
     icon: <HugeiconsIcon icon={CreditCardIcon} strokeWidth={2} />,
@@ -137,6 +142,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               (item.url === adminPaths.content && segments[0] === "content") ||
               (item.url === adminPaths.auditLogs &&
                 segments[0] === "audit-logs") ||
+              (item.url === adminPaths.webhookEvents &&
+                segments[0] === "webhook-events") ||
               (item.url === adminPaths.coupons && segments[0] === "coupons") ||
               (item.url === adminPaths.support && segments[0] === "support") ||
               (item.url === adminPaths.invoices &&

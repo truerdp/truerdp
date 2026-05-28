@@ -11,7 +11,6 @@ import {
 } from "@hugeicons/core-free-icons"
 
 import { webPaths } from "@/lib/paths"
-import ThemeToggle from "@/components/theme-toggle"
 import { Button } from "@workspace/ui/components/button"
 import { Accordion } from "@workspace/ui/components/accordion"
 import {
@@ -116,8 +115,6 @@ export function MobileNavSheet({
               <p className="text-xs font-semibold tracking-[0.18em] text-muted-foreground uppercase">
                 Account
               </p>
-
-              {/* <ThemeToggle /> */}
 
               {!isAuthenticated ? (
                 <div className="grid grid-cols-1 gap-3">

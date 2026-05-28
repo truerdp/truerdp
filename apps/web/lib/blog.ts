@@ -6,12 +6,7 @@ import {
   fallbackBlogSettings,
   postProjection,
 } from "@/lib/blog-queries"
-import {
-  mapPost,
-  mapPostSummary,
-  portableTextToPlainText,
-  toImage,
-} from "@/lib/blog-mappers"
+import { mapPost, mapPostSummary, toImage } from "@/lib/blog-mappers"
 import type {
   BlogPostDocument,
   BlogPostSummary,
@@ -167,10 +162,12 @@ export async function getRelatedBlogPosts(input: {
     tags: ["sanity", "blog", "blog:post"],
   })
 
-  return (data as BlogPostDocument[] | null | undefined)
-    ?.map((document) => mapPostSummary(document))
-    .filter((entry): entry is BlogPostSummary => Boolean(entry))
-    .slice(0, limit) ?? []
+  return (
+    (data as BlogPostDocument[] | null | undefined)
+      ?.map((document) => mapPostSummary(document))
+      .filter((entry): entry is BlogPostSummary => Boolean(entry))
+      .slice(0, limit) ?? []
+  )
 }
 
 export {
@@ -179,8 +176,10 @@ export {
   listBlogCategories,
   listBlogTags,
 } from "@/lib/blog-taxonomies"
-export { estimateReadingTimeMinutes, portableTextToPlainText }
-from "@/lib/blog-mappers"
+export {
+  estimateReadingTimeMinutes,
+  portableTextToPlainText,
+} from "@/lib/blog-mappers"
 export type {
   BlogAuthor,
   BlogCategory,

@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import { Button } from "@workspace/ui/components/button"
 import {
   Dialog,
@@ -41,6 +41,13 @@ export function SuspendInstanceDialog({
   const mutation = mode === "suspend" ? suspendInstance : unsuspendInstance
   const open = controlledOpen ?? uncontrolledOpen
   const setOpen = onOpenChange ?? setUncontrolledOpen
+  const handleOpenChange = (nextOpen: boolean) => {
+    if (!nextOpen) {
+      setReason("")
+    }
+
+    setOpen(nextOpen)
+  }
   const isPending =
     mutation.isPending && mutation.variables?.instanceId === instanceId
   const isSuspend = mode === "suspend"
@@ -48,12 +55,6 @@ export function SuspendInstanceDialog({
     reason.trim().length > 0 && reason.trim().length < 3
       ? "Reason must be at least 3 characters."
       : null
-
-  useEffect(() => {
-    if (!open) {
-      setReason("")
-    }
-  }, [open])
 
   async function submit() {
     if (error || reason.trim().length === 0) {
@@ -64,12 +65,11 @@ export function SuspendInstanceDialog({
       instanceId,
       reason: reason.trim(),
     })
-    setReason("")
-    setOpen(false)
+    handleOpenChange(false)
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       {trigger === "button" ? (
         <DialogTrigger
           render={

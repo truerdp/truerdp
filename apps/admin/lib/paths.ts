@@ -8,6 +8,7 @@ export const adminPaths = {
   plans: "/plans" as Route,
   content: "/content" as Route,
   auditLogs: "/audit-logs" as Route,
+  webhookEvents: "/webhook-events" as Route,
   coupons: "/coupons" as Route,
   support: "/support" as Route,
   supportTicket: (ticketId: number) => `/support/${ticketId}` as Route,

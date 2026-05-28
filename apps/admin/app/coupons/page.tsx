@@ -54,6 +54,20 @@ export default function CouponsPage() {
     },
   })
 
+  const syncCouponDodo = useMutation({
+    mutationFn: (couponId: number) =>
+      clientApi(`/admin/coupons/${couponId}/sync-dodo`, {
+        method: "POST",
+      }),
+    onSuccess: async () => {
+      toast.success("Dodo discount sync requested")
+      await queryClient.invalidateQueries({ queryKey: queryKeys.coupons() })
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Unable to sync coupon")
+    },
+  })
+
   const { expiryDate, expiryTime } = getCouponExpiryState(form.expiresAt)
 
   function editCoupon(coupon: Coupon) {
@@ -176,6 +190,8 @@ export default function CouponsPage() {
             isActive: !coupon.isActive,
           })
         }
+        onSyncDodo={(coupon) => syncCouponDodo.mutate(coupon.id)}
+        isSyncingDodo={syncCouponDodo.isPending}
       />
     </section>
   )

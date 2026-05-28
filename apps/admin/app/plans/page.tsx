@@ -5,8 +5,8 @@ import { usePlans } from "@/hooks/use-plans"
 import {
   useTogglePlanFeatured,
   useTogglePlanStatus,
+  useSyncPlanDodoProducts,
 } from "@/hooks/use-manage-plans"
-import { Button } from "@workspace/ui/components/button"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -17,14 +17,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@workspace/ui/components/alert-dialog"
-import {
-  Alert02Icon,
-} from "@hugeicons/core-free-icons"
+import { Alert02Icon } from "@hugeicons/core-free-icons"
 import { HugeiconsIcon } from "@hugeicons/react"
-import {
-  PlansEmpty,
-  PlansSkeleton,
-} from "@/components/plans-page-parts"
+import { PlansEmpty, PlansSkeleton } from "@/components/plans-page-parts"
 import {
   AdminPlansControls,
   AdminPlansHeader,
@@ -37,6 +32,7 @@ export default function AdminPlansPage() {
   const { data, isLoading, isError, error } = usePlans()
   const togglePlanStatus = useTogglePlanStatus()
   const togglePlanFeatured = useTogglePlanFeatured()
+  const syncPlanDodoProducts = useSyncPlanDodoProducts()
 
   const [searchValue, setSearchValue] = useState("")
   const [statusFilter, setStatusFilter] = useState<PlanStatusFilter>("all")
@@ -46,9 +42,8 @@ export default function AdminPlansPage() {
     number | null
   >(null)
 
-  const plans = data ?? []
-
   const filteredPlans = useMemo(() => {
+    const plans = data ?? []
     const normalizedQuery = searchValue.trim().toLowerCase()
 
     const matches = plans.filter((plan) => {
@@ -83,7 +78,7 @@ export default function AdminPlansPage() {
 
       return a.name.localeCompare(b.name)
     })
-  }, [plans, searchValue, sortBy, statusFilter])
+  }, [data, searchValue, sortBy, statusFilter])
 
   const handleDeactivatePlan = (planId: number) => {
     setSelectedDeactivatePlanId(planId)
@@ -157,6 +152,11 @@ export default function AdminPlansPage() {
             })
           }
           onDeactivate={handleDeactivatePlan}
+          isSyncingDodo={(planId) =>
+            syncPlanDodoProducts.isPending &&
+            syncPlanDodoProducts.variables?.planId === planId
+          }
+          onSyncDodo={(planId) => syncPlanDodoProducts.mutate({ planId })}
         />
       )}
 
