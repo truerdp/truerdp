@@ -6,8 +6,33 @@ Truerdp is a `pnpm` + Turborepo monorepo with:
 - one Fastify backend: `backend`
 - shared packages for UI, ESLint config, and TypeScript config
 
-This root README focuses on the current working development setup.
-Detailed product, domain, lifecycle, backend, and operations notes are maintained in the repo markdown files.
+This root README focuses on the current working development setup. Detailed
+product, domain, lifecycle, backend, and operations notes are maintained in the
+repo markdown files.
+
+## Default Workflow
+
+Use these commands for the normal path:
+
+```bash
+pnpm dev
+pnpm run dev:stop
+pnpm run doctor
+pnpm run prod:backend
+pnpm run prod:backend:refresh
+```
+
+- `pnpm dev` starts local Postgres/backend in Docker and all frontend apps
+  locally. It also starts an ngrok tunnel for the backend on port `3003` when
+  ngrok is installed. If Infisical is configured in the shell, it injects
+  secrets first; otherwise it uses local `.env` files and creates
+  `apps/backend/.env` from the example when missing.
+- `pnpm run prod:backend` renders backend production secrets from Infisical and
+  starts/rebuilds the production backend container.
+- `pnpm run prod:backend:refresh` re-renders backend production secrets and
+  recreates the backend container without rebuilding.
+- Pushes to `main` deploy the backend through GitHub Actions and use the same
+  `pnpm run prod:backend` command on the DigitalOcean host.
 
 ## Current Status
 
@@ -112,7 +137,7 @@ PowerShell:
 Copy-Item apps/backend/.env.example apps/backend/.env
 ```
 
-4. Start all workspaces:
+4. Start the local development stack:
 
 ```bash
 pnpm dev
@@ -120,22 +145,36 @@ pnpm dev
 
 ## Daily Startup
 
-After rebooting your machine, use one of these startup flows:
-
-### DB + backend in Docker, frontend locally
+After rebooting your machine, start everything with:
 
 ```bash
-pnpm run dev:docker
+pnpm dev
 ```
 
-Equivalent expanded form:
+That command uses Infisical when available and falls back to local `.env` files
+when it is not. It also starts `ngrok http 3003` automatically when ngrok is
+available. To skip the tunnel for one run:
+
+```bash
+TRUERDP_SKIP_TUNNEL=true pnpm dev
+```
+
+PowerShell:
+
+```powershell
+$env:TRUERDP_SKIP_TUNNEL = "true"; pnpm dev
+```
+
+Equivalent expanded fallback form:
 
 ```bash
 docker compose -f docker-compose.yml up -d --force-recreate backend db
 pnpm run dev:frontend
 ```
 
-`pnpm dev` starts backend too, so avoid running it together with `docker compose -f docker-compose.yml up -d` unless you intentionally stop one backend instance.
+Avoid running raw `turbo dev` with
+`docker compose -f docker-compose.yml up -d backend` unless you intentionally
+stop one backend instance.
 
 If you change backend routes or server-only code and want to refresh only the
 Docker backend without touching the frontends, use:
@@ -144,9 +183,13 @@ Docker backend without touching the frontends, use:
 pnpm run dev:backend:restart
 ```
 
-### VS Code split-terminal startup
+### VS Code Startup
 
-If you want Docker and frontend dev in separate terminals with one action, run the VS Code task:
+The simplest VS Code task is:
+
+- `dev: app`
+
+If you want Docker and frontend dev in separate terminals with one action, use:
 
 - `dev: docker + frontend (split terminals)`
 
@@ -182,30 +225,35 @@ BACKEND_BIND_HOST=127.0.0.1
 3. Render backend secrets from Infisical and start the backend:
 
 ```bash
-pnpm run docker:prod:up:backend:infisical
+pnpm run prod:backend
 ```
 
 If running Postgres inside Compose instead of Neon, set real `POSTGRES_*`
-values and start the full stack:
+values and start the full stack directly:
 
 ```bash
-pnpm run docker:prod:up
+docker compose -f docker-compose.prod.yml up -d --build
 ```
 
 4. Stop the stack:
 
 ```bash
-pnpm run docker:prod:down
+pnpm run prod:down
 ```
 
 Notes:
 
 - The production stack builds with `apps/backend/Dockerfile.prod`.
 - It does not use bind mounts and runs `node dist/index.js`.
-- For external managed databases (Neon/RDS/etc), set `DATABASE_URL` in Infisical
-  and use `pnpm run docker:prod:up:backend:infisical`.
-- Backend binds to `127.0.0.1:3003` by default in production compose; front it with Caddy and Cloudflare Full (strict) TLS as described in `deploy/docker-prod.md`.
-- Pushes to `main` that touch backend-related files deploy through GitHub Actions after typecheck, build, and migrations. Required secrets are documented in `deploy/docker-prod.md`.
+- For external managed databases (Neon/RDS/etc), set `DATABASE_URL` in
+  Infisical and use `pnpm run prod:backend`.
+- Backend binds to `127.0.0.1:3003` by default in production compose; front it
+  with Caddy and Cloudflare Full (strict) TLS as described in
+  `deploy/docker-prod.md`.
+- Pushes to `main` that touch backend-related files deploy through GitHub
+  Actions after typecheck, build, migrations, and remote
+  `pnpm run prod:backend`. Required secrets are documented in
+  `deploy/docker-prod.md`.
 
 Local URLs:
 
@@ -300,15 +348,14 @@ Root commands:
 ```bash
 pnpm dev
 pnpm run dev:frontend
-pnpm run dev:docker
 pnpm run dev:backend:restart
 pnpm run dev:stop
-pnpm run docker:local:up
-pnpm run docker:local:down
-pnpm run docker:prod:up
-pnpm run docker:prod:up:backend
-pnpm run docker:prod:down
-pnpm run docker:prod:logs
+pnpm run doctor
+pnpm run prod:backend
+pnpm run prod:backend:refresh
+pnpm run prod:down
+pnpm run prod:logs
+pnpm run tunnel:backend
 pnpm build
 pnpm lint
 pnpm format
@@ -382,16 +429,14 @@ Seeded local credentials:
 To wipe the Neon database configured for production:
 
 ```bash
-pnpm db:reset:neon
+pnpm --filter backend db:reset -- --yes
 ```
 
 If you want to preview the tables first, run:
 
 ```bash
-pnpm --filter backend db:reset:neon -- --dry-run
+pnpm --filter backend db:reset -- --dry-run
 ```
 
 This truncates every `public` table except `__drizzle_migrations` and resets
 identities with `CASCADE`.
-
-

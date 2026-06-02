@@ -155,21 +155,21 @@ workflow.
 Start only the backend service with the Infisical-rendered env file:
 
 ```bash
-BACKEND_ENV_FILE=apps/backend/.env.production.infisical \
-docker compose -f docker-compose.prod.yml up -d --build --no-deps backend
+pnpm run prod:backend
 ```
 
-You can also use the package script:
+The expanded form is:
 
 ```bash
-pnpm run docker:prod:up:backend:infisical
+pnpm run infisical:render:backend
+BACKEND_ENV_FILE=apps/backend/.env.production.infisical \
+docker compose -f docker-compose.prod.yml up -d --build --no-deps backend
 ```
 
 Do not use local development commands on the VPS production deployment:
 
 ```bash
 pnpm run dev:backend:restart
-pnpm run dev:docker
 pnpm dev
 ```
 
@@ -306,9 +306,7 @@ For env-only changes:
 
 ```bash
 cd /opt/truerdp
-pnpm run infisical:render:backend
-BACKEND_ENV_FILE=apps/backend/.env.production.infisical \
-docker compose -f docker-compose.prod.yml up -d --force-recreate --no-deps backend
+pnpm run prod:backend:refresh
 ```
 
 Restart without rebuilding:
@@ -336,7 +334,7 @@ The deploy workflow does this in order:
 3. Runs Drizzle migrations against Neon.
 4. SSHes into the VPS.
 5. Pulls `main`.
-6. Rebuilds and restarts the backend container.
+6. Runs `pnpm run prod:backend` on the VPS.
 7. Checks `https://api.truerdp.com/`.
 
 Required GitHub environment or repository secrets:

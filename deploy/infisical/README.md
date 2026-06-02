@@ -76,15 +76,13 @@ pnpm run infisical:render:backend
 Start production with the Infisical-rendered env file:
 
 ```bash
-BACKEND_ENV_FILE=apps/backend/.env.production.infisical \
-docker compose -f docker-compose.prod.yml up -d --build --no-deps backend
+pnpm run prod:backend
 ```
 
 For secret-only changes, render again and restart the backend:
 
 ```bash
-pnpm run infisical:render:backend
-docker compose -f docker-compose.prod.yml up -d --force-recreate --no-deps backend
+pnpm run prod:backend:refresh
 ```
 
 Do not commit generated env files or machine identity credentials.

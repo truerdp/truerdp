@@ -105,7 +105,7 @@ jobs:
             git fetch origin main
             git checkout main
             git pull --ff-only origin main
-            docker compose -f docker-compose.prod.yml up -d --build --no-deps backend
+            pnpm run prod:backend
             docker image prune -f
           SSH
 

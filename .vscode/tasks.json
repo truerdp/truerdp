@@ -2,6 +2,17 @@
   "version": "2.0.0",
   "tasks": [
     {
+      "label": "dev: app",
+      "type": "shell",
+      "command": "pnpm dev",
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "group": "dev"
+      },
+      "problemMatcher": []
+    },
+    {
       "label": "docker: up detached",
       "type": "shell",
       "command": "docker compose -f docker-compose.yml up -d db backend",
@@ -26,10 +37,7 @@
     {
       "label": "dev: docker + frontend (split terminals)",
       "dependsOrder": "sequence",
-      "dependsOn": [
-        "docker: up detached",
-        "dev: frontend"
-      ],
+      "dependsOn": ["docker: up detached", "dev: frontend"],
       "problemMatcher": []
     }
   ]

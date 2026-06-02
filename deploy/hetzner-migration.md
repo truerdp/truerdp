@@ -56,7 +56,7 @@ curl https://api.truerdp.com/
 Expected:
 
 ```json
-{"status":"ok","message":"Truerdp API is running"}
+{ "status": "ok", "message": "Truerdp API is running" }
 ```
 
 ## 3) Create the Hetzner VPS
@@ -140,28 +140,20 @@ BACKEND_BIND_HOST=127.0.0.1
 BACKEND_PORT=3003
 ```
 
-Create the backend env file:
-
-```bash
-nano apps/backend/.env.production.local
-```
-
-Copy the production backend env values from the DigitalOcean server. Keep the
-same secrets unless you intentionally rotate them:
+After the Infisical agent is configured, use this instead:
 
 ```env
-NODE_ENV=production
-PORT=3003
-DATABASE_URL=postgresql://USER:PASSWORD@HOST.neon.tech/DBNAME?sslmode=require
-CORS_ALLOWED_ORIGINS=https://truerdp.com,https://dashboard.truerdp.com,https://admin.truerdp.com
-JWT_SECRET=...
-COOKIE_SECRET=...
+BACKEND_ENV_FILE=apps/backend/.env.production.infisical
 ```
+
+Configure Infisical on the new VPS using `deploy/infisical/README.md`. Keep the
+same Infisical project/folders and add a machine identity credential for the new
+host.
 
 Start the backend:
 
 ```bash
-docker compose -f docker-compose.prod.yml up -d --build --no-deps backend
+pnpm run prod:backend
 ```
 
 Verify locally on the Hetzner VPS:
@@ -285,7 +277,7 @@ For backend code changes:
 ssh root@<hetzner-ip>
 cd /opt/truerdp
 git pull
-docker compose -f docker-compose.prod.yml up -d --build --no-deps backend
+pnpm run prod:backend
 docker compose -f docker-compose.prod.yml logs -f backend
 ```
 
@@ -293,7 +285,7 @@ For env-only changes:
 
 ```bash
 cd /opt/truerdp
-docker compose -f docker-compose.prod.yml up -d --force-recreate --no-deps backend
+pnpm run prod:backend:refresh
 ```
 
 For restart only:
