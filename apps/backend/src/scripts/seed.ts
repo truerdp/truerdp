@@ -3,7 +3,12 @@ import { and, eq, notInArray } from "drizzle-orm"
 import { closeDbConnection, db } from "../db.js"
 import { planPricing, plans } from "../schema.js"
 import { DEFAULT_PLANS, type SeedPlan } from "./seed-data.js"
-import { requireSeedRecord, upsertServer, upsertUser } from "./seed-core.js"
+import {
+  requireSeedRecord,
+  upsertServer,
+  upsertUser,
+  ensureAuthAccount,
+} from "./seed-core.js"
 
 async function upsertPlan(input: SeedPlan) {
   const existingPlan = await db
@@ -141,11 +146,27 @@ async function seed() {
     role: "admin",
   })
 
+  // create a loginable Better Auth account with fixed password for dev
+  await ensureAuthAccount({
+    userId: adminUser.id,
+    email: adminUser.email,
+    firstName: adminUser.firstName,
+    lastName: adminUser.lastName,
+  })
+
   const normalUser = await upsertUser({
     email: "user@truerdp.local",
     firstName: "Test",
     lastName: "User",
     role: "user",
+  })
+
+  // create a loginable Better Auth account for the normal user
+  await ensureAuthAccount({
+    userId: normalUser.id,
+    email: normalUser.email,
+    firstName: normalUser.firstName,
+    lastName: normalUser.lastName,
   })
 
   const seededPlans = []

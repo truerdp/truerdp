@@ -14,7 +14,6 @@ import { planRoutes } from "./routes/plan.js"
 import { webhookRoutes } from "./routes/webhook.js"
 import { orderRoutes } from "./routes/order.js"
 import { supportRoutes } from "./routes/support.js"
-import { contentRoutes } from "./routes/content.js"
 import fastifyRawBody from "fastify-raw-body"
 import { startExpiryReminderScheduler } from "./services/billing/reminder-scheduler.js"
 
@@ -63,7 +62,6 @@ server.register(swagger, {
       { name: "Transactions", description: "Payment transactions & invoices" },
       { name: "Support", description: "Support tickets" },
       { name: "Admin", description: "Admin-only operations" },
-      { name: "Content", description: "CMS pages & email templates" },
       { name: "Webhooks", description: "Payment provider webhooks" },
     ],
   },
@@ -150,7 +148,6 @@ server.register(transactionRoutes)
 server.register(adminRoutes)
 server.register(instanceRoutes)
 server.register(supportRoutes)
-server.register(contentRoutes)
 server.register(webhookRoutes)
 
 server.get(
@@ -194,3 +191,4 @@ const start = async () => {
 }
 
 start()
+

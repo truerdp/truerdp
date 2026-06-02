@@ -1,6 +1,7 @@
 import Link from "next/link"
 import { HugeiconsIcon } from "@hugeicons/react"
 import {
+  DashboardSquare01Icon,
   Home03Icon,
   LoginSquare02Icon,
   Logout01Icon,
@@ -20,7 +21,11 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@workspace/ui/components/sheet"
-import { MobileSubMenuLink, renderMobileMenuItem } from "./menu-items"
+import {
+  isMenuItemActive,
+  MobileSubMenuLink,
+  renderMobileMenuItem,
+} from "./menu-items"
 import type { MenuItem } from "./types"
 
 const mobileFeaturedLinks: MenuItem[] = [
@@ -41,6 +46,7 @@ const mobileFeaturedLinks: MenuItem[] = [
 interface MobileNavSheetProps {
   brandName: string
   menu: MenuItem[]
+  pathname: string
   mobileMenuOpen: boolean
   setMobileMenuOpen: (open: boolean) => void
   isAuthenticated: boolean
@@ -51,12 +57,16 @@ interface MobileNavSheetProps {
 export function MobileNavSheet({
   brandName,
   menu,
+  pathname,
   mobileMenuOpen,
   setMobileMenuOpen,
   isAuthenticated,
   isLoggingOut,
   onLogout,
 }: MobileNavSheetProps) {
+  const dashboardUrl =
+    process.env.NEXT_PUBLIC_DASHBOARD_URL ?? "http://localhost:3001"
+
   return (
     <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
       <SheetTrigger render={<Button variant="outline" size="icon" />}>
@@ -100,13 +110,18 @@ export function MobileNavSheet({
                     key={item.title}
                     item={item}
                     onClick={() => setMobileMenuOpen(false)}
+                    isActive={isMenuItemActive(item, pathname)}
                   />
                 ))}
               </div>
 
               <Accordion className="divide-y divide-border/60 overflow-visible rounded-none border-0 bg-transparent">
                 {menu.map((item) =>
-                  renderMobileMenuItem(item, () => setMobileMenuOpen(false))
+                  renderMobileMenuItem(
+                    item,
+                    () => setMobileMenuOpen(false),
+                    pathname
+                  )
                 )}
               </Accordion>
             </section>
@@ -146,19 +161,36 @@ export function MobileNavSheet({
                   </Link>
                 </div>
               ) : (
-                <Button
-                  variant="secondary"
-                  className="w-full"
-                  onClick={onLogout}
-                  disabled={isLoggingOut}
-                >
-                  <HugeiconsIcon
-                    icon={Logout01Icon}
-                    strokeWidth={2}
-                    data-icon="inline-start"
-                  />
-                  Logout
-                </Button>
+                <div className="grid grid-cols-1 gap-3">
+                  <a
+                    href={dashboardUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    <Button variant="outline" className="w-full">
+                      <HugeiconsIcon
+                        icon={DashboardSquare01Icon}
+                        strokeWidth={2}
+                        data-icon="inline-start"
+                      />
+                      Dashboard
+                    </Button>
+                  </a>
+                  <Button
+                    variant="secondary"
+                    className="w-full"
+                    onClick={onLogout}
+                    disabled={isLoggingOut}
+                  >
+                    <HugeiconsIcon
+                      icon={Logout01Icon}
+                      strokeWidth={2}
+                      data-icon="inline-start"
+                    />
+                    Logout
+                  </Button>
+                </div>
               )}
             </section>
           </div>

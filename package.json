@@ -5,8 +5,8 @@
   "scripts": {
     "build": "turbo build",
     "dev": "turbo dev",
-    "dev:frontend": "turbo dev --filter=web --filter=dashboard --filter=admin",
-    "prod:local:build": "turbo build --filter=backend --filter=web --filter=dashboard --filter=admin",
+    "dev:frontend": "turbo dev --filter=web --filter=dashboard --filter=admin --filter=cms",
+    "prod:local:build": "turbo build --filter=backend --filter=web --filter=dashboard --filter=admin --filter=cms",
     "prod:local:start:backend": "pnpm --filter backend start:prod-local",
     "prod:local:start:web": "pnpm --filter web start -- -p 3000",
     "prod:local:start:dashboard": "pnpm --filter dashboard start -- -p 3001",
@@ -15,17 +15,22 @@
     "docker:local:down": "docker compose -f docker-compose.yml down",
     "docker:prod:up": "docker compose -f docker-compose.prod.yml up -d --build",
     "docker:prod:up:backend": "docker compose -f docker-compose.prod.yml up -d --build --no-deps backend",
+    "docker:prod:up:backend:infisical": "pnpm run infisical:render:backend && cross-env BACKEND_ENV_FILE=apps/backend/.env.production.infisical docker compose -f docker-compose.prod.yml up -d --build --no-deps backend",
     "docker:prod:down": "docker compose -f docker-compose.prod.yml down",
     "docker:prod:logs": "docker compose -f docker-compose.prod.yml logs -f backend db",
     "dev:docker": "docker compose -f docker-compose.yml up -d --build backend db && pnpm run dev:frontend",
+    "dev:infisical": "infisical run --path=/shared --path=/backend --path=/web --path=/dashboard --path=/admin --path=/cms -- pnpm run dev:docker",
     "dev:backend:restart": "docker compose -f docker-compose.yml up -d --build backend",
-    "dev:stop": "docker compose -f docker-compose.yml down && kill-port 3000 3001 3002 3003 || true",
+    "dev:stop": "docker compose -f docker-compose.yml down && kill-port 3000 3001 3002 3003 3004 || true",
+    "infisical:render:backend": "infisical agent --config deploy/infisical/runtime/backend-agent.yaml",
     "ngrok:backend": "ngrok http 3003",
     "db:reset": "pnpm --filter backend db:reset -- --yes",
     "refactor:audit": "node scripts/refactor-audit.mjs",
     "lint": "turbo lint",
     "format": "turbo format",
-    "typecheck": "turbo typecheck"
+    "typecheck": "turbo typecheck",
+    "dev:cms": "pnpm --filter cms dev",
+    "prod:local:start:cms": "pnpm --filter cms start"
   },
   "devDependencies": {
     "@workspace/eslint-config": "workspace:*",
@@ -34,6 +39,7 @@
     "prettier-plugin-tailwindcss": "^0.7.2",
     "turbo": "^2.8.8",
     "typescript": "5.9.3",
+    "cross-env": "^10.1.0",
     "kill-port": "^2.0.1"
   },
   "packageManager": "pnpm@10.29.3",

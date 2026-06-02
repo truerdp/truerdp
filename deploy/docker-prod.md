@@ -119,48 +119,50 @@ BACKEND_BIND_HOST=127.0.0.1
 BACKEND_PORT=3003
 ```
 
+Use `apps/backend/.env.production.infisical` for `BACKEND_ENV_FILE` after the
+Infisical render step succeeds. The `.env.production.local` value is only the
+manual break-glass fallback.
+
 Important: `DATABASE_URL` must be a real Postgres URL. If the container logs show
 `input: 'YOUR_NEON_DATABASE_URL'`, a placeholder value is still being loaded.
 
-## 5) Backend env
+## 5) Backend env with Infisical
 
-Create the backend runtime env file:
+Production backend secrets should come from Infisical. Follow
+`deploy/infisical/README.md` to create the Infisical project, add the
+DigitalOcean machine identity, and copy
+`deploy/infisical/backend-agent.yaml.example` to the ignored runtime config.
+
+Render the backend runtime env file:
 
 ```bash
-nano apps/backend/.env.production.local
+pnpm run infisical:render:backend
 ```
 
-Set production values:
+The agent writes:
 
-```env
-NODE_ENV=production
-PORT=3003
-DATABASE_URL=postgresql://USER:PASSWORD@HOST.neon.tech/DBNAME?sslmode=require
-
-CORS_ALLOWED_ORIGINS=https://truerdp.com,https://dashboard.truerdp.com,https://admin.truerdp.com
-
-JWT_SECRET=...
-COOKIE_SECRET=...
-
-# Payment, email, CMS, and webhook provider secrets go here.
+```txt
+apps/backend/.env.production.infisical
 ```
 
-Use Neon's pooled connection string for normal backend runtime when available.
-Use a direct Neon connection string for migrations if the pooled URL causes
-migration issues.
+If Infisical is unavailable during an emergency, you can still set
+`BACKEND_ENV_FILE=apps/backend/.env.production.local` and create that ignored
+file manually. Treat that as a temporary break-glass path, not the normal
+workflow.
 
 ## 6) Build and start the backend
 
-Start only the backend service:
+Start only the backend service with the Infisical-rendered env file:
 
 ```bash
+BACKEND_ENV_FILE=apps/backend/.env.production.infisical \
 docker compose -f docker-compose.prod.yml up -d --build --no-deps backend
 ```
 
 You can also use the package script:
 
 ```bash
-pnpm run docker:prod:up:backend
+pnpm run docker:prod:up:backend:infisical
 ```
 
 Do not use local development commands on the VPS production deployment:
@@ -191,7 +193,7 @@ curl http://127.0.0.1:3003/
 Expected response:
 
 ```json
-{"status":"ok","message":"Truerdp API is running"}
+{ "status": "ok", "message": "Truerdp API is running" }
 ```
 
 ## 8) Caddy reverse proxy
@@ -304,6 +306,8 @@ For env-only changes:
 
 ```bash
 cd /opt/truerdp
+pnpm run infisical:render:backend
+BACKEND_ENV_FILE=apps/backend/.env.production.infisical \
 docker compose -f docker-compose.prod.yml up -d --force-recreate --no-deps backend
 ```
 
@@ -370,8 +374,9 @@ The VPS must already have the repo cloned at:
 
 The deploy command intentionally uses `git pull --ff-only`; if tracked files
 were edited directly on the VPS, the deployment fails instead of overwriting
-those changes. Keep production-only values in `.env` and
-`apps/backend/.env.production.local`, which are untracked.
+those changes. Keep production-only values in Infisical, with only root `.env`,
+the generated `apps/backend/.env.production.infisical`, and optional
+break-glass `apps/backend/.env.production.local` files on the VPS.
 
 The standalone `.github/workflows/migrate.yml` workflow is manual-only and is
 kept for emergency migration runs.
@@ -383,7 +388,8 @@ If Compose says `POSTGRES_PASSWORD is required`, create or fix the root
 `docker-compose.prod.yml`, including the optional local `db` service.
 
 If logs show `Invalid URL` and `input: 'YOUR_NEON_DATABASE_URL'`, replace the
-placeholder in both `.env` and `apps/backend/.env.production.local`.
+placeholder in Infisical and re-run `pnpm run infisical:render:backend`. Also
+check the root `.env` file if it overrides `DATABASE_URL`.
 
 If Docker build fails with `error reading from server: EOF`, check RAM and disk:
 

@@ -1,4 +1,5 @@
-import { Geist, Geist_Mono } from "next/font/google"
+import { Geist, Geist_Mono, Audiowide } from "next/font/google"
+import type { Metadata } from "next"
 import "quill/dist/quill.snow.css"
 
 import "@workspace/ui/globals.css"
@@ -17,6 +18,36 @@ const fontMono = Geist_Mono({
   variable: "--font-mono",
 })
 
+const fontBrand = Audiowide({
+  subsets: ["latin"],
+  variable: "--font-brand",
+  weight: "400",
+})
+
+export const metadata: Metadata = {
+  manifest: "/site.webmanifest",
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "48x48" },
+      { url: "/favicon.svg", type: "image/svg+xml" },
+      { url: "/favicon-96x96.png", sizes: "96x96", type: "image/png" },
+    ],
+    apple: [
+      {
+        url: "/apple-touch-icon.png",
+        sizes: "180x180",
+        type: "image/png",
+      },
+    ],
+    shortcut: ["/favicon.ico"],
+  },
+  appleWebApp: {
+    title: "TrueRDP",
+    capable: true,
+    statusBarStyle: "default",
+  },
+}
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -30,7 +61,8 @@ export default function RootLayout({
         "antialiased",
         fontMono.variable,
         "font-sans",
-        geist.variable
+        geist.variable,
+        fontBrand.variable
       )}
     >
       <body suppressHydrationWarning>

@@ -1,141 +1,61 @@
 import { NextRequest, NextResponse } from "next/server"
 import { revalidatePath, revalidateTag } from "next/cache"
-import { parseBody } from "next-sanity/webhook"
 
-type SanityWebhookBody = {
-  _type?: string
-  slug?: {
-    current?: string
-  }
+type PayloadRevalidateBody = {
+  collection?: string
+  global?: string
+  slug?: string | null
 }
 
-function resolvePathForSlug(input: {
-  slug?: string | null
-  type?: string | null
-}) {
-  const slug = input.slug
-  if (!slug) {
-    return null
-  }
+function isAuthorized(request: NextRequest) {
+  const secret = process.env.CMS_REVALIDATE_SECRET?.trim()
+  const header = request.headers.get("authorization") ?? ""
 
-  if (input.type === "blogPost") {
-    return `/blog/${slug}`
-  }
+  return Boolean(secret && header === `Bearer ${secret}`)
+}
 
-  if (input.type === "blogCategory") {
-    return `/blog/category/${slug}`
-  }
+function resolvePath(input: PayloadRevalidateBody) {
+  const slug = input.slug?.trim()
 
-  if (input.type === "blogTag") {
-    return `/blog/tag/${slug}`
-  }
-
-  if (slug === "homepage") {
-    return "/"
-  }
-
-  if (slug === "faq") {
-    return "/faq"
-  }
-
-  if (slug === "terms") {
-    return "/terms"
-  }
-
-  if (slug === "privacy") {
-    return "/privacy"
-  }
-
-  if (slug === "refund-policy") {
-    return "/refund-policy"
-  }
-
-  if (slug === "contact") {
-    return "/contact"
-  }
+  if (input.global === "home-page") return "/"
+  if (input.global === "faq-page") return "/faq"
+  if (input.collection === "blog-posts" && slug) return `/blog/${slug}`
+  if (input.collection === "blog-categories" && slug) return `/blog/category/${slug}`
+  if (input.collection === "blog-tags" && slug) return `/blog/tag/${slug}`
+  if (input.collection === "legal-pages" && slug) return `/${slug}`
 
   return null
 }
 
 export async function POST(request: NextRequest) {
-  const secret = process.env.SANITY_REVALIDATE_SECRET
-
-  if (!secret) {
-    return NextResponse.json(
-      { error: "SANITY_REVALIDATE_SECRET is not configured" },
-      { status: 500 }
-    )
-  }
-
-  const { isValidSignature, body } = await parseBody<SanityWebhookBody>(
-    request,
-    secret
-  )
-
-  if (!isValidSignature) {
+  if (!isAuthorized(request)) {
     return NextResponse.json({ error: "Invalid signature" }, { status: 401 })
   }
 
-  const typeTag = body?._type
-  const slug = body?.slug?.current
+  const body = (await request.json().catch(() => null)) as PayloadRevalidateBody | null
+  const path = body ? resolvePath(body) : null
 
-  revalidateTag("sanity", "max")
+  revalidateTag("cms", "max")
 
-  if (typeTag) {
-    revalidateTag(typeTag, "max")
+  if (body?.global) {
+    revalidateTag(body.global, "max")
+  }
+  if (body?.collection) {
+    revalidateTag(body.collection, "max")
+  }
+  if (body?.slug) {
+    revalidateTag(`cms:${body.slug}`, "max")
   }
 
-  if (slug) {
-    revalidateTag(`cms:${slug}`, "max")
-  }
-
-  if (typeTag === "blogPost") {
+  if (body?.collection?.startsWith("blog-") || body?.global === "blog-settings") {
     revalidateTag("blog", "max")
-    revalidateTag("blog:post", "max")
-    if (slug) {
-      revalidateTag(`blog:slug:${slug}`, "max")
-    }
     revalidatePath("/blog")
     revalidatePath("/blog/search")
   }
-
-  if (typeTag === "blogCategory") {
-    revalidateTag("blog", "max")
-    revalidateTag("blog:category", "max")
-    if (slug) {
-      revalidateTag(`blog:category:${slug}`, "max")
-    }
-    revalidatePath("/blog")
-    revalidatePath("/blog/search")
-  }
-
-  if (typeTag === "blogTag") {
-    revalidateTag("blog", "max")
-    revalidateTag("blog:tag", "max")
-    if (slug) {
-      revalidateTag(`blog:tag:${slug}`, "max")
-    }
-    revalidatePath("/blog")
-    revalidatePath("/blog/search")
-  }
-
-  if (typeTag === "blogSettings") {
-    revalidateTag("blog", "max")
-    revalidateTag("blog:settings", "max")
-    revalidatePath("/blog")
-    revalidatePath("/blog/search")
-  }
-
-  const path = resolvePathForSlug({ slug: slug ?? null, type: typeTag ?? null })
 
   if (path) {
     revalidatePath(path)
   }
 
-  return NextResponse.json({
-    revalidated: true,
-    path,
-    typeTag: typeTag ?? null,
-    slug: slug ?? null,
-  })
+  return NextResponse.json({ revalidated: true, path, body })
 }

@@ -1,0 +1,9 @@
+{
+  "name": "@workspace/brand-assets",
+  "version": "0.0.1",
+  "private": true,
+  "exports": {
+    "./logo.svg": "./assets/logo.svg",
+    "./logo-full.svg": "./assets/logo-full.svg"
+  }
+}

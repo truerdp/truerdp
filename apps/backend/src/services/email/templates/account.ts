@@ -1,10 +1,27 @@
-import { escapeHtml, getAdminAlertRecipients, sendManagedEmail } from "../core.js"
+import {
+  escapeHtml,
+  getAdminAlertRecipients,
+  sendManagedEmail,
+} from "../core.js"
+
+function assertEmailSent(
+  result: Awaited<ReturnType<typeof sendManagedEmail>>,
+  purpose: string
+) {
+  if (result.sent) {
+    return result
+  }
+
+  throw new Error(
+    `${purpose} email was not sent: ${result.skippedReason ?? "unknown reason"}`
+  )
+}
 
 export async function sendPasswordResetEmail(input: {
   to: string
   resetUrl: string
 }) {
-  return sendManagedEmail({
+  const result = await sendManagedEmail({
     templateKey: "password_reset",
     to: input.to,
     variables: {
@@ -26,13 +43,15 @@ export async function sendPasswordResetEmail(input: {
     `,
     tags: [{ name: "category", value: "password_reset" }],
   })
+
+  return assertEmailSent(result, "Password reset")
 }
 
 export async function sendVerificationEmail(input: {
   to: string
   verificationUrl: string
 }) {
-  return sendManagedEmail({
+  const result = await sendManagedEmail({
     templateKey: "email_verification",
     to: input.to,
     variables: {
@@ -53,12 +72,17 @@ export async function sendVerificationEmail(input: {
     `,
     tags: [{ name: "category", value: "email_verification" }],
   })
+
+  return assertEmailSent(result, "Verification")
 }
 
-export async function sendWelcomeEmail(input: { to: string; firstName: string }) {
+export async function sendWelcomeEmail(input: {
+  to: string
+  firstName: string
+}) {
   const safeName = escapeHtml(input.firstName)
 
-  return sendManagedEmail({
+  const result = await sendManagedEmail({
     templateKey: "welcome",
     to: input.to,
     variables: {
@@ -75,6 +99,8 @@ export async function sendWelcomeEmail(input: { to: string; firstName: string })
     `,
     tags: [{ name: "category", value: "welcome" }],
   })
+
+  return assertEmailSent(result, "Welcome")
 }
 
 export async function sendAdminAlertEmail(input: {

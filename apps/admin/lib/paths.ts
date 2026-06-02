@@ -6,7 +6,6 @@ export const adminPaths = {
   instanceDetails: (instanceId: number) => `/instances/${instanceId}` as Route,
   users: "/users" as Route,
   plans: "/plans" as Route,
-  content: "/content" as Route,
   auditLogs: "/audit-logs" as Route,
   webhookEvents: "/webhook-events" as Route,
   coupons: "/coupons" as Route,
@@ -17,4 +16,6 @@ export const adminPaths = {
   transactions: "/transactions" as Route,
   expiredInstances: "/instances/expired" as Route,
   userDetails: (userId: number) => `/users/${userId}` as Route,
+  account: "/account" as Route,
 } as const
+

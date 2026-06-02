@@ -6,8 +6,9 @@ import { useState } from "react"
 import { useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
 import { HugeiconsIcon } from "@hugeicons/react"
+import logoSvg from "@workspace/brand-assets/logo.svg"
 import {
-  Home03Icon,
+  DashboardSquare01Icon,
   LoginSquare02Icon,
   Logout01Icon,
   UserAdd01Icon,
@@ -22,9 +23,13 @@ import {
   NavigationMenu,
   NavigationMenuList,
 } from "@workspace/ui/components/navigation-menu"
-import { renderDesktopMenuItem } from "@/components/site-header/menu-items"
+import {
+  getActiveMenuPath,
+  renderDesktopMenuItem,
+} from "@/components/site-header/menu-items"
 import { MobileNavSheet } from "@/components/site-header/mobile-nav-sheet"
 import type { HeaderLink, MenuItem } from "@/components/site-header/types"
+import Image from "next/image"
 
 export default function SiteHeader({
   brandName = "TrueRDP",
@@ -40,10 +45,8 @@ export default function SiteHeader({
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [isLoggingOut, setIsLoggingOut] = useState(false)
   const isAuthenticated = !profileQuery.isError && Boolean(profileQuery.data)
-
-  if (pathname?.startsWith("/studio")) {
-    return null
-  }
+  const dashboardUrl =
+    process.env.NEXT_PUBLIC_DASHBOARD_URL ?? "http://localhost:3001"
 
   const menu: MenuItem[] = (headerLinks ?? [])
     .filter((item) => Boolean(item.label && item.href))
@@ -51,6 +54,7 @@ export default function SiteHeader({
       title: item.label as string,
       url: item.href as string,
     }))
+  const activeMenuPath = getActiveMenuPath(menu, pathname)
 
   async function onLogout() {
     try {
@@ -72,14 +76,16 @@ export default function SiteHeader({
 
   return (
     <header className="sticky top-0 z-20 border-b border-white/70 bg-[oklch(0.99_0.018_84)]/88 shadow-sm shadow-[oklch(0.56_0.1_230)]/5 backdrop-blur dark:border-white/10 dark:bg-[oklch(0.17_0.035_255)]/88">
-      <section className="py-4">
+      <section className="py-3">
         <div className="mx-auto w-full max-w-6xl px-6">
           <nav className="hidden items-center justify-between lg:flex">
             <div className="flex items-center gap-6">
               <BrandLink brandName={brandName} />
               <NavigationMenu>
                 <NavigationMenuList>
-                  {menu.map((item) => renderDesktopMenuItem(item))}
+                  {menu.map((item) =>
+                    renderDesktopMenuItem(item, activeMenuPath)
+                  )}
                 </NavigationMenuList>
               </NavigationMenu>
             </div>
@@ -110,19 +116,31 @@ export default function SiteHeader({
                   </Link>
                 </>
               ) : (
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  onClick={onLogout}
-                  disabled={isLoggingOut}
-                >
-                  <HugeiconsIcon
-                    icon={Logout01Icon}
-                    strokeWidth={2}
-                    data-icon="inline-start"
-                  />
-                  Logout
-                </Button>
+                <>
+                  <a href={dashboardUrl} target="_blank" rel="noreferrer">
+                    <Button size="sm" variant="outline">
+                      <HugeiconsIcon
+                        icon={DashboardSquare01Icon}
+                        strokeWidth={2}
+                        data-icon="inline-start"
+                      />
+                      Dashboard
+                    </Button>
+                  </a>
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    onClick={onLogout}
+                    disabled={isLoggingOut}
+                  >
+                    <HugeiconsIcon
+                      icon={Logout01Icon}
+                      strokeWidth={2}
+                      data-icon="inline-start"
+                    />
+                    Logout
+                  </Button>
+                </>
               )}
             </div>
           </nav>
@@ -136,6 +154,7 @@ export default function SiteHeader({
                 menu={menu}
                 mobileMenuOpen={mobileMenuOpen}
                 setMobileMenuOpen={setMobileMenuOpen}
+                pathname={pathname}
                 isAuthenticated={isAuthenticated}
                 isLoggingOut={isLoggingOut}
                 onLogout={onLogout}
@@ -148,16 +167,35 @@ export default function SiteHeader({
   )
 }
 
+function SiteLogo({ brandName }: { brandName: string }) {
+  return (
+    <div className="inline-flex items-center gap-2">
+      <Image
+        loading="eager"
+        src={logoSvg}
+        alt={brandName}
+        width={80}
+        height={80}
+        className="dark:grayscale dark:invert"
+      />
+      <span
+        aria-label="TrueRDP"
+        className="font-brand text-3xl text-blue-900 dark:text-white"
+      >
+        <span className="text-black dark:text-white">True</span>
+        <span className="dark:text-white">RDP</span>
+      </span>
+    </div>
+  )
+}
+
 function BrandLink({ brandName }: { brandName: string }) {
   return (
     <Link
       href={webPaths.home}
-      className="inline-flex items-center gap-2 text-sm font-semibold text-[oklch(0.24_0.08_260)] dark:text-white"
+      className="text-sm font-semibold text-[oklch(0.24_0.08_260)] dark:text-white"
     >
-      <span className="inline-flex size-8 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,oklch(0.78_0.16_76),oklch(0.7_0.14_190))] text-[oklch(0.18_0.045_250)] shadow-sm">
-        <HugeiconsIcon icon={Home03Icon} size={18} strokeWidth={2} />
-      </span>
-      {brandName}
+      <SiteLogo brandName={brandName} />
     </Link>
   )
 }

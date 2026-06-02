@@ -99,7 +99,7 @@ interface ThemeProviderProps {
 
 function ThemeProvider({
   children,
-  defaultTheme = "system",
+  defaultTheme = "light",
   enableSystem = true,
   disableTransitionOnChange = true,
 }: ThemeProviderProps) {

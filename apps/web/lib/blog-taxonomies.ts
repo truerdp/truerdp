@@ -1,105 +1,107 @@
 import "server-only"
 
-import { isSanityConfigured, sanityFetch } from "@/lib/sanity"
+import type { BlogCategory, BlogTag, PayloadTaxonomyDocument } from "@/lib/blog-types"
 
-type BlogCategoryDocument = {
-  _id?: string
-  name?: string
-  slug?: { current?: string }
-  description?: string
+type PayloadListResponse<T> = {
+  docs?: T[]
 }
 
-type BlogTagDocument = {
-  _id?: string
-  name?: string
-  slug?: { current?: string }
+function getCmsBaseUrl() {
+  return (
+    process.env.CMS_INTERNAL_API_URL?.trim() ||
+    process.env.PAYLOAD_PUBLIC_URL?.trim() ||
+    "http://localhost:3004"
+  ).replace(/\/$/, "")
+}
+
+async function cmsFetch<T>(path: string): Promise<T | null> {
+  const url = new URL(`${getCmsBaseUrl()}${path}`)
+  if (!url.searchParams.has("depth")) {
+    url.searchParams.set("depth", "1")
+  }
+
+  const response = await fetch(url, {
+    next: {
+      tags: ["cms", "blog"],
+    },
+  })
+
+  if (!response.ok) {
+    return null
+  }
+
+  return (await response.json()) as T
+}
+
+function mapCategory(entry: PayloadTaxonomyDocument | null | undefined): BlogCategory | null {
+  const id = String(entry?.id ?? "").trim()
+  const slug = entry?.slug?.trim()
+  const name = entry?.name?.trim()
+
+  if (!id || !slug || !name) {
+    return null
+  }
+
+  return {
+    id,
+    slug,
+    name,
+    description: entry?.description?.trim() || null,
+  }
+}
+
+function mapTag(entry: PayloadTaxonomyDocument | null | undefined): BlogTag | null {
+  const id = String(entry?.id ?? "").trim()
+  const slug = entry?.slug?.trim()
+  const name = entry?.name?.trim()
+
+  if (!id || !slug || !name) {
+    return null
+  }
+
+  return { id, slug, name }
 }
 
 export async function listBlogCategories() {
-  if (!isSanityConfigured) {
+  try {
+    const result = await cmsFetch<PayloadListResponse<PayloadTaxonomyDocument>>(
+      "/api/blog-categories?limit=100&sort=name"
+    )
+
+    return result?.docs
+      ?.map((entry) => mapCategory(entry))
+      .filter((entry): entry is BlogCategory => Boolean(entry)) ?? []
+  } catch {
     return []
   }
-
-  const query = `*[_type == "blogCategory"] | order(name asc) {
-    _id,
-    name,
-    slug,
-    description
-  }`
-
-  const { data } = await sanityFetch({
-    query,
-    tags: ["sanity", "blog", "blog:category"],
-  })
-
-  return (data as BlogCategoryDocument[] | null | undefined)
-    ?.map((entry) => {
-      const slug = entry?.slug?.current?.trim()
-      const name = entry?.name?.trim()
-
-      if (!entry?._id || !slug || !name) {
-        return null
-      }
-
-      return {
-        id: entry._id,
-        slug,
-        name,
-        description: entry?.description?.trim() || null,
-      }
-    })
-    .filter((entry): entry is NonNullable<typeof entry> => Boolean(entry)) ?? []
 }
 
 export async function listBlogTags() {
-  if (!isSanityConfigured) {
+  try {
+    const result = await cmsFetch<PayloadListResponse<PayloadTaxonomyDocument>>(
+      "/api/blog-tags?limit=100&sort=name"
+    )
+
+    return result?.docs
+      ?.map((entry) => mapTag(entry))
+      .filter((entry): entry is BlogTag => Boolean(entry)) ?? []
+  } catch {
     return []
   }
-
-  const query = `*[_type == "blogTag"] | order(name asc) {
-    _id,
-    name,
-    slug
-  }`
-  const { data } = await sanityFetch({
-    query,
-    tags: ["sanity", "blog", "blog:tag"],
-  })
-
-  return (data as BlogTagDocument[] | null | undefined)
-    ?.map((entry) => {
-      const slug = entry?.slug?.current?.trim()
-      const name = entry?.name?.trim()
-
-      if (!entry?._id || !slug || !name) {
-        return null
-      }
-
-      return {
-        id: entry._id,
-        slug,
-        name,
-      }
-    })
-    .filter((entry): entry is NonNullable<typeof entry> => Boolean(entry)) ?? []
 }
 
 export async function listAllPublishedBlogSlugs() {
-  if (!isSanityConfigured) {
+  try {
+    const result = await cmsFetch<PayloadListResponse<{ slug?: string }>>(
+      "/api/blog-posts?limit=100&sort=-publishAt"
+    )
+
+    return result?.docs
+      ?.map((entry) => entry.slug?.trim())
+      .filter((entry): entry is string => Boolean(entry)) ?? []
+  } catch {
     return []
   }
-
-  const query = `*[_type == "blogPost" && isPublished == true && publishAt <= now() && defined(slug.current)] | order(publishAt desc) {
-    "slug": slug.current
-  }`
-  const { data } = await sanityFetch({
-    query,
-    tags: ["sanity", "blog", "blog:post"],
-  })
-
-  return (data as Array<{ slug?: string }> | null | undefined)
-    ?.map((entry) => entry.slug?.trim())
-    .filter((entry): entry is string => Boolean(entry)) ?? []
 }
 
 export function getSiteOrigin() {

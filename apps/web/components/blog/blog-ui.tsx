@@ -1,14 +1,13 @@
 import Link from "next/link"
-import { PortableText } from "@portabletext/react"
+import { RichText } from "@payloadcms/richtext-lexical/react"
+import type { ComponentProps } from "react"
 import { Badge } from "@workspace/ui/components/badge"
 import { Input } from "@workspace/ui/components/input"
 import type { BlogPostSummary } from "@/lib/blog"
 import { blogPaths } from "@/lib/paths"
 import { Button } from "@workspace/ui/components/button"
 
-type PortableTextValue = {
-  _type: string
-} & Record<string, unknown>
+type RichTextData = ComponentProps<typeof RichText>["data"]
 
 function formatDate(value: string) {
   const date = new Date(value)
@@ -45,8 +44,8 @@ export function BlogAuthorByline({
 }) {
   return (
     <p className="text-sm text-muted-foreground">
-      {name ? `By ${name} · ` : ""}
-      {formatDate(publishAt)} · {readingTimeMinutes} min read
+      {name ? `By ${name} - ` : ""}
+      {formatDate(publishAt)} - {readingTimeMinutes} min read
     </p>
   )
 }
@@ -104,46 +103,15 @@ export function BlogSearchForm({ defaultQuery }: { defaultQuery: string }) {
 export function BlogPortableBody({
   value,
 }: {
-  value: Record<string, unknown>[]
+  value: Record<string, unknown> | null
 }) {
-  const normalizedValue = value.filter(
-    (item): item is PortableTextValue =>
-      typeof item === "object" &&
-      item !== null &&
-      typeof item._type === "string"
-  )
+  if (!value) {
+    return null
+  }
 
   return (
     <div className="prose prose-neutral dark:prose-invert max-w-none">
-      <PortableText
-        value={normalizedValue}
-        components={{
-          block: {
-            h2: ({ children }) => (
-              <h2 className="mt-10 text-2xl font-semibold">{children}</h2>
-            ),
-            h3: ({ children }) => (
-              <h3 className="mt-8 text-xl font-semibold">{children}</h3>
-            ),
-          },
-          marks: {
-            link: ({ value, children }) => {
-              const href =
-                typeof value?.href === "string" && value.href ? value.href : "#"
-              return (
-                <a
-                  href={href}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="underline"
-                >
-                  {children}
-                </a>
-              )
-            },
-          },
-        }}
-      />
+      <RichText data={value as unknown as RichTextData} />
     </div>
   )
 }
@@ -164,3 +132,5 @@ export function RelatedPosts({ posts }: { posts: BlogPostSummary[] }) {
     </section>
   )
 }
+
+

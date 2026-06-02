@@ -1,9 +1,24 @@
 # Deployment Environment Variables
 
-This file lists every environment variable used by the deployed apps. Do not
-commit real secret values here.
+Infisical Cloud is the intended source of truth for deployed secrets. Do not
+commit real secret values here, and do not keep production values manually
+duplicated across Vercel and DigitalOcean except for the DigitalOcean
+machine-identity credential used to fetch secrets from Infisical.
 
-## Backend - Railway
+Use one Infisical project with slug `truerdp`, environments `development`,
+`preview`, and `production`, and these folders:
+
+- `/shared`: common URLs/config used by multiple apps.
+- `/backend`: backend runtime secrets.
+- `/web`: web app values.
+- `/dashboard`: dashboard app values.
+- `/admin`: admin app values.
+- `/cms`: Payload CMS values.
+
+See `deploy/infisical/README.md` for the Vercel sync and DigitalOcean agent
+workflow.
+
+## Backend - Infisical `/backend`
 
 Project: backend
 
@@ -50,9 +65,9 @@ Backend notes:
 - Set Dodo, CoinGate, and Resend values before enabling those flows in
   production.
 
-## Web - Vercel
+## Shared - Infisical `/shared`
 
-Project: `truerdp-web`
+Use shared values for URLs that multiple projects consume:
 
 ```env
 NEXT_PUBLIC_API_URL=https://api.truerdp.com
@@ -60,19 +75,24 @@ NEXT_PUBLIC_WEB_URL=https://truerdp.com
 NEXT_PUBLIC_DASHBOARD_URL=https://dashboard.truerdp.com
 NEXT_PUBLIC_ADMIN_URL=https://admin.truerdp.com
 INTERNAL_API_URL=https://api.truerdp.com
+PAYLOAD_PUBLIC_URL=https://cms.truerdp.com
+CMS_INTERNAL_API_URL=https://cms.truerdp.com
+```
 
-NEXT_PUBLIC_SANITY_PROJECT_ID=
-NEXT_PUBLIC_SANITY_DATASET=production
-NEXT_PUBLIC_SANITY_STUDIO_URL=https://truerdp.com/studio
+Shared notes:
+
+- `NEXT_PUBLIC_*` values are public after a frontend build.
+- After changing any `NEXT_PUBLIC_*` value, redeploy the affected Vercel apps.
+
+## Web - Infisical `/web` synced to Vercel
+
+Project: `truerdp-web`
+
+```env
+CMS_INTERNAL_API_TOKEN=
+CMS_REVALIDATE_SECRET=
 NEXT_PUBLIC_TAWK_TO_PROPERTY_ID=69f19d041b71d51c3915ab58
 NEXT_PUBLIC_TAWK_TO_WIDGET_ID=1jnbsqn3o
-SANITY_PROJECT_ID=
-SANITY_DATASET=production
-SANITY_API_VERSION=2026-03-01
-SANITY_API_TOKEN=
-SANITY_BROWSER_TOKEN=
-SANITY_DRAFT_SECRET=
-SANITY_REVALIDATE_SECRET=
 ```
 
 Web notes:
@@ -81,32 +101,17 @@ Web notes:
 - `NEXT_PUBLIC_DASHBOARD_URL` is used after checkout success.
 - `NEXT_PUBLIC_WEB_URL`, `NEXT_PUBLIC_DASHBOARD_URL`, and
   `NEXT_PUBLIC_ADMIN_URL` are used to allow safe post-login redirects.
-- `NEXT_PUBLIC_WEB_URL` is also used by Sanity Studio Live Preview to decide
-  which frontend URL to show inside the preview frame.
-- `NEXT_PUBLIC_SANITY_STUDIO_URL` is used by Sanity Visual Editing source maps.
-  Use `/studio` locally and the full Studio URL in production.
-- `SANITY_API_TOKEN` must be available in production for draft preview token
-  validation and live draft reads. Use a server-only token with read access.
-- `SANITY_BROWSER_TOKEN` is exposed to the browser by Sanity Live. Use the
-  narrowest read-only browser-safe token you can, or leave it blank if browser
-  live updates are not required.
-- `SANITY_DRAFT_SECRET` is for the manual `/api/draft?secret=...&slug=...`
-  preview entrypoint. Sanity Presentation live preview also sends
-  `sanity-preview-secret`, which is validated with `SANITY_API_TOKEN`.
-- `SANITY_REVALIDATE_SECRET` must match the secret configured on the Sanity
-  webhook that posts to `https://truerdp.com/api/revalidate`.
-- In Sanity project settings, add CORS origins for the deployed web origin and
-  local web origin, for example `https://truerdp.com` and
-  `http://localhost:3000`.
+- `PAYLOAD_PUBLIC_URL` points editors and app integrations at Payload CMS.
+- `CMS_INTERNAL_API_URL` and `CMS_INTERNAL_API_TOKEN` allow server-side reads
+  for draft content and managed email templates.
+- `CMS_REVALIDATE_SECRET` must match Payload hooks that post to
+  `https://truerdp.com/api/revalidate` and the manual draft URL secret.
 
-## Dashboard - Vercel
+## Dashboard - Infisical `/dashboard` synced to Vercel
 
 Project: dashboard
 
 ```env
-NEXT_PUBLIC_API_URL=https://api.truerdp.com
-NEXT_PUBLIC_WEB_URL=https://truerdp.com
-INTERNAL_API_URL=
 NEXT_PUBLIC_ENABLE_QUERY_DEVTOOLS=false
 ```
 
@@ -116,14 +121,12 @@ Dashboard notes:
 - `NEXT_PUBLIC_WEB_URL` controls the login redirect target. If it is missing,
   dashboard falls back to `http://localhost:3000`.
 
-## Admin - Vercel
+## Admin - Infisical `/admin` synced to Vercel
 
 Project: admin
 
 ```env
-NEXT_PUBLIC_API_URL=https://api.truerdp.com
-NEXT_PUBLIC_WEB_URL=https://truerdp.com
-INTERNAL_API_URL=
+# App-specific values can stay empty until needed.
 ```
 
 Admin notes:
@@ -131,6 +134,24 @@ Admin notes:
 - `NEXT_PUBLIC_API_URL` must include `https://`.
 - `NEXT_PUBLIC_WEB_URL` controls the login redirect target. If it is missing,
   admin falls back to `http://localhost:3000`.
+
+## CMS - Infisical `/cms` synced to Vercel
+
+Project: cms
+
+```env
+DATABASE_URL=postgresql://USER:PASSWORD@HOST/DB?sslmode=require
+PAYLOAD_SECRET=
+CMS_INTERNAL_API_TOKEN=
+CMS_REVALIDATE_SECRET=
+```
+
+CMS notes:
+
+- If CMS and backend share the same Postgres database, keep `DATABASE_URL`
+  intentionally identical in Infisical.
+- `CMS_INTERNAL_API_TOKEN` and `CMS_REVALIDATE_SECRET` must match the values
+  used by web/backend integrations.
 
 ## Redeploy Rule
 

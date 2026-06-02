@@ -1,7 +1,4 @@
-import { and, eq } from "drizzle-orm"
 import { Resend } from "resend"
-import { db } from "../../db.js"
-import { emailTemplates } from "../../schema.js"
 
 type SendEmailInput = {
   to: string | string[]
@@ -10,6 +7,12 @@ type SendEmailInput = {
   text?: string
   replyTo?: string
   tags?: { name: string; value: string }[]
+}
+
+type ManagedEmailTemplate = {
+  subjectTemplate: string
+  htmlTemplate: string
+  textTemplate: string | null
 }
 
 export type SendEmailResult = {
@@ -34,6 +37,14 @@ function getFromEmail() {
 
 function getReplyToEmail() {
   return process.env.RESEND_REPLY_TO_EMAIL?.trim() || undefined
+}
+
+function getCmsInternalApiUrl() {
+  return process.env.CMS_INTERNAL_API_URL?.trim().replace(/\/$/, "") ?? ""
+}
+
+function getCmsInternalApiToken() {
+  return process.env.CMS_INTERNAL_API_TOKEN?.trim() ?? ""
 }
 
 export function getDashboardBaseUrl() {
@@ -65,6 +76,39 @@ function interpolateTemplate(
   })
 }
 
+async function getManagedEmailTemplate(key: string) {
+  const baseUrl = getCmsInternalApiUrl()
+  const token = getCmsInternalApiToken()
+
+  if (!baseUrl || !token) {
+    return null
+  }
+
+  try {
+    const response = await fetch(
+      `${baseUrl}/internal/email-templates/${encodeURIComponent(key)}`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    )
+
+    if (!response.ok) {
+      return null
+    }
+
+    const payload = (await response.json()) as {
+      template?: ManagedEmailTemplate | null
+    }
+
+    return payload.template ?? null
+  } catch (error) {
+    console.warn("[email] failed to load Payload email template", error)
+    return null
+  }
+}
+
 export async function sendManagedEmail(input: {
   templateKey: string
   to: string | string[]
@@ -74,21 +118,7 @@ export async function sendManagedEmail(input: {
   fallbackText?: string
   tags?: { name: string; value: string }[]
 }) {
-  const [template] = await db
-    .select({
-      subjectTemplate: emailTemplates.subjectTemplate,
-      htmlTemplate: emailTemplates.htmlTemplate,
-      textTemplate: emailTemplates.textTemplate,
-    })
-    .from(emailTemplates)
-    .where(
-      and(
-        eq(emailTemplates.key, input.templateKey),
-        eq(emailTemplates.isActive, true)
-      )
-    )
-    .limit(1)
-
+  const template = await getManagedEmailTemplate(input.templateKey)
   const subjectTemplate = template?.subjectTemplate ?? input.fallbackSubject
   const htmlTemplate = template?.htmlTemplate ?? input.fallbackHtml
   const textTemplate = template?.textTemplate ?? input.fallbackText
@@ -111,6 +141,7 @@ export async function sendEmail(
   const apiKey = getResendApiKey()
 
   if (!apiKey) {
+    console.warn("[email] skipped: RESEND_API_KEY is not configured")
     return {
       sent: false,
       skippedReason: "RESEND_API_KEY is not configured",

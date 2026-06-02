@@ -28,6 +28,7 @@ export async function generateMetadata(): Promise<Metadata> {
     title: homepage.seoTitle || homepage.title,
     description:
       homepage.seoDescription ||
+      homepage.summary ||
       "Deploy high-performance Windows RDP in minutes with transparent plans and instant checkout.",
   }
 }
@@ -50,7 +51,11 @@ async function getPlans() {
 export default async function Page() {
   const { plans, error } = await getPlans()
   const homepage = await getCmsPage("homepage")
-  const cmsContent = homepage.content as Record<string, unknown>
+  const cmsContent = {
+    title: homepage.title,
+    summary: homepage.summary,
+    ...(homepage.content as Record<string, unknown>),
+  }
 
   const homeContent = buildHomeContent(cmsContent)
   const planInsights = buildPlanInsights(plans)

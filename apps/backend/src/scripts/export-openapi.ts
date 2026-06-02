@@ -34,7 +34,6 @@ import { planRoutes } from "../routes/plan.js"
 import { webhookRoutes } from "../routes/webhook.js"
 import { orderRoutes } from "../routes/order.js"
 import { supportRoutes } from "../routes/support.js"
-import { contentRoutes } from "../routes/content.js"
 import fastifyRawBody from "fastify-raw-body"
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
@@ -85,7 +84,6 @@ async function exportSpec() {
         },
         { name: "Support", description: "Support tickets" },
         { name: "Admin", description: "Admin-only operations" },
-        { name: "Content", description: "CMS pages & email templates" },
         { name: "Webhooks", description: "Payment provider webhooks" },
       ],
     },
@@ -118,7 +116,6 @@ async function exportSpec() {
   server.register(adminRoutes)
   server.register(instanceRoutes)
   server.register(supportRoutes)
-  server.register(contentRoutes)
   server.register(webhookRoutes)
 
   server.get(
@@ -173,3 +170,5 @@ exportSpec().catch((err) => {
   console.error("Failed to export OpenAPI spec:", err)
   process.exit(1)
 })
+
+

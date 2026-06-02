@@ -48,6 +48,7 @@
   --color-sidebar-ring: var(--sidebar-ring);
   --font-sans: var(--font-sans);
   --font-slab: var(--font-slab);
+  --font-brand: var(--font-brand);
   --font-heading: var(--font-sans);
   --animate-shimmer-slide: shimmer-slide var(--speed) ease-in-out infinite
     alternate;

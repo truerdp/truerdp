@@ -27,13 +27,15 @@ import { Skeleton } from "@workspace/ui/components/skeleton"
 import { HugeiconsIcon } from "@hugeicons/react"
 import {
   UnfoldMoreIcon,
-  SparklesIcon,
   CheckmarkBadgeIcon,
-  CreditCardIcon,
-  NotificationIcon,
   LogoutIcon,
+  Moon02Icon,
+  Sun02Icon,
 } from "@hugeicons/core-free-icons"
 import { buildWebLoginUrl, logout } from "@/lib/auth"
+import Link from "next/link"
+import { adminPaths } from "@/lib/paths"
+import { useTheme } from "@/components/theme-provider"
 
 export function NavUser({
   user,
@@ -50,6 +52,8 @@ export function NavUser({
   const router = useRouter()
   const queryClient = useQueryClient()
   const [isLoggingOut, setIsLoggingOut] = useState(false)
+  const { resolvedTheme, setTheme } = useTheme()
+  const isDark = resolvedTheme === "dark"
 
   async function handleLogout() {
     try {
@@ -98,7 +102,12 @@ export function NavUser({
           >
             <Avatar>
               <AvatarImage src={user.avatar} alt={user.name} />
-              <AvatarFallback>AD</AvatarFallback>
+              <AvatarFallback>
+                {user.name
+                  .split(" ")
+                  .map((n) => n[0])
+                  .join("")}
+              </AvatarFallback>
             </Avatar>
             {userText}
             <HugeiconsIcon
@@ -118,7 +127,12 @@ export function NavUser({
                 <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
                   <Avatar>
                     <AvatarImage src={user.avatar} alt={user.name} />
-                    <AvatarFallback>AD</AvatarFallback>
+                    <AvatarFallback>
+                      {user.name
+                        .split(" ")
+                        .map((n) => n[0])
+                        .join("")}
+                    </AvatarFallback>
                   </Avatar>
                   {menuUserText}
                 </div>
@@ -126,24 +140,18 @@ export function NavUser({
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
-              <DropdownMenuItem>
-                <HugeiconsIcon icon={SparklesIcon} strokeWidth={2} />
-                Upgrade to Pro
-              </DropdownMenuItem>
-            </DropdownMenuGroup>
-            <DropdownMenuSeparator />
-            <DropdownMenuGroup>
-              <DropdownMenuItem>
+              <DropdownMenuItem render={<Link href={adminPaths.account} />}>
                 <HugeiconsIcon icon={CheckmarkBadgeIcon} strokeWidth={2} />
                 Account
               </DropdownMenuItem>
-              <DropdownMenuItem>
-                <HugeiconsIcon icon={CreditCardIcon} strokeWidth={2} />
-                Billing
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <HugeiconsIcon icon={NotificationIcon} strokeWidth={2} />
-                Notifications
+              <DropdownMenuItem
+                onClick={() => setTheme(isDark ? "light" : "dark")}
+              >
+                <HugeiconsIcon
+                  icon={isDark ? Sun02Icon : Moon02Icon}
+                  strokeWidth={2}
+                />
+                {isDark ? "Switch to light mode" : "Switch to dark mode"}
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />

@@ -16,6 +16,9 @@ postman
 .env.development.local
 .env.test.local
 .env.production.local
+*.env.production.local
+*.env.production.infisical
+deploy/infisical/runtime/
 
 # Testing
 coverage

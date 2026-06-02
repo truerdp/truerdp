@@ -1,5 +1,8 @@
-import { PortableText } from "@portabletext/react"
+import { RichText } from "@payloadcms/richtext-lexical/react"
+import type { ComponentProps } from "react"
 import { getCmsPage } from "@/lib/cms"
+
+type RichTextData = ComponentProps<typeof RichText>["data"]
 
 type Section = {
   heading?: string
@@ -11,12 +14,21 @@ type FaqItem = {
   answer?: string
 }
 
+function isLexicalValue(value: unknown): value is Record<string, unknown> {
+  return Boolean(
+    value &&
+      typeof value === "object" &&
+      "root" in value &&
+      typeof (value as { root?: unknown }).root === "object"
+  )
+}
+
 export default async function CmsContentPage({ slug }: { slug: string }) {
   const page = await getCmsPage(slug)
   const sections = Array.isArray(page.content?.sections)
     ? (page.content.sections as Section[])
     : []
-  const body = Array.isArray(page.content?.body) ? page.content.body : []
+  const body = page.content?.body
   const faqItems = Array.isArray(page.content?.items)
     ? (page.content.items as FaqItem[])
     : []
@@ -45,9 +57,9 @@ export default async function CmsContentPage({ slug }: { slug: string }) {
         </section>
       ) : null}
 
-      {body.length > 0 ? (
+      {isLexicalValue(body) ? (
         <section className="prose prose-neutral mt-8 max-w-none dark:prose-invert">
-          <PortableText value={body} />
+          <RichText data={body as unknown as RichTextData} />
         </section>
       ) : null}
 
@@ -68,3 +80,5 @@ export default async function CmsContentPage({ slug }: { slug: string }) {
     </main>
   )
 }
+
+

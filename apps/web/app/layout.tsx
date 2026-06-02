@@ -1,5 +1,5 @@
-import { Geist_Mono, Geist } from "next/font/google"
-import { draftMode } from "next/headers"
+import { Geist_Mono, Geist, Audiowide } from "next/font/google"
+import type { Metadata } from "next"
 import NextTopLoader from "nextjs-toploader"
 import Script from "next/script"
 
@@ -12,9 +12,7 @@ import { cn } from "@workspace/ui/lib/utils"
 import { AppProviders } from "./providers"
 import SiteHeader from "@/components/site-header"
 import SiteFooter from "@/components/site-footer"
-import { SanityPreview } from "@/components/sanity-preview"
 import { getSiteSettings } from "@/lib/cms"
-import { SanityLive } from "@/lib/sanity"
 
 const geist = Geist({ subsets: ["latin"], variable: "--font-sans" })
 
@@ -22,6 +20,36 @@ const fontMono = Geist_Mono({
   subsets: ["latin"],
   variable: "--font-mono",
 })
+
+const fontBrand = Audiowide({
+  subsets: ["latin"],
+  variable: "--font-brand",
+  weight: "400",
+})
+
+export const metadata: Metadata = {
+  manifest: "/site.webmanifest",
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "48x48" },
+      { url: "/favicon.svg", type: "image/svg+xml" },
+      { url: "/favicon-96x96.png", sizes: "96x96", type: "image/png" },
+    ],
+    apple: [
+      {
+        url: "/apple-touch-icon.png",
+        sizes: "180x180",
+        type: "image/png",
+      },
+    ],
+    shortcut: ["/favicon.ico"],
+  },
+  appleWebApp: {
+    title: "TrueRDP",
+    capable: true,
+    statusBarStyle: "default",
+  },
+}
 
 function TawkToWidget() {
   const propertyId = process.env.NEXT_PUBLIC_TAWK_TO_PROPERTY_ID
@@ -45,7 +73,6 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode
 }>) {
-  const { isEnabled } = await draftMode()
   const isDevelopment = process.env.NODE_ENV === "development"
   const siteSettings = await getSiteSettings()
 
@@ -57,7 +84,8 @@ export default async function RootLayout({
         "antialiased",
         fontMono.variable,
         "font-sans",
-        geist.variable
+        geist.variable,
+        fontBrand.variable
       )}
     >
       <body suppressHydrationWarning className="min-h-svh">
@@ -82,8 +110,6 @@ export default async function RootLayout({
                 />
               </div>
               {!isDevelopment && <TawkToWidget />}
-              {isEnabled ? <SanityLive /> : null}
-              <SanityPreview isDraftMode={isEnabled} />
               <Toaster richColors position="top-center" duration={5000} />
             </AppProviders>
           </TooltipProvider>

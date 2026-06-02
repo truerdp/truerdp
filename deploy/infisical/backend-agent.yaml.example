@@ -1,0 +1,20 @@
+infisical:
+  address: "https://app.infisical.com"
+  exit-after-auth: true
+  retry-strategy:
+    max-retries: 3
+    max-delay: "5s"
+    base-delay: "200ms"
+
+auth:
+  type: "universal-auth"
+  config:
+    client-id: "/etc/infisical/truerdp/client-id"
+    client-secret: "/etc/infisical/truerdp/client-secret"
+    remove_client_secret_on_read: false
+
+templates:
+  - source-path: "/opt/truerdp/deploy/infisical/backend.env.tmpl"
+    destination-path: "/opt/truerdp/apps/backend/.env.production.infisical"
+    config:
+      polling-interval: 5m

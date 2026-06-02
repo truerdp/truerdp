@@ -1,132 +1,203 @@
-import { isSanityConfigured, sanityFetch } from "@/lib/sanity"
-import {
-  faqPageQuery,
-  homePageQuery,
-  legalPageQuery,
-  siteSettingsQuery,
-} from "@/lib/cms-queries"
+import "server-only"
+
+import { draftMode } from "next/headers"
 import {
   fallbackSiteSettings,
   getFallbackCmsPagesForImport,
   getFallbackPage,
 } from "@/lib/cms-fallback"
-import {
-  createDefaultCmsPage,
-  mapFaqPageToCms,
-  mapHomePageToCms,
-  mapLegalPageToCms,
-  mapSiteSettings,
-} from "@/lib/cms-page-mappers"
-import type {
-  CmsPage,
-  FaqPageDocument,
-  HomePageDocument,
-  LegalPageDocument,
-  SiteSettings,
-  SiteSettingsDocument,
-} from "@/lib/cms-types"
+import { createDefaultCmsPage } from "@/lib/cms-page-mappers"
+import type { CmsPage, SiteSettings } from "@/lib/cms-types"
 
-async function getHomePage(): Promise<CmsPage | null> {
-  const { data } = await sanityFetch({
-    query: homePageQuery,
-    tags: ["sanity", "homePage", "cms:homepage"],
+type PayloadListResponse<T> = {
+  docs?: T[]
+  totalDocs?: number
+}
+
+type PayloadGlobal = Record<string, unknown>
+
+type PayloadPage = PayloadGlobal & {
+  id?: string | number
+  title?: string
+  slug?: string
+  summary?: string | null
+  seoTitle?: string | null
+  seoDescription?: string | null
+  body?: unknown
+}
+
+function getCmsBaseUrl() {
+  return (
+    process.env.CMS_INTERNAL_API_URL?.trim() ||
+    process.env.PAYLOAD_PUBLIC_URL?.trim() ||
+    "http://localhost:3004"
+  ).replace(/\/$/, "")
+}
+
+async function isDraftModeEnabled() {
+  try {
+    const draft = await draftMode()
+    return draft.isEnabled
+  } catch {
+    return false
+  }
+}
+
+async function cmsFetch<T>(path: string): Promise<T | null> {
+  const draft = await isDraftModeEnabled()
+  const url = new URL(`${getCmsBaseUrl()}${path}`)
+
+  if (!url.searchParams.has("depth")) {
+    url.searchParams.set("depth", "2")
+  }
+  if (draft) {
+    url.searchParams.set("draft", "true")
+  }
+
+  const headers: HeadersInit = {}
+  const token = process.env.CMS_INTERNAL_API_TOKEN?.trim()
+  if (draft && token) {
+    headers.Authorization = `Bearer ${token}`
+  }
+
+  const response = await fetch(url, {
+    headers,
+    ...(process.env.NODE_ENV === "development"
+      ? { cache: "no-store" as const }
+      : {
+          next: {
+            tags: ["cms"],
+          },
+        }),
   })
-  const document = data as HomePageDocument | null
 
+  if (!response.ok) {
+    return null
+  }
+
+  return (await response.json()) as T
+}
+
+function toStringOrNull(value: unknown) {
+  return typeof value === "string" && value.trim() ? value : null
+}
+
+function mapGlobalToCmsPage(slug: string, document: PayloadPage | null): CmsPage | null {
   if (!document) {
     return null
   }
 
-  return mapHomePageToCms(document)
+  const fallback = getFallbackPage(slug)
+  const content = { ...((fallback?.content as Record<string, unknown>) ?? {}) }
+
+  for (const [key, value] of Object.entries(document)) {
+    if (
+      [
+        "id",
+        "createdAt",
+        "updatedAt",
+        "globalType",
+        "title",
+        "slug",
+        "summary",
+        "seoTitle",
+        "seoDescription",
+      ].includes(key)
+    ) {
+      continue
+    }
+    content[key] = value
+  }
+
+  if (document.body) {
+    content.body = document.body
+  }
+
+  return {
+    ...(fallback ?? createDefaultCmsPage(slug)),
+    slug,
+    title: document.title ?? fallback?.title ?? "Content",
+    summary: document.summary ?? fallback?.summary ?? null,
+    content,
+    seoTitle: document.seoTitle ?? null,
+    seoDescription: document.seoDescription ?? null,
+  }
+}
+
+function mapLegalPage(slug: string, document: PayloadPage | null): CmsPage | null {
+  if (!document) {
+    return null
+  }
+
+  const fallback = getFallbackPage(slug)
+
+  return {
+    ...(fallback ?? createDefaultCmsPage(slug)),
+    slug,
+    title: document.title ?? fallback?.title ?? "Content",
+    summary: document.summary ?? fallback?.summary ?? null,
+    content: {
+      ...(fallback?.content ?? {}),
+      body: document.body ?? fallback?.content.body ?? null,
+    },
+    seoTitle: document.seoTitle ?? null,
+    seoDescription: document.seoDescription ?? null,
+  }
 }
 
 export async function getSiteSettings(): Promise<SiteSettings> {
-  if (!isSanityConfigured) {
-    return fallbackSiteSettings
-  }
-
   try {
-    const { data } = await sanityFetch({
-      query: siteSettingsQuery,
-      tags: ["sanity", "siteSettings", "cms:site-settings"],
-    })
+    const document = await cmsFetch<PayloadGlobal>("/api/globals/site-settings")
 
-    return mapSiteSettings(data as SiteSettingsDocument | null)
+    if (!document) {
+      return fallbackSiteSettings
+    }
+
+    return {
+      brandName:
+        toStringOrNull(document.brandName) ?? fallbackSiteSettings.brandName,
+      headerLinks: Array.isArray(document.headerLinks)
+        ? (document.headerLinks as SiteSettings["headerLinks"])
+        : fallbackSiteSettings.headerLinks,
+      footerLinks: Array.isArray(document.footerLinks)
+        ? (document.footerLinks as SiteSettings["footerLinks"])
+        : fallbackSiteSettings.footerLinks,
+      footer: {
+        ...fallbackSiteSettings.footer,
+        ...((document.footer as SiteSettings["footer"] | undefined) ?? {}),
+      },
+    }
   } catch {
     return fallbackSiteSettings
   }
-}
-
-async function getFaqPage(): Promise<CmsPage | null> {
-  const { data } = await sanityFetch({
-    query: faqPageQuery,
-    tags: ["sanity", "faqPage", "cms:faq"],
-  })
-  const document = data as FaqPageDocument | null
-
-  if (!document) {
-    return null
-  }
-
-  return mapFaqPageToCms(document)
-}
-
-async function getLegalPage(slug: string): Promise<CmsPage | null> {
-  const { data } = await sanityFetch({
-    query: legalPageQuery,
-    params: { slug },
-    tags: ["sanity", "legalPage", `cms:${slug}`],
-  })
-  const document = data as LegalPageDocument | null
-
-  if (!document) {
-    return null
-  }
-
-  return mapLegalPageToCms(slug, document)
 }
 
 export async function getCmsPage(slug: string): Promise<CmsPage> {
   const fallback = getFallbackPage(slug)
 
-  if (!isSanityConfigured) {
-    if (fallback) {
-      return fallback
-    }
-
-    return createDefaultCmsPage(slug)
-  }
-
   try {
-    let page: CmsPage | null = null
-
     if (slug === "homepage") {
-      page = await getHomePage()
-    } else if (slug === "faq") {
-      page = await getFaqPage()
-    } else if (
-      ["terms", "privacy", "refund-policy", "contact"].includes(slug)
-    ) {
-      page = await getLegalPage(slug)
+      const document = await cmsFetch<PayloadPage>("/api/globals/home-page")
+      const page = mapGlobalToCmsPage(slug, document)
+      if (page) return page
     }
 
-    if (page) {
-      return {
-        ...(fallback ?? {}),
-        ...page,
-        content: page.content ?? fallback?.content ?? {},
-      }
+    if (slug === "faq") {
+      const document = await cmsFetch<PayloadPage>("/api/globals/faq-page")
+      const page = mapGlobalToCmsPage(slug, document)
+      if (page) return page
     }
+
+    const result = await cmsFetch<PayloadListResponse<PayloadPage>>(
+      `/api/legal-pages?where[slug][equals]=${encodeURIComponent(slug)}&limit=1`
+    )
+    const page = mapLegalPage(slug, result?.docs?.[0] ?? null)
+    if (page) return page
   } catch {
-    // Sanity is optional during rollout. We intentionally fail over to
-    // local defaults when API credentials are missing or remote fetch fails.
+    // Payload is optional during local bootstrap; fall back to checked-in defaults.
   }
 
-  if (fallback) {
-    return fallback
-  }
-
-  return createDefaultCmsPage(slug)
+  return fallback ?? createDefaultCmsPage(slug)
 }
 
 export { getFallbackCmsPagesForImport }

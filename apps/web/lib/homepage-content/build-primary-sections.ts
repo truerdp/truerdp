@@ -6,11 +6,17 @@ export function buildPrimaryHomeSections(cmsContent: Record<string, unknown>) {
     badge: readText(cmsHero.badge, "Premium RDP plans with instant checkout"),
     headline: readText(
       cmsHero.headline,
-      "Choose a fast Windows RDP plan without the usual infrastructure guesswork"
+      readText(
+        cmsContent.title,
+        "Choose a fast Windows RDP plan without the usual infrastructure guesswork"
+      )
     ),
     description: readText(
       cmsHero.description,
-      "Compare CPU, RAM, storage, location, and duration in one place, then move from plan selection to checkout without waiting on a sales call."
+      readText(
+        cmsContent.summary,
+        "Compare CPU, RAM, storage, location, and duration in one place, then move from plan selection to checkout without waiting on a sales call."
+      )
     ),
     primaryCtaLabel: readText(cmsHero.primaryCtaLabel, "Create account"),
     secondaryCtaLabel: readText(cmsHero.secondaryCtaLabel, "See how setup works"),

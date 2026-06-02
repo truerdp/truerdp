@@ -10,7 +10,7 @@ export const fallbackHomepagePage: CmsPage = {
       headline: "Choose a TrueRDP plan and start your order in minutes",
       description:
         "Select duration, pick a payment method, and generate a transaction. Provisioning is handled by admin confirmation in the current flow.",
-      primaryCtaLabel: "Start checkout",
+      primaryCtaLabel: "Go to Plans",
       secondaryCtaLabel: "How it works",
       trustLine:
         "Low-latency infrastructure with transparent plan comparisons.",
@@ -98,8 +98,7 @@ export const fallbackHomepagePage: CmsPage = {
     testimonialsSection: {
       eyebrow: "Recent buyer feedback",
       headline: "Trusted by buyers who need clear specs and quick checkout",
-      ratingLabel:
-        "Feedback from recent support and onboarding conversations",
+      ratingLabel: "Feedback from recent support and onboarding conversations",
       items: [
         {
           quote:
@@ -152,7 +151,8 @@ export const fallbackHomepagePage: CmsPage = {
     },
     liveSupportSection: {
       eyebrow: "Live support",
-      headline: "Need help choosing capacity? Chat with support before checkout.",
+      headline:
+        "Need help choosing capacity? Chat with support before checkout.",
       description:
         "Tawk.to live chat is ready for the marketing site. Use the chat widget for plan fit, order questions, and provisioning status.",
       topics: [

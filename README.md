@@ -166,23 +166,23 @@ Detailed step-by-step VPS guide:
   `deploy/hetzner-migration.md`
 - Backend deploy workflow: `.github/workflows/deploy-backend.yml`
 
-1. Create a backend env file on the server (for example `apps/backend/.env.production.local`) with production values.
-   A template is available at `apps/backend/.env.production.example`.
+1. Store production app secrets in Infisical. See `deploy/infisical/README.md`
+   for the project/folder layout, Vercel syncs, and DigitalOcean backend agent.
 2. Create a root `.env` file for Docker Compose interpolation. For an external
    managed database such as Neon, include:
 
 ```env
 POSTGRES_PASSWORD=not-used-with-neon
 DATABASE_URL="postgresql://..."
-BACKEND_ENV_FILE=apps/backend/.env.production.local
+BACKEND_ENV_FILE=apps/backend/.env.production.infisical
 BACKEND_PORT=3003
 BACKEND_BIND_HOST=127.0.0.1
 ```
 
-3. Start the backend:
+3. Render backend secrets from Infisical and start the backend:
 
 ```bash
-pnpm run docker:prod:up:backend
+pnpm run docker:prod:up:backend:infisical
 ```
 
 If running Postgres inside Compose instead of Neon, set real `POSTGRES_*`
@@ -202,7 +202,8 @@ Notes:
 
 - The production stack builds with `apps/backend/Dockerfile.prod`.
 - It does not use bind mounts and runs `node dist/index.js`.
-- For external managed databases (Neon/RDS/etc), set `DATABASE_URL` in your backend env file and use `pnpm run docker:prod:up:backend`.
+- For external managed databases (Neon/RDS/etc), set `DATABASE_URL` in Infisical
+  and use `pnpm run docker:prod:up:backend:infisical`.
 - Backend binds to `127.0.0.1:3003` by default in production compose; front it with Caddy and Cloudflare Full (strict) TLS as described in `deploy/docker-prod.md`.
 - Pushes to `main` that touch backend-related files deploy through GitHub Actions after typecheck, build, and migrations. Required secrets are documented in `deploy/docker-prod.md`.
 
@@ -273,27 +274,24 @@ Notes:
 - Better Auth (`/api/auth/*`) is now the primary auth path used by the web app.
 - Keep `BETTER_AUTH_*` and `CORS_ALLOWED_ORIGINS` aligned across web/dashboard/admin origins.
 
-Web CMS env values (set in `apps/web/.env` for dev, or
-`apps/web/.env.production.local` for local production runs):
+Payload CMS env values (set in `apps/cms/.env` and shared app env as needed):
 
 ```env
-NEXT_PUBLIC_SANITY_PROJECT_ID=
-NEXT_PUBLIC_SANITY_DATASET=production
-SANITY_PROJECT_ID=
-SANITY_DATASET=production
-SANITY_API_VERSION=2026-03-01
-SANITY_API_TOKEN=
-SANITY_BROWSER_TOKEN=
-SANITY_DRAFT_SECRET=
-SANITY_REVALIDATE_SECRET=
+PAYLOAD_SECRET=change-this-in-production
+PAYLOAD_PUBLIC_URL=http://localhost:3004
+CMS_INTERNAL_API_URL=http://localhost:3004
+CMS_INTERNAL_API_TOKEN=change-this-cms-internal-token
+CMS_REVALIDATE_SECRET=change-this-revalidate-secret
+WEB_BASE_URL=http://localhost:3000
 ```
 
-Sanity routes used by `apps/web`:
+Payload routes used by the apps:
 
-- Studio: `http://localhost:3000/studio`
-- Draft mode enable: `/api/draft?secret=...&slug=/target-path`
-- Draft mode disable: `/api/draft/disable?slug=/target-path`
-- Revalidation webhook: `POST /api/revalidate` (signed with `SANITY_REVALIDATE_SECRET`)
+- Admin: `http://localhost:3004/admin`
+- Public API: `http://localhost:3004/api/*`
+- Web draft mode enable: `/api/draft?secret=...&slug=/target-path`
+- Web draft mode disable: `/api/draft/disable?slug=/target-path`
+- Web revalidation webhook: `POST /api/revalidate` signed with `CMS_REVALIDATE_SECRET`
 
 ## Commands
 
@@ -324,8 +322,8 @@ pnpm --filter web dev
 pnpm --filter dashboard dev
 pnpm --filter admin dev
 pnpm --filter backend dev
-pnpm --filter web sanity:studio
-pnpm --filter web sanity:deploy
+pnpm --filter cms dev
+pnpm --filter cms payload
 ```
 
 Backend database workflows:
@@ -344,8 +342,8 @@ If you are updating payment or provisioning behavior, also review `BUSINESS_FLOW
 
 ## CI/CD Migrations
 
-Vercel and Railway can auto-deploy from `main`, but database migrations still
-need an explicit production step. The GitHub Actions workflow in
+Vercel and the backend deploy workflow can auto-deploy from `main`, but
+database migrations still need an explicit production step. The GitHub Actions workflow in
 `.github/workflows/migrate.yml` runs `pnpm --filter backend db:migrate` on every
 push to `main` and can also be triggered manually.
 
@@ -355,21 +353,10 @@ Required GitHub secret:
 PRODUCTION_DATABASE_URL="postgres://..."
 ```
 
-Use the same production database connection string that Railway/backend uses.
+Use the same production database connection string that Infisical provides to
+the backend.
 The workflow has a single concurrency group so production migrations run one at
 a time.
-
-If the Railway backend service auto-deploys directly from GitHub, also set the
-Railway service pre-deploy command to:
-
-```bash
-pnpm --filter backend db:migrate
-```
-
-Railway runs pre-deploy commands after build and before deployment, and a
-failing command stops that deployment. This gives the backend strict
-migrate-before-start ordering. See Railway's
-[pre-deploy command docs](https://docs.railway.com/guides/pre-deploy-command).
 
 ## Local DB Reset
 
@@ -392,7 +379,7 @@ Seeded local credentials:
 
 ## Neon DB Reset
 
-To wipe the Neon database configured in `apps/backend/.env.production.local`:
+To wipe the Neon database configured for production:
 
 ```bash
 pnpm db:reset:neon
@@ -406,3 +393,5 @@ pnpm --filter backend db:reset:neon -- --dry-run
 
 This truncates every `public` table except `__drizzle_migrations` and resets
 identities with `CASCADE`.
+
+

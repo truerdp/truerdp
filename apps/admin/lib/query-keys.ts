@@ -4,8 +4,6 @@ export const queryKeys = {
   users: () => ["users"] as const,
   userDetails: (id: number) => ["users", id] as const,
   plans: () => ["plans"] as const,
-  contentPages: () => ["content", "pages"] as const,
-  emailTemplates: () => ["content", "email-templates"] as const,
   auditLogs: (params: Record<string, string | number | undefined>) =>
     ["audit-logs", params] as const,
   webhookEvents: (params: Record<string, string | number | undefined>) =>
@@ -21,3 +19,4 @@ export const queryKeys = {
   pendingTransactions: () => ["transactions", "pending"] as const,
   profile: () => ["profile"] as const,
 } as const
+

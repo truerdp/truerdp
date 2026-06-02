@@ -1,10 +1,13 @@
 "use client"
 
 import * as React from "react"
+import Image from "next/image"
 
 import { NavMain } from "@/components/nav-main"
 import { NavUser } from "@/components/nav-user"
-import { TeamSwitcher } from "@/components/team-switcher"
+import { useSidebar } from "@workspace/ui/components/sidebar"
+import { Avatar, AvatarFallback } from "@workspace/ui/components/avatar"
+import { cn } from "@workspace/ui/lib/utils"
 import {
   Sidebar,
   SidebarContent,
@@ -22,11 +25,11 @@ import {
   CreditCardIcon,
   Package02Icon,
   UserAdd01Icon,
-  NoteIcon,
   Audit01Icon,
 } from "@hugeicons/core-free-icons"
 import { adminPaths } from "@/lib/paths"
 import { useProfile } from "@/hooks/use-profile"
+import logoSvg from "@workspace/brand-assets/logo.svg"
 
 const team = {
   name: "TrueRDP",
@@ -54,11 +57,6 @@ const navMain = [
     title: "Plans",
     url: adminPaths.plans,
     icon: <HugeiconsIcon icon={Package02Icon} strokeWidth={2} />,
-  },
-  {
-    title: "Content",
-    url: adminPaths.content,
-    icon: <HugeiconsIcon icon={NoteIcon} strokeWidth={2} />,
   },
   {
     title: "Audit Logs",
@@ -109,13 +107,43 @@ const data = {
   navMain,
 }
 
+function SiteLogo({
+  brandName,
+  imgOnly,
+}: {
+  brandName: string
+  imgOnly?: boolean
+}) {
+  return (
+    <div className="inline-flex items-center gap-2">
+      <Image
+        loading="eager"
+        src={logoSvg}
+        alt={brandName}
+        width={50}
+        height={50}
+        className="dark:grayscale dark:invert"
+      />
+      {!imgOnly && (
+        <span
+          aria-label="TrueRDP"
+          className="font-brand text-2xl text-blue-900 dark:text-white"
+        >
+          <span className="text-black dark:text-white">True</span>
+          <span className="dark:text-white">RDP</span>
+        </span>
+      )}
+    </div>
+  )
+}
+
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { data: profile, isLoading: isProfileLoading } = useProfile()
   const segments = useSelectedLayoutSegments()
   const profileName = `${profile?.firstName ?? ""} ${profile?.lastName ?? ""}`
     .trim()
     .replace(/\s+/g, " ")
-
+  const { state, isMobile } = useSidebar()
   const user = {
     name: profileName,
     email: profile?.email ?? "",
@@ -125,7 +153,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
-        <TeamSwitcher teams={data.teams} />
+        {state === "expanded" ? (
+          <SiteLogo brandName={team.name} />
+        ) : (
+          <SiteLogo brandName={team.name} imgOnly />
+        )}
       </SidebarHeader>
       <SidebarContent>
         <NavMain
@@ -139,7 +171,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 segments.length === 1) ||
               (item.url === adminPaths.users && segments[0] === "users") ||
               (item.url === adminPaths.plans && segments[0] === "plans") ||
-              (item.url === adminPaths.content && segments[0] === "content") ||
               (item.url === adminPaths.auditLogs &&
                 segments[0] === "audit-logs") ||
               (item.url === adminPaths.webhookEvents &&

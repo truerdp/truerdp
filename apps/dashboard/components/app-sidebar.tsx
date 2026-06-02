@@ -1,16 +1,17 @@
 "use client"
 
 import * as React from "react"
+import Image from "next/image"
 
 import { NavMain } from "@/components/nav-main"
 import { NavUser } from "@/components/nav-user"
-import { TeamSwitcher } from "@/components/team-switcher"
 import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
   SidebarHeader,
   SidebarRail,
+  useSidebar,
 } from "@workspace/ui/components/sidebar"
 import { useSelectedLayoutSegments } from "next/navigation"
 import { HugeiconsIcon } from "@hugeicons/react"
@@ -24,6 +25,9 @@ import {
 } from "@hugeicons/core-free-icons"
 import { dashboardPaths } from "@/lib/paths"
 import { useProfile } from "@/hooks/use-profile"
+import { Avatar, AvatarFallback } from "@workspace/ui/components/avatar"
+import { cn } from "@workspace/ui/lib/utils"
+import logoSvg from "@workspace/brand-assets/logo.svg"
 
 const team = {
   name: "TrueRDP",
@@ -71,6 +75,36 @@ const data = {
   navMain,
 }
 
+function SiteLogo({
+  brandName,
+  imgOnly,
+}: {
+  brandName: string
+  imgOnly?: boolean
+}) {
+  return (
+    <div className="inline-flex items-center gap-2">
+      <Image
+        loading="eager"
+        src={logoSvg}
+        alt={brandName}
+        width={50}
+        height={50}
+        className="dark:grayscale dark:invert"
+      />
+      {!imgOnly && (
+        <span
+          aria-label="TrueRDP"
+          className="font-brand text-2xl text-blue-900 dark:text-white"
+        >
+          <span className="text-black dark:text-white">True</span>
+          <span className="dark:text-white">RDP</span>
+        </span>
+      )}
+    </div>
+  )
+}
+
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { data: profile, isLoading: isProfileLoading } = useProfile()
   const segments = useSelectedLayoutSegments()
@@ -85,10 +119,16 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     avatar: fallbackAvatar,
   }
 
+  const { state } = useSidebar()
+
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
-        <TeamSwitcher teams={data.teams} />
+        {state === "expanded" ? (
+          <SiteLogo brandName={team.name} />
+        ) : (
+          <SiteLogo brandName={team.name} imgOnly />
+        )}
       </SidebarHeader>
       <SidebarContent>
         <NavMain

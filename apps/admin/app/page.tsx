@@ -8,6 +8,9 @@ import { useExpiredInstances } from "@/hooks/use-expired-instances"
 import { useExpiringSoonInstances } from "@/hooks/use-expiring-soon-instances"
 
 export default function Page() {
+  const cmsUrl =
+    process.env.NEXT_PUBLIC_CMS_URL?.replace(/\/$/, "") ||
+    "http://localhost:3004"
   const {
     data: expiringSoonData,
     isLoading: isExpiringSoonLoading,
@@ -32,6 +35,20 @@ export default function Page() {
           Track upcoming expirations and clean up expired instances.
         </p>
       </div>
+
+      <a
+        href={`${cmsUrl}/admin`}
+        target="_blank"
+        rel="noreferrer"
+        className="block rounded-xl border bg-card p-5 transition-colors hover:bg-muted/40"
+      >
+        <p className="text-sm font-medium text-muted-foreground">Content CMS</p>
+        <h2 className="mt-1 text-xl font-semibold">Open Payload CMS</h2>
+        <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
+          Website pages, blog content, media, site settings, and managed email
+          templates now live in Payload.
+        </p>
+      </a>
 
       <section className="min-w-0 space-y-3">
         <h2 className="text-lg font-semibold">Expiring Soon</h2>

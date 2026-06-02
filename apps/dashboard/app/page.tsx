@@ -49,7 +49,7 @@ export default function DashboardPage() {
           <h2 className="text-lg font-semibold">Your Instances</h2>
           <Link
             href={dashboardPaths.instances}
-            className={buttonVariants({ variant: "link" })}
+            className={buttonVariants({ variant: "default" })}
           >
             <HugeiconsIcon
               icon={FullScreenIcon}
@@ -74,7 +74,7 @@ export default function DashboardPage() {
           <h2 className="text-lg font-semibold">Recent Transactions</h2>
           <Link
             href={dashboardPaths.transactions}
-            className={buttonVariants({ variant: "link" })}
+            className={buttonVariants({ variant: "default" })}
           >
             <HugeiconsIcon
               icon={FullScreenIcon}

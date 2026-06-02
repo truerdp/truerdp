@@ -38,7 +38,7 @@ export type BlogPostSummary = {
 }
 
 export type BlogPost = BlogPostSummary & {
-  body: Record<string, unknown>[]
+  body: Record<string, unknown> | null
   seoTitle: string | null
   seoDescription: string | null
 }
@@ -49,41 +49,46 @@ export type BlogSettings = {
   defaultOgImage: BlogImage | null
 }
 
-export type BlogPostDocument = {
-  _id?: string
+export type PayloadMediaDocument = {
+  id?: string | number
+  url?: string
+  filename?: string
+  alt?: string
+}
+
+export type PayloadTaxonomyDocument = {
+  id?: string | number
+  name?: string
+  slug?: string
+  description?: string
+}
+
+export type PayloadAuthorDocument = PayloadTaxonomyDocument & {
+  bio?: string
+  avatar?: PayloadMediaDocument | string | number | null
+}
+
+export type PayloadBlogPostDocument = {
+  id?: string | number
   title?: string
-  slug?: { current?: string }
+  slug?: string
   excerpt?: string
-  coverImage?: { asset?: { url?: string } }
-  ogImage?: { asset?: { url?: string } }
-  author?: {
-    name?: string
-    slug?: { current?: string }
-    bio?: string
-    avatar?: { asset?: { url?: string } }
-  }
-  categories?: Array<{
-    _id?: string
-    name?: string
-    slug?: { current?: string }
-    description?: string
-  }>
-  tags?: Array<{
-    _id?: string
-    name?: string
-    slug?: { current?: string }
-  }>
+  coverImage?: PayloadMediaDocument | string | number | null
+  ogImage?: PayloadMediaDocument | string | number | null
+  author?: PayloadAuthorDocument | string | number | null
+  categories?: Array<PayloadTaxonomyDocument | string | number>
+  tags?: Array<PayloadTaxonomyDocument | string | number>
   publishAt?: string
   isFeatured?: boolean
   seoTitle?: string
   seoDescription?: string
-  body?: Record<string, unknown>[]
+  body?: Record<string, unknown> | null
 }
 
-export type BlogSettingsDocument = {
+export type PayloadBlogSettingsDocument = {
   heroTitle?: string
   heroDescription?: string
-  defaultOgImage?: { asset?: { url?: string } }
+  defaultOgImage?: PayloadMediaDocument | string | number | null
 }
 
 export type ListBlogPostsInput = {
