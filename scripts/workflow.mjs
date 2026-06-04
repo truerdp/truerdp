@@ -1,10 +1,12 @@
-import { existsSync, copyFileSync, mkdirSync } from "node:fs"
+import { existsSync, copyFileSync, mkdirSync, readFileSync } from "node:fs"
 import { spawn, spawnSync } from "node:child_process"
 import { join } from "node:path"
 
 const root = process.cwd()
 const backendAgentConfig = "deploy/infisical/runtime/backend-agent.yaml"
 const backendAgentConfigExample = "deploy/infisical/backend-agent.yaml.example"
+const infisicalAuthUrl =
+  "https://app.infisical.com/api/v1/auth/universal-auth/login"
 const infisicalMachineIdentityFiles = [
   "/etc/infisical/truerdp/client-id",
   "/etc/infisical/truerdp/client-secret",
@@ -227,6 +229,59 @@ function ensureProductionInfisicalReady() {
       ].join("\n")
     )
     process.exit(1)
+  }
+
+  validateInfisicalMachineIdentity()
+}
+
+function validateInfisicalMachineIdentity() {
+  const [clientIdFile, clientSecretFile] = infisicalMachineIdentityFiles
+  const clientId = readFileSync(clientIdFile, "utf8").trim()
+  const clientSecret = readFileSync(clientSecretFile, "utf8").trim()
+
+  if (!clientId || !clientSecret) {
+    console.error("Infisical machine identity files must not be empty.")
+    process.exit(1)
+  }
+
+  const result = spawnSync(
+    "curl",
+    [
+      "--fail",
+      "--silent",
+      "--show-error",
+      "--output",
+      process.platform === "win32" ? "NUL" : "/dev/null",
+      "--request",
+      "POST",
+      "--header",
+      "Content-Type: application/json",
+      "--data-binary",
+      "@-",
+      infisicalAuthUrl,
+    ],
+    {
+      cwd: root,
+      encoding: "utf8",
+      input: JSON.stringify({
+        clientId,
+        clientSecret,
+      }),
+      shell: process.platform === "win32",
+    }
+  )
+
+  if (result.status !== 0) {
+    console.error(
+      [
+        "Infisical machine identity authentication failed.",
+        "Check /etc/infisical/truerdp/client-id and client-secret.",
+        result.stderr.trim(),
+      ]
+        .filter(Boolean)
+        .join("\n")
+    )
+    process.exit(result.status ?? 1)
   }
 }
 
