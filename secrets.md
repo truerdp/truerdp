@@ -53,13 +53,11 @@ NEXT_PUBLIC_API_URL=https://api.truerdp.com
 NEXT_PUBLIC_WEB_URL=https://truerdp.com
 NEXT_PUBLIC_DASHBOARD_URL=https://dashboard.truerdp.com
 NEXT_PUBLIC_ADMIN_URL=https://admin.truerdp.com
-INTERNAL_API_URL=https://api.truerdp.com
 
 # Email
 RESEND_API_KEY=
 RESEND_FROM_EMAIL=TrueRDP <support@truerdp.com>
 RESEND_REPLY_TO_EMAIL=
-RESEND_BASE_URL=
 ADMIN_ALERT_EMAILS=
 
 # Dodo Payments
@@ -68,7 +66,6 @@ DODO_PAYMENTS_API_KEY=
 DODO_PAYMENTS_WEBHOOK_KEY=
 DODO_DEFAULT_CURRENCY=USD
 DODO_TAX_CATEGORY=
-DODO_PRODUCT_MAP=
 
 # CoinGate
 COINGATE_ENVIRONMENT=sandbox
