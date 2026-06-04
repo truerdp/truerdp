@@ -10,6 +10,7 @@
     "dev:stop": "docker compose -f docker-compose.yml down && kill-port 3000 3001 3002 3003 3004 || true",
     "infisical:render:backend": "infisical agent --config deploy/infisical/runtime/backend-agent.yaml",
     "prod:backend": "node scripts/workflow.mjs prod:backend",
+    "prod:backend:preflight": "node scripts/workflow.mjs prod:backend:preflight",
     "prod:backend:refresh": "node scripts/workflow.mjs prod:backend:refresh",
     "prod:down": "docker compose -f docker-compose.prod.yml down",
     "prod:logs": "docker compose -f docker-compose.prod.yml logs -f backend db",
