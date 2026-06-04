@@ -58,8 +58,9 @@ printf '%s' '<client-secret>' > /etc/infisical/truerdp/client-secret
 chmod 600 /etc/infisical/truerdp/client-id /etc/infisical/truerdp/client-secret
 ```
 
-Copy the example config to the ignored runtime directory and adjust paths or the
-project slug if needed:
+The production workflow creates the ignored runtime agent config from the
+checked-in example automatically. If you need to customize paths or the project
+slug on a host, create it manually before running the deploy command:
 
 ```bash
 mkdir -p deploy/infisical/runtime

@@ -1,14 +1,21 @@
-import { existsSync, copyFileSync } from "node:fs"
+import { existsSync, copyFileSync, mkdirSync } from "node:fs"
 import { spawn, spawnSync } from "node:child_process"
 import { join } from "node:path"
 
 const root = process.cwd()
+const backendAgentConfig = "deploy/infisical/runtime/backend-agent.yaml"
+const backendAgentConfigExample = "deploy/infisical/backend-agent.yaml.example"
+const infisicalMachineIdentityFiles = [
+  "/etc/infisical/truerdp/client-id",
+  "/etc/infisical/truerdp/client-secret",
+]
 
 const command = process.argv[2]
 
 const commands = {
   dev: runDev,
   "dev:no-infisical": runDevWithoutInfisical,
+  "prod:backend:preflight": runProdBackendPreflight,
   "prod:backend": runProdBackend,
   "prod:backend:refresh": runProdBackendRefresh,
   doctor: runDoctor,
@@ -21,6 +28,7 @@ if (!command || !commands[command]) {
       "",
       "Commands:",
       "  dev                   Start local DB/backend Docker and frontend apps",
+      "  prod:backend:preflight Check production backend deploy prerequisites",
       "  prod:backend          Render Infisical backend env and deploy backend",
       "  prod:backend:refresh  Re-render Infisical env and recreate backend",
       "  doctor                Check local workflow prerequisites",
@@ -71,6 +79,12 @@ function runDevWithoutInfisical() {
   ])
   startBackendTunnel()
   run("pnpm", ["run", "dev:frontend"])
+}
+
+function runProdBackendPreflight() {
+  ensureBackendAgentConfig()
+  ensureProductionInfisicalReady()
+  console.log("Production backend deploy prerequisites are present.")
 }
 
 function runProdBackend() {
@@ -143,7 +157,10 @@ function runDoctor() {
     `Backend env: ${existsSync(join(root, "apps/backend/.env")) ? "present" : "missing; dev will copy the example"}`
   )
   console.log(
-    `Backend agent config: ${existsSync(join(root, "deploy/infisical/runtime/backend-agent.yaml")) ? "present" : "missing; copy deploy/infisical/backend-agent.yaml.example first"}`
+    `Backend agent config: ${existsSync(join(root, backendAgentConfig)) ? "present" : "missing; prod commands will create it from the example"}`
+  )
+  console.log(
+    `Infisical machine identity: ${infisicalMachineIdentityFiles.every((file) => existsSync(file)) ? "present" : "missing under /etc/infisical/truerdp"}`
   )
 }
 
@@ -159,24 +176,58 @@ function ensureLocalEnv(target, source) {
 }
 
 function renderBackendEnv() {
-  const config = join(root, "deploy/infisical/runtime/backend-agent.yaml")
+  const config = ensureBackendAgentConfig()
+  ensureProductionInfisicalReady()
 
-  if (!existsSync(config)) {
+  run("infisical", ["agent", "--config", config])
+}
+
+function ensureBackendAgentConfig() {
+  const runtimeDir = join(root, "deploy/infisical/runtime")
+  const config = join(root, backendAgentConfig)
+  const example = join(root, backendAgentConfigExample)
+
+  if (existsSync(config)) {
+    return config
+  }
+
+  if (!existsSync(example)) {
     console.error(
       [
-        "Missing deploy/infisical/runtime/backend-agent.yaml.",
-        "Copy deploy/infisical/backend-agent.yaml.example there and add the",
-        "DigitalOcean machine identity files under /etc/infisical/truerdp.",
+        `Missing ${backendAgentConfigExample}.`,
+        `Cannot create ${backendAgentConfig}.`,
       ].join(" ")
     )
     process.exit(1)
   }
 
-  run("infisical", [
-    "agent",
-    "--config",
-    "deploy/infisical/runtime/backend-agent.yaml",
-  ])
+  mkdirSync(runtimeDir, { recursive: true })
+  copyFileSync(example, config)
+  console.log(`Created ${backendAgentConfig} from the example.`)
+
+  return config
+}
+
+function ensureProductionInfisicalReady() {
+  if (!commandExists("infisical")) {
+    console.error("Missing Infisical CLI. Install it on the production host.")
+    process.exit(1)
+  }
+
+  const missingIdentityFiles = infisicalMachineIdentityFiles.filter(
+    (file) => !existsSync(file)
+  )
+
+  if (missingIdentityFiles.length > 0) {
+    console.error(
+      [
+        "Missing Infisical machine identity files:",
+        ...missingIdentityFiles.map((file) => `- ${file}`),
+        "Create them on the production host before running prod:backend.",
+      ].join("\n")
+    )
+    process.exit(1)
+  }
 }
 
 function canUseInfisical() {

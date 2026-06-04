@@ -77,9 +77,6 @@ jobs:
             exit 1
           fi
 
-      - name: Run migrations
-        run: pnpm --filter backend db:migrate
-
       - name: Configure SSH
         run: |
           set -euo pipefail
@@ -88,6 +85,28 @@ jobs:
           printf '%s\n' "$DEPLOY_KEY" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
           ssh-keyscan -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts
+
+      - name: Preflight DigitalOcean VPS
+        run: |
+          set -euo pipefail
+
+          ssh \
+            -i ~/.ssh/deploy_key \
+            -o ServerAliveInterval=30 \
+            -o ServerAliveCountMax=20 \
+            -o TCPKeepAlive=yes \
+            "$DEPLOY_USER@$DEPLOY_HOST" <<'SSH'
+            set -euo pipefail
+
+            cd /opt/truerdp
+            git fetch origin main
+            git checkout main
+            git pull --ff-only origin main
+            pnpm run prod:backend:preflight
+          SSH
+
+      - name: Run migrations
+        run: pnpm --filter backend db:migrate
 
       - name: Deploy on DigitalOcean VPS
         run: |

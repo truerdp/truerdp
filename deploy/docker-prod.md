@@ -135,9 +135,10 @@ Important: `DATABASE_URL` must be a real Postgres URL. If the container logs sho
 ## 5) Backend env with Infisical
 
 Production backend secrets should come from Infisical. Follow
-`deploy/infisical/README.md` to create the Infisical project, add the
-DigitalOcean machine identity, and copy
-`deploy/infisical/backend-agent.yaml.example` to the ignored runtime config.
+`deploy/infisical/README.md` to create the Infisical project and add the
+DigitalOcean machine identity. The deploy script creates the ignored runtime
+agent config from `deploy/infisical/backend-agent.yaml.example` if it is
+missing.
 
 Render the backend runtime env file:
 
@@ -379,8 +380,9 @@ The VPS must already have the repo cloned at:
 The deploy command intentionally uses `git pull --ff-only`; if tracked files
 were edited directly on the VPS, the deployment fails instead of overwriting
 those changes. Keep production-only values in Infisical, with only root `.env`,
-the generated `apps/backend/.env.production.infisical`, and optional
-break-glass `apps/backend/.env.production.local` files on the VPS.
+the generated `apps/backend/.env.production.infisical`, the ignored
+`deploy/infisical/runtime/backend-agent.yaml`, and optional break-glass
+`apps/backend/.env.production.local` files on the VPS.
 
 The standalone `.github/workflows/migrate.yml` workflow is manual-only and is
 kept for emergency migration runs.
@@ -411,6 +413,12 @@ docker builder prune -f
 docker system prune -f
 docker compose -f docker-compose.prod.yml up -d --build --no-deps backend
 ```
+
+If GitHub Actions fails during the SSH deploy step with
+`Missing Infisical machine identity files`, create
+`/etc/infisical/truerdp/client-id` and
+`/etc/infisical/truerdp/client-secret` on the VPS using the values from the
+Infisical production machine identity.
 
 If GitHub Actions fails during the SSH deploy step with
 `client_loop: send disconnect: Broken pipe`, the remote Docker build likely
