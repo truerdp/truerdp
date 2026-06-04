@@ -1,5 +1,11 @@
 # VPS Production Deployment
 
+Command to login to DigitalOcean droplet via SSH:
+
+```txt
+ssh ujjawal@159.223.115.183
+```
+
 This guide documents the production backend setup for a small Ubuntu VPS, such
 as a DigitalOcean Droplet. It assumes:
 

@@ -2,7 +2,7 @@
 
 Truerdp is a `pnpm` + Turborepo monorepo with:
 
-- three Next.js applications: `web`, `dashboard`, `admin`
+- four Next.js applications: `web`, `dashboard`, `admin`, `cms`
 - one Fastify backend: `backend`
 - shared packages for UI, ESLint config, and TypeScript config
 
@@ -23,10 +23,10 @@ pnpm run prod:backend:refresh
 ```
 
 - `pnpm dev` starts local Postgres/backend in Docker and all frontend apps
-  locally. It also starts an ngrok tunnel for the backend on port `3003` when
-  ngrok is installed. If Infisical is configured in the shell, it injects
-  secrets first; otherwise it uses local `.env` files and creates
-  `apps/backend/.env` from the example when missing.
+  locally (`web`, `dashboard`, `admin`, and `cms`). It also starts an ngrok
+  tunnel for the backend on port `3003` when ngrok is installed. If Infisical
+  is configured in the shell, it injects secrets first; otherwise it uses local
+  `.env` files and creates `apps/backend/.env` from the example when missing.
 - `pnpm run prod:backend` renders backend production secrets from Infisical and
   starts/rebuilds the production backend container.
 - `pnpm run prod:backend:refresh` re-renders backend production secrets and
@@ -260,6 +260,7 @@ Local URLs:
 - Web: `http://localhost:3000`
 - Dashboard: `http://localhost:3001`
 - Admin: `http://localhost:3002`
+- CMS: `http://localhost:3004`
 - Backend: `http://localhost:3003`
 
 ## Business Flows
