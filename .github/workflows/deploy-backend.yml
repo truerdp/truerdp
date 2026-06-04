@@ -12,6 +12,7 @@ on:
       - "package.json"
       - "pnpm-lock.yaml"
       - "pnpm-workspace.yaml"
+      - "scripts/workflow.mjs"
       - "turbo.json"
   workflow_dispatch:
 
