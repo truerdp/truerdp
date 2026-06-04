@@ -7,6 +7,7 @@ on:
     paths:
       - ".github/workflows/deploy-backend.yml"
       - "apps/backend/**"
+      - "deploy/infisical/**"
       - "packages/**"
       - "docker-compose.prod.yml"
       - "package.json"
