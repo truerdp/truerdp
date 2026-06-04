@@ -5,22 +5,17 @@ Application code still reads `process.env`; Infisical only delivers the values.
 
 ## Infisical Project Layout
 
-Use one Infisical Cloud project with slug `truerdp`.
+Use one Infisical Cloud project with slug `true-rdp-58y0`.
 
 Environments:
 
-- `development`
-- `preview`
-- `production`
+- `dev`
+- `staging`
+- `prod`
 
-Folders:
-
-- `/shared`: common URLs and config used by multiple apps.
-- `/backend`: backend-only runtime secrets.
-- `/web`: web app values.
-- `/dashboard`: dashboard app values.
-- `/admin`: admin app values.
-- `/cms`: Payload CMS values.
+Secrets live at the project root (`/`). This keeps Infisical as the single
+place to edit deployed configuration without maintaining app-specific folders
+or generated env files by hand.
 
 Keep `NEXT_PUBLIC_*` values in Infisical for consistency, but remember they are
 public frontend config after a Next.js build.
@@ -28,13 +23,7 @@ public frontend config after a Next.js build.
 ## Vercel Syncs
 
 Create one Vercel App Connection in Infisical, then create one Secret Sync per
-Vercel project. In Infisical, configure each app folder to import `/shared`,
-then sync the app folder:
-
-- `web`: import `/shared` into `/web`, then sync `/web`.
-- `dashboard`: import `/shared` into `/dashboard`, then sync `/dashboard`.
-- `admin`: import `/shared` into `/admin`, then sync `/admin`.
-- `cms`: import `/shared` into `/cms`, then sync `/cms`.
+Vercel project from the root path (`/`).
 
 Recommended sync options while migrating:
 

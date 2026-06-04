@@ -47,12 +47,7 @@ function runDev() {
   if (canUseInfisical()) {
     run("infisical", [
       "run",
-      "--path=/shared",
-      "--path=/backend",
-      "--path=/web",
-      "--path=/dashboard",
-      "--path=/admin",
-      "--path=/cms",
+      "--path=/",
       "--",
       "node",
       "scripts/workflow.mjs",

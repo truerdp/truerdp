@@ -147,7 +147,7 @@ BACKEND_ENV_FILE=apps/backend/.env.production.infisical
 ```
 
 Configure Infisical on the new VPS using `deploy/infisical/README.md`. Keep the
-same Infisical project/folders and add a machine identity credential for the new
+same Infisical project root and add a machine identity credential for the new
 host.
 
 Start the backend:
