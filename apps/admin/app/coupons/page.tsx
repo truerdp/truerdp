@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
-import { clientApi } from "@workspace/api"
+import { clientApi } from "@workspace/api/client"
 import { CouponFormCard } from "@/app/coupons/_components/coupon-form-card"
 import { CouponsTable } from "@/app/coupons/_components/coupons-table"
 import {

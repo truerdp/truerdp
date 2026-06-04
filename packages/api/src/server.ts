@@ -1,23 +1,11 @@
 import { fetcher, type ApiRequestOptions } from "./fetcher"
+import { cookies } from "next/headers"
 
 declare const process: {
   env: Record<string, string | undefined>
 }
 
 const isServer = typeof window === "undefined"
-
-interface CookieEntry {
-  name: string
-  value: string
-}
-
-interface CookieStore {
-  getAll(): CookieEntry[]
-}
-
-interface NextHeadersModule {
-  cookies(): CookieStore | Promise<CookieStore>
-}
 
 function getBaseUrl() {
   return isServer
@@ -26,8 +14,6 @@ function getBaseUrl() {
 }
 
 async function buildCookieHeader() {
-  const nextHeadersModule = "next/headers" as string
-  const { cookies } = (await import(nextHeadersModule)) as NextHeadersModule
   const cookieStore = await cookies()
 
   return cookieStore

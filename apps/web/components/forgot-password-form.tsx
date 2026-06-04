@@ -3,7 +3,7 @@
 import { FormEvent, useState } from "react"
 import Link from "next/link"
 import { toast } from "sonner"
-import { clientApi } from "@workspace/api"
+import { clientApi } from "@workspace/api/client"
 import { cn } from "@workspace/ui/lib/utils"
 import { Alert, AlertDescription } from "@workspace/ui/components/alert"
 import { Button } from "@workspace/ui/components/button"

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { useMutation } from "@tanstack/react-query"
-import { clientApi } from "@workspace/api"
+import { clientApi } from "@workspace/api/client"
 import {
   Dialog,
   DialogContent,

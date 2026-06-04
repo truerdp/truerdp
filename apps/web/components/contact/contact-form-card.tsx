@@ -2,7 +2,7 @@
 
 import { FormEvent, useState } from "react"
 import { toast } from "sonner"
-import { clientApi } from "@workspace/api"
+import { clientApi } from "@workspace/api/client"
 import { Alert, AlertDescription } from "@workspace/ui/components/alert"
 import { Button } from "@workspace/ui/components/button"
 import {

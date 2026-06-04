@@ -1,4 +1,4 @@
-import { clientApi } from "@workspace/api"
+import { clientApi } from "@workspace/api/client"
 
 export async function logout() {
   await clientApi("/api/auth/sign-out", {

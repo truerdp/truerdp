@@ -3,7 +3,7 @@
 import { FormEvent, useEffect, useState } from "react"
 import { useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
-import { clientApi } from "@workspace/api"
+import { clientApi } from "@workspace/api/client"
 import { queryKeys } from "@/lib/query-keys"
 import type { Profile } from "@/hooks/use-profile"
 import { Button } from "@workspace/ui/components/button"

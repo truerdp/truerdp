@@ -3,7 +3,7 @@ import { Plus_Jakarta_Sans } from "next/font/google"
 
 import { HugeiconsIcon } from "@hugeicons/react"
 import { CreditCardIcon } from "@hugeicons/core-free-icons"
-import { serverApi } from "@workspace/api"
+import { serverApi } from "@workspace/api/server"
 import {
   Alert,
   AlertDescription,

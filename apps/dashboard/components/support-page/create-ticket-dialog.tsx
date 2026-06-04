@@ -3,7 +3,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
 import { Add01Icon } from "@hugeicons/core-free-icons"
 import { HugeiconsIcon } from "@hugeicons/react"
-import { clientApi } from "@workspace/api"
+import { clientApi } from "@workspace/api/client"
 
 import { queryKeys } from "@/lib/query-keys"
 import type { TicketSummary } from "@/components/support-page/types"

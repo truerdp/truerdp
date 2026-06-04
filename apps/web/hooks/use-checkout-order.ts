@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
-import { clientApi } from "@workspace/api"
+import { clientApi } from "@workspace/api/client"
 
 import { useOrder } from "@/hooks/use-order"
 import { useProfile } from "@/hooks/use-profile"

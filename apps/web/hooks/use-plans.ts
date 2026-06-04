@@ -1,7 +1,7 @@
 "use client"
 
 import { useQuery } from "@tanstack/react-query"
-import { clientApi } from "@workspace/api"
+import { clientApi } from "@workspace/api/client"
 
 export interface PlanPricingOption {
   id: number

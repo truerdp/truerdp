@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
-import { clientApi } from "@workspace/api"
+import { clientApi } from "@workspace/api/client"
 import { Input } from "@workspace/ui/components/input"
 import { CreateTicketDialog } from "@/app/support/_components/create-ticket-dialog"
 import { TicketsTable } from "@/app/support/_components/tickets-table"

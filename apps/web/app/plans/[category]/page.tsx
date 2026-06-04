@@ -2,7 +2,7 @@ import type { Metadata } from "next"
 import Link from "next/link"
 import { Plus_Jakarta_Sans } from "next/font/google"
 
-import { serverApi } from "@workspace/api"
+import { serverApi } from "@workspace/api/server"
 import {
   Alert,
   AlertDescription,

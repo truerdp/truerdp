@@ -1,7 +1,7 @@
 "use client"
 
 import { useQuery } from "@tanstack/react-query"
-import { clientApi } from "@workspace/api"
+import { clientApi } from "@workspace/api/client"
 import { queryKeys } from "@/lib/query-keys"
 
 export interface AdminTransaction {

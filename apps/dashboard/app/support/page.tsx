@@ -4,7 +4,7 @@ import { useMemo, useState } from "react"
 import { useQuery } from "@tanstack/react-query"
 
 import { queryKeys } from "@/lib/query-keys"
-import { clientApi } from "@workspace/api"
+import { clientApi } from "@workspace/api/client"
 import { CreateTicketDialog } from "@/components/support-page/create-ticket-dialog"
 import { TicketsTable } from "@/components/support-page/tickets-table"
 import type { TicketSummary } from "@/components/support-page/types"

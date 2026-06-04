@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef } from "react"
 import { useSearchParams } from "next/navigation"
-import { clientApi } from "@workspace/api"
+import { clientApi } from "@workspace/api/client"
 
 import { useTransactions } from "@/hooks/use-transactions"
 
