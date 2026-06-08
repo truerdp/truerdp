@@ -61,7 +61,9 @@ export function AdminInvoicesTable({
               <TableRow key={invoice.id}>
                 <TableCell>
                   <div className="flex flex-col">
-                    <span className="font-mono text-sm">{invoice.invoiceNumber}</span>
+                    <span className="font-mono text-sm">
+                      {invoice.invoiceNumber}
+                    </span>
                     <span className="text-xs text-muted-foreground">
                       TX {invoice.transaction.reference || "-"}
                     </span>
@@ -76,10 +78,14 @@ export function AdminInvoicesTable({
                 </TableCell>
                 <TableCell>
                   <div className="flex flex-col gap-0.5">
-                    <span className="text-sm font-medium">{invoice.plan.name}</span>
+                    <span className="text-sm font-medium">
+                      {invoice.plan.name}
+                    </span>
                     <span className="text-xs text-muted-foreground">
                       {invoice.plan.durationDays} days ·{" "}
-                      {invoice.plan.kind === "renewal" ? "Renewal" : "New purchase"}
+                      {invoice.plan.kind === "renewal"
+                        ? "Renewal"
+                        : "New purchase"}
                     </span>
                   </div>
                 </TableCell>

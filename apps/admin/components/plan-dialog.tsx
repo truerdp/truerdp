@@ -31,7 +31,9 @@ export function PlanDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="flex max-h-[85vh] max-w-3xl flex-col gap-5 overflow-hidden p-0">
         <DialogHeader className="px-6 pt-6">
-          <DialogTitle>{mode === "edit" ? "Edit Plan" : "Create Plan"}</DialogTitle>
+          <DialogTitle>
+            {mode === "edit" ? "Edit Plan" : "Create Plan"}
+          </DialogTitle>
           <DialogDescription>
             {mode === "edit"
               ? "Update compute resources and pricing options."

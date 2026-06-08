@@ -24,7 +24,10 @@ interface UserDetailsSidebarProps {
   insights: Insight[]
 }
 
-export function UserDetailsSidebar({ data, insights }: UserDetailsSidebarProps) {
+export function UserDetailsSidebar({
+  data,
+  insights,
+}: UserDetailsSidebarProps) {
   const { user, summary } = data
   const activeInstances = getActiveInstanceLinks(data.instances)
 
@@ -59,8 +62,14 @@ export function UserDetailsSidebar({ data, insights }: UserDetailsSidebarProps) 
         <CardContent>
           <MetaRow label="User ID" value={`#${user.id}`} />
           <MetaRow label="Role" value={formatStatusLabel(user.role)} />
-          <MetaRow label="Member since" value={formatDateOnly(user.createdAt)} />
-          <MetaRow label="Profile updated" value={formatDateTime(user.updatedAt)} />
+          <MetaRow
+            label="Member since"
+            value={formatDateOnly(user.createdAt)}
+          />
+          <MetaRow
+            label="Profile updated"
+            value={formatDateTime(user.updatedAt)}
+          />
           <MetaRow
             label="Last activity"
             value={formatDateTime(summary.lastActivityAt)}

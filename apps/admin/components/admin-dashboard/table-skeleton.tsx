@@ -37,4 +37,3 @@ export function TableSkeleton({ columns, rows = 4 }: TableSkeletonProps) {
     </Table>
   )
 }
-

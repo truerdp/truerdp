@@ -2,10 +2,7 @@
 
 import { useMemo, useState } from "react"
 import { HugeiconsIcon } from "@hugeicons/react"
-import {
-  Alert02Icon,
-  DashboardSquare01Icon,
-} from "@hugeicons/core-free-icons"
+import { Alert02Icon, DashboardSquare01Icon } from "@hugeicons/core-free-icons"
 
 import { useUsers } from "@/hooks/use-users"
 import {
@@ -17,7 +14,11 @@ import {
 } from "@workspace/ui/components/card"
 import { Input } from "@workspace/ui/components/input"
 import { formatCurrency } from "@/components/admin-users/helpers"
-import { MetricCard, UsersEmpty, UsersSkeleton } from "@/components/admin-users/states"
+import {
+  MetricCard,
+  UsersEmpty,
+  UsersSkeleton,
+} from "@/components/admin-users/states"
 import { AdminUsersTable } from "@/components/admin-users/table"
 
 export default function AdminUsersPage() {

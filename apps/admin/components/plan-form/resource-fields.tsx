@@ -36,4 +36,3 @@ export function PlanResourceFields({
     </div>
   )
 }
-

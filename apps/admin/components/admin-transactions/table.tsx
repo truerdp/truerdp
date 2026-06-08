@@ -69,7 +69,9 @@ export function AdminTransactionsTable({
               </TableCell>
               <TableCell>
                 <div className="flex flex-col gap-1">
-                  <span className="text-sm font-medium">{transaction.plan.name}</span>
+                  <span className="text-sm font-medium">
+                    {transaction.plan.name}
+                  </span>
                   <span className="text-xs text-muted-foreground">
                     {transaction.pricing.durationDays} days
                   </span>
@@ -103,18 +105,18 @@ export function AdminTransactionsTable({
                         size="sm"
                         onClick={() => onConfirm(transaction.id)}
                         disabled={isUpdating}
-                    >
-                      {isUpdating ? (
-                        <Spinner data-icon="inline-start" />
-                      ) : (
-                        <HugeiconsIcon
-                          icon={TaskDone02Icon}
-                          strokeWidth={2}
-                          data-icon="inline-start"
-                        />
-                      )}
-                      Confirm
-                    </Button>
+                      >
+                        {isUpdating ? (
+                          <Spinner data-icon="inline-start" />
+                        ) : (
+                          <HugeiconsIcon
+                            icon={TaskDone02Icon}
+                            strokeWidth={2}
+                            data-icon="inline-start"
+                          />
+                        )}
+                        Confirm
+                      </Button>
                       <Button
                         size="sm"
                         variant="destructive"

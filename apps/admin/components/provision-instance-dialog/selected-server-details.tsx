@@ -36,4 +36,3 @@ export function SelectedServerDetails({ server }: SelectedServerDetailsProps) {
     </Field>
   )
 }
-

@@ -111,7 +111,10 @@ export default function AdminAuditLogsPage() {
           <TableBody>
             {items.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-sm text-muted-foreground">
+                <TableCell
+                  colSpan={7}
+                  className="text-sm text-muted-foreground"
+                >
                   {query.isLoading ? "Loading logs..." : "No audit logs found."}
                 </TableCell>
               </TableRow>
@@ -121,7 +124,9 @@ export default function AdminAuditLogsPage() {
                   <TableCell className="text-xs">
                     {new Date(item.createdAt).toLocaleString()}
                   </TableCell>
-                  <TableCell className="font-mono text-xs">{item.action}</TableCell>
+                  <TableCell className="font-mono text-xs">
+                    {item.action}
+                  </TableCell>
                   <TableCell className="text-xs">
                     {item.entityType}
                     {item.entityId ? ` #${item.entityId}` : ""}
@@ -131,7 +136,9 @@ export default function AdminAuditLogsPage() {
                       ? `${item.admin.email} (#${item.admin.id})`
                       : "System"}
                   </TableCell>
-                  <TableCell className="max-w-72 text-xs">{item.reason}</TableCell>
+                  <TableCell className="max-w-72 text-xs">
+                    {item.reason}
+                  </TableCell>
                   <TableCell className="max-w-72 font-mono text-[11px]">
                     {toPrettyJson(item.beforeState)}
                   </TableCell>

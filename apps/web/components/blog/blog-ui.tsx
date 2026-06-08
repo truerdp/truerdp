@@ -132,5 +132,3 @@ export function RelatedPosts({ posts }: { posts: BlogPostSummary[] }) {
     </section>
   )
 }
-
-

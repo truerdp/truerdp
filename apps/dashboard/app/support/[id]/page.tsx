@@ -80,11 +80,15 @@ export default function SupportTicketPage() {
   })
 
   if (isLoading) {
-    return <div className="text-sm text-muted-foreground">Loading thread...</div>
+    return (
+      <div className="text-sm text-muted-foreground">Loading thread...</div>
+    )
   }
 
   if (error || !data) {
-    return <div className="text-sm text-destructive">Unable to load ticket.</div>
+    return (
+      <div className="text-sm text-destructive">Unable to load ticket.</div>
+    )
   }
 
   return (
@@ -101,7 +105,9 @@ export default function SupportTicketPage() {
             <h1 className="text-2xl font-bold tracking-tight">
               Ticket #{data.ticket.id}
             </h1>
-            <Badge variant={data.ticket.status === "open" ? "default" : "outline"}>
+            <Badge
+              variant={data.ticket.status === "open" ? "default" : "outline"}
+            >
               {data.ticket.status}
             </Badge>
           </div>
@@ -143,9 +149,12 @@ export default function SupportTicketPage() {
                   )}
                 >
                   <div className="mb-1 text-xs opacity-75">
-                    {isMine ? "You" : "Support"} • {formatDate(message.createdAt)}
+                    {isMine ? "You" : "Support"} •{" "}
+                    {formatDate(message.createdAt)}
                   </div>
-                  <p className="whitespace-pre-wrap leading-6">{message.message}</p>
+                  <p className="leading-6 whitespace-pre-wrap">
+                    {message.message}
+                  </p>
                 </div>
               </div>
             )

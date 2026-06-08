@@ -2,7 +2,10 @@ import { Check } from "@hugeicons/core-free-icons"
 import { HugeiconsIcon } from "@hugeicons/react"
 
 import type { InstanceDetailsData } from "@/components/instance-details/helpers"
-import { formatDateTime, getResourceStatusVariant } from "@/components/instance-details/helpers"
+import {
+  formatDateTime,
+  getResourceStatusVariant,
+} from "@/components/instance-details/helpers"
 import { Badge } from "@workspace/ui/components/badge"
 import {
   Card,
@@ -44,11 +47,15 @@ export function ResourceCard({ data }: ResourceCardProps) {
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
               <p className="text-xs text-muted-foreground">IP Address</p>
-              <p className="mt-1 font-mono text-sm">{server?.ipAddress || "-"}</p>
+              <p className="mt-1 font-mono text-sm">
+                {server?.ipAddress || "-"}
+              </p>
             </div>
             <div>
               <p className="text-xs text-muted-foreground">Username</p>
-              <p className="mt-1 font-mono text-sm">{resource.username || "-"}</p>
+              <p className="mt-1 font-mono text-sm">
+                {resource.username || "-"}
+              </p>
             </div>
           </div>
         </div>
@@ -62,7 +69,9 @@ export function ResourceCard({ data }: ResourceCardProps) {
             </div>
             <div>
               <p className="text-xs text-muted-foreground">External ID</p>
-              <p className="mt-1 font-mono text-sm">{server?.externalId || "-"}</p>
+              <p className="mt-1 font-mono text-sm">
+                {server?.externalId || "-"}
+              </p>
             </div>
           </div>
         </div>
@@ -73,13 +82,20 @@ export function ResourceCard({ data }: ResourceCardProps) {
             <div>
               <p className="text-xs text-muted-foreground">Assigned At</p>
               <div className="mt-1 flex items-center gap-2">
-                <HugeiconsIcon icon={Check} className="h-4 w-4 text-green-600" />
-                <span className="text-sm">{formatDateTime(resource.assignedAt)}</span>
+                <HugeiconsIcon
+                  icon={Check}
+                  className="h-4 w-4 text-green-600"
+                />
+                <span className="text-sm">
+                  {formatDateTime(resource.assignedAt)}
+                </span>
               </div>
             </div>
             <div>
               <p className="text-xs text-muted-foreground">Released At</p>
-              <p className="mt-1 text-sm">{formatDateTime(resource.releasedAt)}</p>
+              <p className="mt-1 text-sm">
+                {formatDateTime(resource.releasedAt)}
+              </p>
             </div>
           </div>
         </div>

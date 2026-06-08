@@ -19,4 +19,3 @@ export const queryKeys = {
   pendingTransactions: () => ["transactions", "pending"] as const,
   profile: () => ["profile"] as const,
 } as const
-

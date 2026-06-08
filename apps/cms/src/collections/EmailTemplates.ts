@@ -18,6 +18,12 @@ export const EmailTemplates: CollectionConfig = {
     { name: "subjectTemplate", type: "text", required: true },
     { name: "htmlTemplate", type: "textarea", required: true },
     { name: "textTemplate", type: "textarea" },
-    { name: "isActive", type: "checkbox", required: true, defaultValue: true, index: true },
+    {
+      name: "isActive",
+      type: "checkbox",
+      required: true,
+      defaultValue: true,
+      index: true,
+    },
   ],
 }

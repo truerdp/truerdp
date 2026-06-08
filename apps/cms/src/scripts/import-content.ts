@@ -43,7 +43,9 @@ function readJson<T>(path: string): T | null {
 
 function getArg(name: string) {
   const prefix = `--${name}=`
-  return process.argv.find((arg) => arg.startsWith(prefix))?.slice(prefix.length)
+  return process.argv
+    .find((arg) => arg.startsWith(prefix))
+    ?.slice(prefix.length)
 }
 
 function pickSeo(page: LegacyPage) {
@@ -132,7 +134,8 @@ for (const template of legacy?.emailTemplates ?? []) {
   })
   const data = {
     key: template.key,
-    subjectTemplate: template.subjectTemplate ?? template.subject_template ?? "",
+    subjectTemplate:
+      template.subjectTemplate ?? template.subject_template ?? "",
     htmlTemplate: template.htmlTemplate ?? template.html_template ?? "",
     textTemplate: template.textTemplate ?? template.text_template ?? null,
     isActive: template.isActive ?? template.is_active ?? true,
@@ -155,6 +158,3 @@ for (const template of legacy?.emailTemplates ?? []) {
 }
 
 console.log("Payload import complete")
-
-
-

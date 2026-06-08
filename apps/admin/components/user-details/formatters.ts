@@ -85,7 +85,9 @@ export function getDisplayName(user: UserDetailsUser) {
 
 export function getInitials(user: UserDetailsUser) {
   const initials = `${user.firstName[0] ?? ""}${user.lastName[0] ?? ""}`.trim()
-  return initials ? initials.toUpperCase() : user.email.slice(0, 2).toUpperCase()
+  return initials
+    ? initials.toUpperCase()
+    : user.email.slice(0, 2).toUpperCase()
 }
 
 export function getRoleVariant(role: UserDetailsData["user"]["role"]) {

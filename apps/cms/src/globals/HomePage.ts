@@ -26,7 +26,12 @@ export const HomePage: GlobalConfig = {
     afterChange: [revalidateGlobal("home-page")],
   },
   fields: [
-    { name: "title", type: "text", required: true, defaultValue: "TrueRDP Plans" },
+    {
+      name: "title",
+      type: "text",
+      required: true,
+      defaultValue: "TrueRDP Plans",
+    },
     { name: "summary", type: "textarea" },
     {
       name: "hero",
@@ -63,10 +68,7 @@ export const HomePage: GlobalConfig = {
         {
           name: "steps",
           type: "array",
-          fields: [
-            ...textItemFields,
-            { name: "details", type: "textarea" },
-          ],
+          fields: [...textItemFields, { name: "details", type: "textarea" }],
         },
       ],
     },

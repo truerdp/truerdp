@@ -104,9 +104,8 @@ function ThemeProvider({
   disableTransitionOnChange = true,
 }: ThemeProviderProps) {
   const [theme, setThemeState] = React.useState<Theme>(defaultTheme)
-  const [resolvedTheme, setResolvedTheme] = React.useState<ResolvedTheme>(
-    "light"
-  )
+  const [resolvedTheme, setResolvedTheme] =
+    React.useState<ResolvedTheme>("light")
 
   React.useEffect(() => {
     setThemeState(readStoredTheme(defaultTheme))

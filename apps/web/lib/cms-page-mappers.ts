@@ -1,4 +1,8 @@
-import { fallbackPages, fallbackSiteSettings, getFallbackPage } from "@/lib/cms-fallback"
+import {
+  fallbackPages,
+  fallbackSiteSettings,
+  getFallbackPage,
+} from "@/lib/cms-fallback"
 import type {
   CmsPage,
   FaqPageDocument,
@@ -15,25 +19,32 @@ export function mapHomePageToCms(document: HomePageDocument): CmsPage {
     summary: document.summary ?? fallbackPages.homepage.summary,
     content: {
       hero: document.hero ?? fallbackPages.homepage.content.hero,
-      valueProps: document.valueProps ?? fallbackPages.homepage.content.valueProps,
+      valueProps:
+        document.valueProps ?? fallbackPages.homepage.content.valueProps,
       valuePropsSection:
-        document.valuePropsSection ?? fallbackPages.homepage.content.valuePropsSection,
+        document.valuePropsSection ??
+        fallbackPages.homepage.content.valuePropsSection,
       journeySection:
-        document.journeySection ?? fallbackPages.homepage.content.journeySection,
+        document.journeySection ??
+        fallbackPages.homepage.content.journeySection,
       sections: document.sections ?? fallbackPages.homepage.content.sections,
       locationSection:
-        document.locationSection ?? fallbackPages.homepage.content.locationSection,
+        document.locationSection ??
+        fallbackPages.homepage.content.locationSection,
       testimonialsSection:
         document.testimonialsSection ??
         fallbackPages.homepage.content.testimonialsSection,
       faqPreviewSection:
-        document.faqPreviewSection ?? fallbackPages.homepage.content.faqPreviewSection,
+        document.faqPreviewSection ??
+        fallbackPages.homepage.content.faqPreviewSection,
       liveSupportSection:
-        document.liveSupportSection ?? fallbackPages.homepage.content.liveSupportSection,
+        document.liveSupportSection ??
+        fallbackPages.homepage.content.liveSupportSection,
       finalCta: document.finalCta ?? fallbackPages.homepage.content.finalCta,
     },
     seoTitle: document.seoTitle ?? fallbackPages.homepage.seoTitle,
-    seoDescription: document.seoDescription ?? fallbackPages.homepage.seoDescription,
+    seoDescription:
+      document.seoDescription ?? fallbackPages.homepage.seoDescription,
   }
 }
 
@@ -64,7 +75,10 @@ export function mapFaqPageToCms(document: FaqPageDocument): CmsPage {
   }
 }
 
-export function mapLegalPageToCms(slug: string, document: LegalPageDocument): CmsPage {
+export function mapLegalPageToCms(
+  slug: string,
+  document: LegalPageDocument
+): CmsPage {
   const fallback = getFallbackPage(slug)
 
   return {

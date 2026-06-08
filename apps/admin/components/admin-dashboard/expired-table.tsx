@@ -42,7 +42,9 @@ export function ExpiredTable({ instances }: ExpiredTableProps) {
             <TableCell>
               <div className="flex gap-3">
                 <span className="font-medium">{instance.daysSinceExpiry}</span>
-                <ExpiredStatusBadge daysSinceExpiry={instance.daysSinceExpiry} />
+                <ExpiredStatusBadge
+                  daysSinceExpiry={instance.daysSinceExpiry}
+                />
               </div>
             </TableCell>
             <TableCell>
@@ -60,4 +62,3 @@ export function ExpiredTable({ instances }: ExpiredTableProps) {
     </Table>
   )
 }
-

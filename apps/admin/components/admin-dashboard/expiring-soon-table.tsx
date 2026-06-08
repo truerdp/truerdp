@@ -7,9 +7,7 @@ import {
   TableHeader,
   TableRow,
 } from "@workspace/ui/components/table"
-import {
-  ExpiringSoonStatusBadge,
-} from "@/components/instance-status-badge"
+import { ExpiringSoonStatusBadge } from "@/components/instance-status-badge"
 import ExtendInstanceDialog from "@/components/extend-instance-dialog"
 import {
   formatDate,
@@ -36,7 +34,9 @@ export function ExpiringSoonTable({ instances }: ExpiringSoonTableProps) {
         {instances.map((instance) => (
           <TableRow
             key={instance.id}
-            className={cn(getExpiringSoonRowClassName(instance.daysUntilExpiry))}
+            className={cn(
+              getExpiringSoonRowClassName(instance.daysUntilExpiry)
+            )}
           >
             <TableCell className="font-mono text-sm">#{instance.id}</TableCell>
             <TableCell>{formatDate(instance.expiryDate)}</TableCell>
@@ -60,4 +60,3 @@ export function ExpiringSoonTable({ instances }: ExpiringSoonTableProps) {
     </Table>
   )
 }
-

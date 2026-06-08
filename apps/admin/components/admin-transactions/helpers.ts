@@ -26,7 +26,9 @@ export function formatAmount(amount: number, currency: string) {
   }
 }
 
-export function getStatusBadgeVariant(status: "pending" | "confirmed" | "failed") {
+export function getStatusBadgeVariant(
+  status: "pending" | "confirmed" | "failed"
+) {
   if (status === "pending") {
     return "secondary"
   }

@@ -1,4 +1,9 @@
-import { Controller, type Control, type FieldErrors, type UseFormRegister } from "react-hook-form"
+import {
+  Controller,
+  type Control,
+  type FieldErrors,
+  type UseFormRegister,
+} from "react-hook-form"
 import { Input } from "@workspace/ui/components/input"
 import {
   Select,
@@ -36,7 +41,9 @@ export function PlanResourceFieldsSecondary({
             aria-invalid={!!errors.bandwidth}
             {...register("bandwidth")}
           />
-          {errors.bandwidth && <FieldError>{errors.bandwidth.message}</FieldError>}
+          {errors.bandwidth && (
+            <FieldError>{errors.bandwidth.message}</FieldError>
+          )}
         </Field>
 
         <Field data-invalid={!!errors.portSpeed}>
@@ -49,7 +56,9 @@ export function PlanResourceFieldsSecondary({
             aria-invalid={!!errors.portSpeed}
             {...register("portSpeed")}
           />
-          {errors.portSpeed && <FieldError>{errors.portSpeed.message}</FieldError>}
+          {errors.portSpeed && (
+            <FieldError>{errors.portSpeed.message}</FieldError>
+          )}
         </Field>
 
         <Field data-invalid={!!errors.setupFees}>
@@ -62,7 +71,9 @@ export function PlanResourceFieldsSecondary({
             aria-invalid={!!errors.setupFees}
             {...register("setupFees", { valueAsNumber: true })}
           />
-          {errors.setupFees && <FieldError>{errors.setupFees.message}</FieldError>}
+          {errors.setupFees && (
+            <FieldError>{errors.setupFees.message}</FieldError>
+          )}
         </Field>
       </div>
 
@@ -88,7 +99,9 @@ export function PlanResourceFieldsSecondary({
             aria-invalid={!!errors.osVersion}
             {...register("osVersion")}
           />
-          {errors.osVersion && <FieldError>{errors.osVersion.message}</FieldError>}
+          {errors.osVersion && (
+            <FieldError>{errors.osVersion.message}</FieldError>
+          )}
         </Field>
 
         <Field data-invalid={!!errors.planType}>
@@ -112,7 +125,9 @@ export function PlanResourceFieldsSecondary({
               </Select>
             )}
           />
-          {errors.planType && <FieldError>{errors.planType.message}</FieldError>}
+          {errors.planType && (
+            <FieldError>{errors.planType.message}</FieldError>
+          )}
         </Field>
 
         <Field data-invalid={!!errors.planLocation}>
@@ -125,10 +140,11 @@ export function PlanResourceFieldsSecondary({
             aria-invalid={!!errors.planLocation}
             {...register("planLocation")}
           />
-          {errors.planLocation && <FieldError>{errors.planLocation.message}</FieldError>}
+          {errors.planLocation && (
+            <FieldError>{errors.planLocation.message}</FieldError>
+          )}
         </Field>
       </div>
     </>
   )
 }
-

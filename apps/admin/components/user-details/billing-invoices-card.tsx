@@ -68,7 +68,10 @@ export function BillingInvoicesCard({ data }: { data: UserDetailsData }) {
                     />
                     <CompactField
                       label="Amount"
-                      value={formatCurrency(invoice.totalAmount, invoice.currency)}
+                      value={formatCurrency(
+                        invoice.totalAmount,
+                        invoice.currency
+                      )}
                     />
                     <CompactField
                       label="Transaction"
@@ -101,7 +104,9 @@ export function BillingInvoicesCard({ data }: { data: UserDetailsData }) {
                     <TableRow key={invoice.id}>
                       <TableCell>
                         <div className="flex flex-col gap-1">
-                          <span className="font-medium">{invoice.invoiceNumber}</span>
+                          <span className="font-medium">
+                            {invoice.invoiceNumber}
+                          </span>
                           <span className="text-xs text-muted-foreground">
                             Order #{invoice.order.id}
                           </span>
@@ -122,7 +127,9 @@ export function BillingInvoicesCard({ data }: { data: UserDetailsData }) {
                         {formatCurrency(invoice.totalAmount, invoice.currency)}
                       </TableCell>
                       <TableCell>
-                        <Badge variant={getInvoiceStatusVariant(invoice.status)}>
+                        <Badge
+                          variant={getInvoiceStatusVariant(invoice.status)}
+                        >
                           {formatStatusLabel(invoice.status)}
                         </Badge>
                       </TableCell>

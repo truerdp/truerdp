@@ -1,4 +1,8 @@
-import type { CollectionAfterChangeHook, CollectionConfig, GlobalAfterChangeHook } from "payload"
+import type {
+  CollectionAfterChangeHook,
+  CollectionConfig,
+  GlobalAfterChangeHook,
+} from "payload"
 
 function getWebBaseUrl() {
   return process.env.WEB_BASE_URL?.trim().replace(/\/$/, "") ?? ""

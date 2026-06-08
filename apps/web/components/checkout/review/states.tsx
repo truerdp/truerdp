@@ -1,6 +1,10 @@
 import Link from "next/link"
 import { HugeiconsIcon } from "@hugeicons/react"
-import { ArrowLeft02Icon, CreditCardIcon, Invoice03Icon } from "@hugeicons/core-free-icons"
+import {
+  ArrowLeft02Icon,
+  CreditCardIcon,
+  Invoice03Icon,
+} from "@hugeicons/core-free-icons"
 
 import { webPaths } from "@/lib/paths"
 import {

@@ -55,7 +55,9 @@ export function getInstanceBillingState(
   transactions: InstanceTransaction[]
 ) {
   const hasPendingRenewal = transactions.some((tx) => tx.status === "pending")
-  const pendingTransactions = transactions.filter((tx) => tx.status === "pending")
+  const pendingTransactions = transactions.filter(
+    (tx) => tx.status === "pending"
+  )
   const latestPendingTransaction = pendingTransactions[0]
 
   const canShowRenew = data?.status === "active" || data?.status === "expired"

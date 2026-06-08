@@ -18,4 +18,3 @@ export const generateMetadata = ({
 export default function Page({ params, searchParams }: Args) {
   return RootPage({ config, params, searchParams, importMap })
 }
-

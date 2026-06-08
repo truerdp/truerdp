@@ -2,10 +2,7 @@
 
 import { useState } from "react"
 import { HugeiconsIcon } from "@hugeicons/react"
-import {
-  Alert02Icon,
-  CreditCardIcon,
-} from "@hugeicons/core-free-icons"
+import { Alert02Icon, CreditCardIcon } from "@hugeicons/core-free-icons"
 import {
   Empty,
   EmptyDescription,

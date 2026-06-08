@@ -50,7 +50,11 @@ export function CreateTicketDialog() {
   return (
     <Dialog open={createOpen} onOpenChange={setCreateOpen}>
       <DialogTrigger render={<Button />}>
-        <HugeiconsIcon icon={Add01Icon} strokeWidth={2} data-icon="inline-start" />
+        <HugeiconsIcon
+          icon={Add01Icon}
+          strokeWidth={2}
+          data-icon="inline-start"
+        />
         Create new ticket
       </DialogTrigger>
       <DialogContent>

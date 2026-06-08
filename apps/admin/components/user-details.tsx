@@ -123,7 +123,11 @@ export function UserDetails({ userId }: UserDetailsProps) {
 
   return (
     <section className="space-y-6">
-      <UserHeroCard data={data} displayName={displayName} successRate={successRate} />
+      <UserHeroCard
+        data={data}
+        displayName={displayName}
+        successRate={successRate}
+      />
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1.45fr)_360px]">
         <UserDetailsTabs data={data} successRate={successRate} />
         <UserDetailsSidebar data={data} insights={insights} />

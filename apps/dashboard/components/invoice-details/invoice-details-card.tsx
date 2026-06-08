@@ -66,7 +66,9 @@ export function InvoiceDetailsCard({ invoice }: InvoiceDetailsCardProps) {
             {invoice.order.status}
           </Badge>
           <Badge variant="outline">Order #{invoice.order.id}</Badge>
-          {urgency ? <Badge variant={urgency.variant}>{urgency.label}</Badge> : null}
+          {urgency ? (
+            <Badge variant={urgency.variant}>{urgency.label}</Badge>
+          ) : null}
         </div>
         <Separator />
         <LabelRow label="Plan" value={invoice.plan.name} />
@@ -74,7 +76,10 @@ export function InvoiceDetailsCard({ invoice }: InvoiceDetailsCardProps) {
           label="Type"
           value={invoice.plan.kind === "renewal" ? "Renewal" : "New purchase"}
         />
-        <LabelRow label="Duration" value={`${invoice.plan.durationDays} days`} />
+        <LabelRow
+          label="Duration"
+          value={`${invoice.plan.durationDays} days`}
+        />
         <div className="flex items-center justify-between gap-4">
           <span className="text-sm text-muted-foreground">Amount</span>
           <span className="text-base font-semibold">
@@ -82,7 +87,10 @@ export function InvoiceDetailsCard({ invoice }: InvoiceDetailsCardProps) {
           </span>
         </div>
         <Separator />
-        <LabelRow label="Method" value={formatMethod(invoice.transaction.method)} />
+        <LabelRow
+          label="Method"
+          value={formatMethod(invoice.transaction.method)}
+        />
         <div className="flex items-center justify-between gap-4">
           <span className="text-sm text-muted-foreground">
             Transaction Reference
@@ -103,7 +111,9 @@ export function InvoiceDetailsCard({ invoice }: InvoiceDetailsCardProps) {
         {payable ? (
           <Button
             onClick={() =>
-              window.location.assign(buildWebCheckoutReviewUrl(invoice.order.id))
+              window.location.assign(
+                buildWebCheckoutReviewUrl(invoice.order.id)
+              )
             }
           >
             Pay now

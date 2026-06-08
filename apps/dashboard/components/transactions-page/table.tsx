@@ -106,7 +106,11 @@ export function TransactionsTable({ transactions }: TransactionsTableProps) {
                     href={dashboardPaths.instanceDetail(tx.instance.id)}
                     className="inline-flex w-fit items-center gap-1.5 text-xs font-medium text-primary hover:underline"
                   >
-                    <HugeiconsIcon icon={LinkSquare02Icon} size={14} strokeWidth={2} />
+                    <HugeiconsIcon
+                      icon={LinkSquare02Icon}
+                      size={14}
+                      strokeWidth={2}
+                    />
                     Instance #{tx.instance.id}
                   </Link>
                 ) : (
@@ -114,7 +118,9 @@ export function TransactionsTable({ transactions }: TransactionsTableProps) {
                 )}
               </div>
             </TableCell>
-            <TableCell className="font-medium">{formatAmount(tx.amount)}</TableCell>
+            <TableCell className="font-medium">
+              {formatAmount(tx.amount)}
+            </TableCell>
             <TableCell>{formatMethod(tx.method)}</TableCell>
             <TableCell>
               <Badge variant={getStatusVariant(tx.status)}>

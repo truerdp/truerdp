@@ -39,4 +39,3 @@ export function filterTickets(tickets: TicketSummary[], search: string) {
       .includes(normalized)
   )
 }
-

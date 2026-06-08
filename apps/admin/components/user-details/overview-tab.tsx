@@ -1,5 +1,8 @@
 import Link from "next/link"
-import { CreditCardIcon, ComputerTerminalIcon } from "@hugeicons/core-free-icons"
+import {
+  CreditCardIcon,
+  ComputerTerminalIcon,
+} from "@hugeicons/core-free-icons"
 import { adminPaths } from "@/lib/paths"
 import { Badge } from "@workspace/ui/components/badge"
 import {
@@ -9,9 +12,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@workspace/ui/components/card"
-import {
-  TabsContent,
-} from "@workspace/ui/components/tabs"
+import { TabsContent } from "@workspace/ui/components/tabs"
 import {
   MetaRow,
   SectionEmpty,
@@ -180,7 +181,9 @@ export function OverviewTab({ data }: { data: UserDetailsData }) {
                         >
                           Instance #{instance.id}
                         </Link>
-                        <Badge variant={getInstanceStatusVariant(instance.status)}>
+                        <Badge
+                          variant={getInstanceStatusVariant(instance.status)}
+                        >
                           {formatStatusLabel(instance.status)}
                         </Badge>
                         {instance.isExpiringSoon ? (

@@ -1,4 +1,9 @@
-import { fallbackJourneyDetails, getJourneyDetails, readRecord, readText } from "@/lib/homepage-content/utils"
+import {
+  fallbackJourneyDetails,
+  getJourneyDetails,
+  readRecord,
+  readText,
+} from "@/lib/homepage-content/utils"
 
 export function buildPrimaryHomeSections(cmsContent: Record<string, unknown>) {
   const cmsHero = readRecord(cmsContent.hero)
@@ -19,7 +24,10 @@ export function buildPrimaryHomeSections(cmsContent: Record<string, unknown>) {
       )
     ),
     primaryCtaLabel: readText(cmsHero.primaryCtaLabel, "Create account"),
-    secondaryCtaLabel: readText(cmsHero.secondaryCtaLabel, "See how setup works"),
+    secondaryCtaLabel: readText(
+      cmsHero.secondaryCtaLabel,
+      "See how setup works"
+    ),
     trustLine: readText(
       cmsHero.trustLine,
       "Transparent plan specs, checkout-ready pricing, and a clean path from selection to provisioning."
@@ -111,13 +119,19 @@ export function buildPrimaryHomeSections(cmsContent: Record<string, unknown>) {
 
   const cmsSections = readRecord(cmsContent.sections)
   const sections = {
-    featuredPlansTitle: readText(cmsSections.featuredPlansTitle, "Featured plans"),
+    featuredPlansTitle: readText(
+      cmsSections.featuredPlansTitle,
+      "Featured plans"
+    ),
     featuredPlansDescription: readText(
       cmsSections.featuredPlansDescription,
       "Start with the strongest inventory and compare real durations before checkout."
     ),
     planGroupsTitle: readText(cmsSections.planGroupsTitle, "Plans by Type"),
-    planLocationsTitle: readText(cmsSections.planLocationsTitle, "Plans by Location"),
+    planLocationsTitle: readText(
+      cmsSections.planLocationsTitle,
+      "Plans by Location"
+    ),
     comparisonTitle: readText(cmsSections.comparisonTitle, "Plan comparison"),
     comparisonDescription: readText(
       cmsSections.comparisonDescription,
@@ -136,7 +150,10 @@ export function buildPrimaryHomeSections(cmsContent: Record<string, unknown>) {
       cmsLocationSection.description,
       "Browse active availability by geography, then compare the matching plan resources and durations."
     ),
-    footerTitle: readText(cmsLocationSection.footerTitle, sections.planLocationsTitle),
+    footerTitle: readText(
+      cmsLocationSection.footerTitle,
+      sections.planLocationsTitle
+    ),
     footerDescription: readText(
       cmsLocationSection.footerDescription,
       "Location cards update from active backend inventory."

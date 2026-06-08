@@ -82,7 +82,10 @@ function toStringOrNull(value: unknown) {
   return typeof value === "string" && value.trim() ? value : null
 }
 
-function mapGlobalToCmsPage(slug: string, document: PayloadPage | null): CmsPage | null {
+function mapGlobalToCmsPage(
+  slug: string,
+  document: PayloadPage | null
+): CmsPage | null {
   if (!document) {
     return null
   }
@@ -124,7 +127,10 @@ function mapGlobalToCmsPage(slug: string, document: PayloadPage | null): CmsPage
   }
 }
 
-function mapLegalPage(slug: string, document: PayloadPage | null): CmsPage | null {
+function mapLegalPage(
+  slug: string,
+  document: PayloadPage | null
+): CmsPage | null {
   if (!document) {
     return null
   }

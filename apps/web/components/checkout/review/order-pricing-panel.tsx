@@ -43,22 +43,32 @@ export function OrderPricingPanel({
         label="Compute"
         value={`${order.plan.cpu} vCPU / ${order.plan.ram} GB RAM / ${order.plan.storage} GB`}
       />
-      <SummaryRow label="Duration" value={`${order.pricing.durationDays} days`} />
+      <SummaryRow
+        label="Duration"
+        value={`${order.pricing.durationDays} days`}
+      />
       <SummaryRow
         label="Subtotal"
-        value={formatAmount(order.invoice?.subtotal ?? order.pricing.priceUsdCents)}
+        value={formatAmount(
+          order.invoice?.subtotal ?? order.pricing.priceUsdCents
+        )}
       />
 
       <div className="space-y-3">
         <div className="flex flex-wrap items-end gap-2">
           <div className="min-w-0 flex-1">
-            <label htmlFor="coupon-code" className="text-sm text-muted-foreground">
+            <label
+              htmlFor="coupon-code"
+              className="text-sm text-muted-foreground"
+            >
               Coupon
             </label>
             <Input
               id="coupon-code"
               value={couponCode}
-              onChange={(event) => setCouponCode(event.target.value.toUpperCase())}
+              onChange={(event) =>
+                setCouponCode(event.target.value.toUpperCase())
+              }
               disabled={isUpdatingCoupon || existingPendingTransaction}
               placeholder="WELCOME10"
             />
@@ -99,7 +109,9 @@ export function OrderPricingPanel({
       <div className="flex items-center justify-between text-sm">
         <span className="text-muted-foreground">Total</span>
         <span className="text-lg font-semibold">
-          {formatAmount(order.invoice?.totalAmount ?? order.pricing.priceUsdCents)}
+          {formatAmount(
+            order.invoice?.totalAmount ?? order.pricing.priceUsdCents
+          )}
         </span>
       </div>
     </div>

@@ -118,7 +118,9 @@ export function CouponFormCard({
             min={1}
             value={form.maxUses ?? ""}
             onChange={(event) =>
-              onMaxUsesChange(event.target.value ? Number(event.target.value) : null)
+              onMaxUsesChange(
+                event.target.value ? Number(event.target.value) : null
+              )
             }
             placeholder="Unlimited"
           />
@@ -128,7 +130,9 @@ export function CouponFormCard({
           <div className="space-y-2">
             <Popover>
               <PopoverTrigger
-                render={<Button variant="outline" className="w-full justify-start" />}
+                render={
+                  <Button variant="outline" className="w-full justify-start" />
+                }
               >
                 {expiryDate ? format(expiryDate, "MMM d, yyyy") : "Pick a date"}
               </PopoverTrigger>
@@ -159,10 +163,7 @@ export function CouponFormCard({
           </div>
         </Field>
         <div className="flex items-center gap-2">
-          <Switch
-            checked={form.isActive}
-            onCheckedChange={onActiveChange}
-          />
+          <Switch checked={form.isActive} onCheckedChange={onActiveChange} />
           <span className="text-sm">Active</span>
         </div>
         <div className="flex items-end gap-2 md:col-span-2">

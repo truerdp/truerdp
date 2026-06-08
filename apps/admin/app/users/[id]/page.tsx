@@ -6,9 +6,7 @@ interface UserDetailPageProps {
   }>
 }
 
-export default async function UserDetailPage({
-  params,
-}: UserDetailPageProps) {
+export default async function UserDetailPage({ params }: UserDetailPageProps) {
   const { id } = await params
   const userId = Number(id)
 

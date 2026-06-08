@@ -144,7 +144,10 @@ export function buildSecondaryHomeSections(
       "Pick a plan that fits your workload, choose the duration, and move into payment with the core details already visible."
     ),
     primaryCtaLabel: readText(cmsFinalCta.primaryCtaLabel, "Start now"),
-    secondaryCtaLabel: readText(cmsFinalCta.secondaryCtaLabel, "Talk to support"),
+    secondaryCtaLabel: readText(
+      cmsFinalCta.secondaryCtaLabel,
+      "Talk to support"
+    ),
   }
 
   return {

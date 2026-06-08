@@ -30,7 +30,12 @@ export const BlogPosts: CollectionConfig = {
     { name: "coverImage", type: "upload", relationTo: "media", required: true },
     { name: "ogImage", type: "upload", relationTo: "media" },
     { name: "body", type: "richText", required: true },
-    { name: "author", type: "relationship", relationTo: "blog-authors", required: true },
+    {
+      name: "author",
+      type: "relationship",
+      relationTo: "blog-authors",
+      required: true,
+    },
     {
       name: "categories",
       type: "relationship",

@@ -48,7 +48,9 @@ export function formatAmount(amount: number, currency: string) {
   }
 }
 
-export function formatMethod(method: AdminInvoiceSummary["transaction"]["method"]) {
+export function formatMethod(
+  method: AdminInvoiceSummary["transaction"]["method"]
+) {
   if (!method) {
     return "-"
   }

@@ -65,14 +65,16 @@ export function AdminServersTable({
               </TableCell>
               <TableCell>
                 <div className="text-sm text-muted-foreground">
-                  {server.cpu} vCPU · {server.ram} GB RAM · {server.storage} GB
-                  {" "}Storage
+                  {server.cpu} vCPU · {server.ram} GB RAM · {server.storage} GB{" "}
+                  Storage
                 </div>
               </TableCell>
               <TableCell>
                 {server.activeInstanceId ? (
                   <div className="space-y-1 text-sm">
-                    <div className="font-medium">Instance #{server.activeInstanceId}</div>
+                    <div className="font-medium">
+                      Instance #{server.activeInstanceId}
+                    </div>
                     <div className="text-xs text-muted-foreground">
                       Resource #{server.activeResourceId}{" "}
                       {server.activeResourceUsername
@@ -81,7 +83,9 @@ export function AdminServersTable({
                     </div>
                   </div>
                 ) : (
-                  <span className="text-sm text-muted-foreground">Not assigned</span>
+                  <span className="text-sm text-muted-foreground">
+                    Not assigned
+                  </span>
                 )}
               </TableCell>
               <TableCell className="text-sm text-muted-foreground">
@@ -92,7 +96,9 @@ export function AdminServersTable({
                   <Button
                     type="button"
                     size="sm"
-                    variant={server.status === "available" ? "default" : "outline"}
+                    variant={
+                      server.status === "available" ? "default" : "outline"
+                    }
                     onClick={() => onSetStatus(server.id, "available")}
                     disabled={isPending || server.status === "available"}
                   >
@@ -101,7 +107,9 @@ export function AdminServersTable({
                   <Button
                     type="button"
                     size="sm"
-                    variant={server.status === "cleaning" ? "default" : "outline"}
+                    variant={
+                      server.status === "cleaning" ? "default" : "outline"
+                    }
                     onClick={() => onSetStatus(server.id, "cleaning")}
                     disabled={isPending || server.status === "cleaning"}
                   >
@@ -110,7 +118,9 @@ export function AdminServersTable({
                   <Button
                     type="button"
                     size="sm"
-                    variant={server.status === "retired" ? "destructive" : "outline"}
+                    variant={
+                      server.status === "retired" ? "destructive" : "outline"
+                    }
                     onClick={() => onSetStatus(server.id, "retired")}
                     disabled={isPending || server.status === "retired"}
                   >

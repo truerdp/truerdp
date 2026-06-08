@@ -30,7 +30,9 @@ export function RecentTransactionsTable({
       <TableBody>
         {transactions.map((transaction) => (
           <TableRow key={transaction.id}>
-            <TableCell className="font-mono text-sm">#{transaction.id}</TableCell>
+            <TableCell className="font-mono text-sm">
+              #{transaction.id}
+            </TableCell>
             <TableCell className="font-medium">
               {formatAmount(transaction.amount)}
             </TableCell>

@@ -66,7 +66,10 @@ export function InstanceDetailsTable({
           {latestPendingTransaction && (
             <AlertDescription className="text-xs text-yellow-800">
               Requested on{" "}
-              {format(new Date(latestPendingTransaction.createdAt), "MMM d, yyyy p")}
+              {format(
+                new Date(latestPendingTransaction.createdAt),
+                "MMM d, yyyy p"
+              )}
             </AlertDescription>
           )}
         </Alert>
@@ -99,10 +102,14 @@ export function InstanceDetailsTable({
                   {formatStatus(billingStatus)}
                 </Badge>
               </TableCell>
-              <TableCell className="font-mono">{data.ipAddress ?? "-"}</TableCell>
+              <TableCell className="font-mono">
+                {data.ipAddress ?? "-"}
+              </TableCell>
               <TableCell>{data.username ?? "-"}</TableCell>
               <TableCell>{formatDate(data.startDate)}</TableCell>
-              <TableCell className={cn("font-medium", isExpired ? "text-red-500" : "")}>
+              <TableCell
+                className={cn("font-medium", isExpired ? "text-red-500" : "")}
+              >
                 {formatDate(data.expiryDate)}
                 {isExpired && " (expired)"}
               </TableCell>

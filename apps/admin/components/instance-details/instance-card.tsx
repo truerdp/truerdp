@@ -5,7 +5,10 @@ import { AdminUserLink } from "@/components/admin-user-link"
 import TerminateInstanceDialog from "@/components/terminate-instance-dialog"
 import { SuspendInstanceDialog } from "@/components/suspend-instance-dialog"
 import type { InstanceDetailsData } from "@/components/instance-details/helpers"
-import { formatDateTime, getStatusVariant } from "@/components/instance-details/helpers"
+import {
+  formatDateTime,
+  getStatusVariant,
+} from "@/components/instance-details/helpers"
 import { Badge } from "@workspace/ui/components/badge"
 import {
   Alert,
@@ -33,7 +36,9 @@ export function InstanceCard({ data }: InstanceCardProps) {
         <div className="flex items-start justify-between">
           <div>
             <CardTitle>Instance #{instance.id}</CardTitle>
-            <CardDescription>Created on {formatDateTime(instance.createdAt)}</CardDescription>
+            <CardDescription>
+              Created on {formatDateTime(instance.createdAt)}
+            </CardDescription>
           </div>
           <div className="flex items-center gap-2">
             <Badge variant={getStatusVariant(instance.status)}>
@@ -44,7 +49,10 @@ export function InstanceCard({ data }: InstanceCardProps) {
               <TerminateInstanceDialog instanceId={instance.id} />
             )}
             {instance.status === "suspended" ? (
-              <SuspendInstanceDialog instanceId={instance.id} mode="unsuspend" />
+              <SuspendInstanceDialog
+                instanceId={instance.id}
+                mode="unsuspend"
+              />
             ) : instance.status !== "terminated" ? (
               <SuspendInstanceDialog instanceId={instance.id} mode="suspend" />
             ) : null}
@@ -69,7 +77,10 @@ export function InstanceCard({ data }: InstanceCardProps) {
               <p className="text-xs text-muted-foreground">User 360</p>
               <div className="mt-1">
                 {user ? (
-                  <AdminUserLink userId={user.id} primary={`Open User #${user.id}`} />
+                  <AdminUserLink
+                    userId={user.id}
+                    primary={`Open User #${user.id}`}
+                  />
                 ) : (
                   <p className="text-sm">-</p>
                 )}
@@ -105,20 +116,28 @@ export function InstanceCard({ data }: InstanceCardProps) {
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
               <p className="text-xs text-muted-foreground">Start Date</p>
-              <p className="mt-1 text-sm">{formatDateTime(instance.startDate)}</p>
+              <p className="mt-1 text-sm">
+                {formatDateTime(instance.startDate)}
+              </p>
             </div>
             <div>
               <p className="text-xs text-muted-foreground">Expiry Date</p>
-              <p className="mt-1 text-sm">{formatDateTime(instance.expiryDate)}</p>
+              <p className="mt-1 text-sm">
+                {formatDateTime(instance.expiryDate)}
+              </p>
             </div>
             {instance.terminatedAt ? (
               <div>
                 <p className="text-xs text-muted-foreground">Terminated At</p>
-                <p className="mt-1 text-sm">{formatDateTime(instance.terminatedAt)}</p>
+                <p className="mt-1 text-sm">
+                  {formatDateTime(instance.terminatedAt)}
+                </p>
               </div>
             ) : null}
             <div>
-              <p className="text-xs text-muted-foreground">Provision Attempts</p>
+              <p className="text-xs text-muted-foreground">
+                Provision Attempts
+              </p>
               <p className="mt-1 text-sm">{instance.provisionAttempts}</p>
             </div>
           </div>
@@ -140,9 +159,14 @@ export function InstanceCard({ data }: InstanceCardProps) {
           ) : (
             <div className="space-y-2">
               {extensionHistory.map((event) => (
-                <div key={event.id} className="rounded-lg border bg-muted/30 p-3 text-sm">
+                <div
+                  key={event.id}
+                  className="rounded-lg border bg-muted/30 p-3 text-sm"
+                >
                   <div className="flex flex-wrap items-center justify-between gap-2">
-                    <div className="font-medium">+{event.daysExtended} days</div>
+                    <div className="font-medium">
+                      +{event.daysExtended} days
+                    </div>
                     <div className="text-xs text-muted-foreground">
                       {formatDateTime(event.createdAt)}
                     </div>
@@ -172,17 +196,22 @@ export function InstanceCard({ data }: InstanceCardProps) {
           ) : (
             <div className="space-y-2">
               {statusEvents.map((event) => (
-                <div key={event.id} className="rounded-lg border bg-muted/30 p-3 text-sm">
+                <div
+                  key={event.id}
+                  className="rounded-lg border bg-muted/30 p-3 text-sm"
+                >
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <div className="font-medium">
-                      {event.action.replaceAll("_", " ")}: {event.fromStatus} -&gt;{" "}
-                      {event.toStatus}
+                      {event.action.replaceAll("_", " ")}: {event.fromStatus}{" "}
+                      -&gt; {event.toStatus}
                     </div>
                     <div className="text-xs text-muted-foreground">
                       {formatDateTime(event.createdAt)}
                     </div>
                   </div>
-                  <div className="mt-1 text-xs text-muted-foreground">{event.reason}</div>
+                  <div className="mt-1 text-xs text-muted-foreground">
+                    {event.reason}
+                  </div>
                   <div className="mt-1 text-xs text-muted-foreground">
                     Admin:{" "}
                     {event.admin

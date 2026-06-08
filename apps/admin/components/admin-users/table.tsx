@@ -55,8 +55,8 @@ export function AdminUsersTable({ users }: AdminUsersTableProps) {
                     {formatCurrency(user.totalSpentCents)}
                   </span>
                   <span className="text-xs text-muted-foreground">
-                    {user.confirmedTransactions}/{user.totalTransactions} successful
-                    transactions
+                    {user.confirmedTransactions}/{user.totalTransactions}{" "}
+                    successful transactions
                   </span>
                 </div>
               </TableCell>

@@ -9,10 +9,7 @@ import {
   EmptyTitle,
 } from "@workspace/ui/components/empty"
 import { Skeleton } from "@workspace/ui/components/skeleton"
-import {
-  Card,
-  CardContent,
-} from "@workspace/ui/components/card"
+import { Card, CardContent } from "@workspace/ui/components/card"
 import {
   Table,
   TableBody,
@@ -80,7 +77,9 @@ export function MetricCard({ title, value, helper }: MetricCardProps) {
         <div className="text-xs font-medium tracking-[0.18em] text-muted-foreground uppercase">
           {title}
         </div>
-        <div className="mt-3 text-2xl font-semibold tracking-tight">{value}</div>
+        <div className="mt-3 text-2xl font-semibold tracking-tight">
+          {value}
+        </div>
         <div className="mt-1 text-sm text-muted-foreground">{helper}</div>
       </CardContent>
     </Card>

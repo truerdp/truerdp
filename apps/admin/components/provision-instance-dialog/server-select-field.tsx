@@ -39,7 +39,9 @@ export function ServerSelectField({
       {isLoading ? (
         <div className="flex items-center gap-2">
           <Spinner data-icon="inline-start" />
-          <span className="text-sm text-muted-foreground">Loading servers...</span>
+          <span className="text-sm text-muted-foreground">
+            Loading servers...
+          </span>
         </div>
       ) : (
         <Controller

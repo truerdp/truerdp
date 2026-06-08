@@ -2,7 +2,10 @@
 
 import { ExpiredTable } from "@/components/admin-dashboard/expired-table"
 import { ExpiringSoonTable } from "@/components/admin-dashboard/expiring-soon-table"
-import { DashboardEmptyState, ErrorMessage } from "@/components/admin-dashboard/states"
+import {
+  DashboardEmptyState,
+  ErrorMessage,
+} from "@/components/admin-dashboard/states"
 import { TableSkeleton } from "@/components/admin-dashboard/table-skeleton"
 import { useExpiredInstances } from "@/hooks/use-expired-instances"
 import { useExpiringSoonInstances } from "@/hooks/use-expiring-soon-instances"
@@ -90,7 +93,9 @@ export default function Page() {
           </div>
         ) : isExpiredError ? (
           <ErrorMessage
-            message={expiredError.message || "Failed to load expired instances."}
+            message={
+              expiredError.message || "Failed to load expired instances."
+            }
           />
         ) : expiredInstances.length === 0 ? (
           <div className="rounded-lg border">

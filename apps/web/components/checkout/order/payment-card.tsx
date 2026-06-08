@@ -4,7 +4,11 @@ import { CreditCardIcon, DollarCircleIcon } from "@hugeicons/core-free-icons"
 import type { BillingOrder } from "@/hooks/use-order"
 import { formatAmount } from "@/lib/format"
 import type { PaymentMethod } from "@/hooks/use-checkout-order"
-import { Alert, AlertDescription, AlertTitle } from "@workspace/ui/components/alert"
+import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+} from "@workspace/ui/components/alert"
 import { Badge } from "@workspace/ui/components/badge"
 import { Button } from "@workspace/ui/components/button"
 import {
@@ -106,7 +110,9 @@ export function CheckoutPaymentCard({
           />
           <SummaryRow
             label="Subtotal"
-            value={formatAmount(order.invoice?.subtotal ?? order.pricing.priceUsdCents)}
+            value={formatAmount(
+              order.invoice?.subtotal ?? order.pricing.priceUsdCents
+            )}
           />
           {order.invoice?.discount ? (
             <SummaryRow
@@ -119,7 +125,9 @@ export function CheckoutPaymentCard({
           <div className="flex items-center justify-between text-sm">
             <span className="text-muted-foreground">Total due</span>
             <span className="text-lg font-semibold">
-              {formatAmount(order.invoice?.totalAmount ?? order.pricing.priceUsdCents)}
+              {formatAmount(
+                order.invoice?.totalAmount ?? order.pricing.priceUsdCents
+              )}
             </span>
           </div>
         </div>
@@ -183,7 +191,9 @@ export function CheckoutPaymentCard({
         <Button
           onClick={onCreateTransaction}
           disabled={
-            isSubmitting || order.status !== "pending_payment" || !hasBillingDetails
+            isSubmitting ||
+            order.status !== "pending_payment" ||
+            !hasBillingDetails
           }
         >
           {isSubmitting ? <Spinner data-icon="inline-start" /> : null}

@@ -5,9 +5,7 @@ function isAuthorized(request: Request) {
   const configuredToken = process.env.CMS_INTERNAL_API_TOKEN?.trim()
   const header = request.headers.get("authorization") ?? ""
 
-  return Boolean(
-    configuredToken && header === `Bearer ${configuredToken}`
-  )
+  return Boolean(configuredToken && header === `Bearer ${configuredToken}`)
 }
 
 export async function GET(
@@ -23,10 +21,7 @@ export async function GET(
   const result = await payload.find({
     collection: "email-templates",
     where: {
-      and: [
-        { key: { equals: key } },
-        { isActive: { equals: true } },
-      ],
+      and: [{ key: { equals: key } }, { isActive: { equals: true } }],
     },
     limit: 1,
     overrideAccess: true,

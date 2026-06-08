@@ -67,19 +67,22 @@ export function ContactFormCard() {
 
     try {
       setIsSubmitting(true)
-      const response = await clientApi<{ message: string }>("/support/contact", {
-        method: "POST",
-        body: {
-          name: form.name.trim(),
-          email: form.email.trim(),
-          subject: form.subject.trim(),
-          message: form.message.trim(),
-          topic: form.topic,
-          companyName: form.companyName.trim() || null,
-          orderReference: form.orderReference.trim() || null,
-          website: form.website.trim(),
-        },
-      })
+      const response = await clientApi<{ message: string }>(
+        "/support/contact",
+        {
+          method: "POST",
+          body: {
+            name: form.name.trim(),
+            email: form.email.trim(),
+            subject: form.subject.trim(),
+            message: form.message.trim(),
+            topic: form.topic,
+            companyName: form.companyName.trim() || null,
+            orderReference: form.orderReference.trim() || null,
+            website: form.website.trim(),
+          },
+        }
+      )
 
       setSuccessMessage(response.message)
       toast.success(response.message)
@@ -182,7 +185,9 @@ export function ContactFormCard() {
 
           <div className="grid gap-4 md:grid-cols-2">
             <Field>
-              <FieldLabel htmlFor="contact-company">Company (optional)</FieldLabel>
+              <FieldLabel htmlFor="contact-company">
+                Company (optional)
+              </FieldLabel>
               <Input
                 id="contact-company"
                 value={form.companyName}
@@ -229,7 +234,8 @@ export function ContactFormCard() {
               required
             />
             <FieldDescription>
-              Include any relevant plan name, location, and timeline expectations.
+              Include any relevant plan name, location, and timeline
+              expectations.
             </FieldDescription>
           </Field>
 

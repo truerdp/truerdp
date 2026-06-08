@@ -66,4 +66,3 @@ export function buildAuditLogSearchParams(params: AuditLogQueryParams) {
 
   return searchParams
 }
-

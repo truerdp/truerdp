@@ -21,7 +21,12 @@ export const FaqPage: GlobalConfig = {
     afterChange: [revalidateGlobal("faq-page")],
   },
   fields: [
-    { name: "title", type: "text", required: true, defaultValue: "Frequently Asked Questions" },
+    {
+      name: "title",
+      type: "text",
+      required: true,
+      defaultValue: "Frequently Asked Questions",
+    },
     { name: "summary", type: "textarea" },
     faqItemsField,
     ...seoFields,

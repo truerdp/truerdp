@@ -12,7 +12,11 @@ import {
   useUpdateServerStatus,
 } from "@/hooks/use-servers"
 import { getServerSummary } from "@/components/admin-servers/helpers"
-import { ServersEmpty, ServersSkeleton, StatusSummaryCard } from "@/components/admin-servers/states"
+import {
+  ServersEmpty,
+  ServersSkeleton,
+  StatusSummaryCard,
+} from "@/components/admin-servers/states"
 import { AdminServersTable } from "@/components/admin-servers/table"
 
 export default function ServersPage() {

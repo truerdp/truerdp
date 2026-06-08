@@ -67,15 +67,21 @@ export function getBillingAddress(
     .join(", ")
 }
 
-export function getPreferredMethods(transactions: UserDetailsData["transactions"]) {
+export function getPreferredMethods(
+  transactions: UserDetailsData["transactions"]
+) {
   return (
     Array.from(
-      new Set(transactions.map((transaction) => formatMethod(transaction.method)))
+      new Set(
+        transactions.map((transaction) => formatMethod(transaction.method))
+      )
     ).join(", ") || "-"
   )
 }
 
-export function getActiveInstanceLinks(instances: UserDetailsData["instances"]) {
+export function getActiveInstanceLinks(
+  instances: UserDetailsData["instances"]
+) {
   return instances
     .filter((instance) => instance.status === "active")
     .slice(0, 5)

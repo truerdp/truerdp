@@ -2,7 +2,12 @@ import "server-only"
 
 import { draftMode } from "next/headers"
 import { fallbackBlogSettings } from "@/lib/blog-queries"
-import { estimateReadingTimeMinutes, lexicalToPlainText, mapPayloadPost, toImage } from "@/lib/blog-mappers"
+import {
+  estimateReadingTimeMinutes,
+  lexicalToPlainText,
+  mapPayloadPost,
+  toImage,
+} from "@/lib/blog-mappers"
 import type {
   BlogPost,
   BlogPostSummary,
@@ -77,12 +82,17 @@ function postMatches(input: {
 }) {
   if (
     input.categorySlug &&
-    !input.post.categories.some((category) => category.slug === input.categorySlug)
+    !input.post.categories.some(
+      (category) => category.slug === input.categorySlug
+    )
   ) {
     return false
   }
 
-  if (input.tagSlug && !input.post.tags.some((tag) => tag.slug === input.tagSlug)) {
+  if (
+    input.tagSlug &&
+    !input.post.tags.some((tag) => tag.slug === input.tagSlug)
+  ) {
     return false
   }
 
@@ -116,7 +126,8 @@ export async function getBlogSettings(): Promise<BlogSettings> {
     return {
       heroTitle: document.heroTitle?.trim() || fallbackBlogSettings.heroTitle,
       heroDescription:
-        document.heroDescription?.trim() || fallbackBlogSettings.heroDescription,
+        document.heroDescription?.trim() ||
+        fallbackBlogSettings.heroDescription,
       defaultOgImage: toImage(document.defaultOgImage),
     }
   } catch {
@@ -212,5 +223,3 @@ export type {
   BlogSettings,
   BlogTag,
 } from "@/lib/blog-types"
-
-

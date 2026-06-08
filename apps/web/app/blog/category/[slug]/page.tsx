@@ -2,11 +2,7 @@ import type { Metadata } from "next"
 import Link from "next/link"
 import { notFound } from "next/navigation"
 import { BlogPostCard } from "@/components/blog/blog-ui"
-import {
-  getSiteOrigin,
-  listBlogCategories,
-  listBlogPosts,
-} from "@/lib/blog"
+import { getSiteOrigin, listBlogCategories, listBlogPosts } from "@/lib/blog"
 import { blogPaths } from "@/lib/paths"
 
 type PageProps = {
@@ -86,7 +82,9 @@ export default async function BlogCategoryPage({ params }: PageProps) {
         <Link href={blogPaths.index} className="text-sm text-muted-foreground">
           Back to blog
         </Link>
-        <h1 className="text-4xl font-semibold tracking-tight">{category.name}</h1>
+        <h1 className="text-4xl font-semibold tracking-tight">
+          {category.name}
+        </h1>
         {category.description ? (
           <p className="text-muted-foreground">{category.description}</p>
         ) : null}

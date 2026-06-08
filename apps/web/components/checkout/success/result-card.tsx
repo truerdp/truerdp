@@ -62,7 +62,9 @@ export function CheckoutSuccessResultCard({
         <CardContent className="flex flex-col gap-5">
           <div className="flex flex-wrap items-center gap-2">
             <Badge variant="secondary">Transaction #{transaction.id}</Badge>
-            {hasOrderId ? <Badge variant="outline">Order #{orderId}</Badge> : null}
+            {hasOrderId ? (
+              <Badge variant="outline">Order #{orderId}</Badge>
+            ) : null}
             <Badge
               variant={isFailed ? "destructive" : "outline"}
               className="capitalize"
@@ -73,7 +75,10 @@ export function CheckoutSuccessResultCard({
 
           <div className="rounded-xl border p-4">
             <SummaryRow label="Plan" value={transaction.plan.name} />
-            <SummaryRow label="Invoice" value={transaction.invoice.invoiceNumber} />
+            <SummaryRow
+              label="Invoice"
+              value={transaction.invoice.invoiceNumber}
+            />
             <SummaryRow
               label="Amount"
               value={formatAmount(transaction.amount)}
@@ -86,7 +91,11 @@ export function CheckoutSuccessResultCard({
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
-            <a href={`${dashboardUrl}/transactions`} target="_blank" rel="noreferrer">
+            <a
+              href={`${dashboardUrl}/transactions`}
+              target="_blank"
+              rel="noreferrer"
+            >
               <Button>
                 <HugeiconsIcon
                   icon={Invoice03Icon}

@@ -54,7 +54,9 @@ export function TicketsTable({ isLoading, tickets }: TicketsTableProps) {
                   </div>
                 </TableCell>
                 <TableCell>
-                  <Badge variant={ticket.status === "open" ? "default" : "outline"}>
+                  <Badge
+                    variant={ticket.status === "open" ? "default" : "outline"}
+                  >
                     {ticket.status}
                   </Badge>
                 </TableCell>
@@ -80,4 +82,3 @@ export function TicketsTable({ isLoading, tickets }: TicketsTableProps) {
     </div>
   )
 }
-

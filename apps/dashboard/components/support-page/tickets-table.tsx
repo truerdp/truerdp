@@ -1,7 +1,10 @@
 import Link from "next/link"
 
 import { dashboardPaths } from "@/lib/paths"
-import { formatTicketDate, type TicketSummary } from "@/components/support-page/types"
+import {
+  formatTicketDate,
+  type TicketSummary,
+} from "@/components/support-page/types"
 import { Badge } from "@workspace/ui/components/badge"
 import { buttonVariants } from "@workspace/ui/components/button"
 import {
@@ -18,7 +21,10 @@ type TicketsTableProps = {
   isLoading: boolean
 }
 
-export function TicketsTable({ filteredTickets, isLoading }: TicketsTableProps) {
+export function TicketsTable({
+  filteredTickets,
+  isLoading,
+}: TicketsTableProps) {
   return (
     <div className="overflow-x-auto rounded-lg border">
       <Table>
@@ -48,7 +54,9 @@ export function TicketsTable({ filteredTickets, isLoading }: TicketsTableProps) 
                   {ticket.subject}
                 </TableCell>
                 <TableCell>
-                  <Badge variant={ticket.status === "open" ? "default" : "outline"}>
+                  <Badge
+                    variant={ticket.status === "open" ? "default" : "outline"}
+                  >
                     {ticket.status}
                   </Badge>
                 </TableCell>

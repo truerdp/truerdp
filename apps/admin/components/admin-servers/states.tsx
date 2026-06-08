@@ -70,7 +70,11 @@ type StatusSummaryCardProps = {
   tone: "default" | "secondary" | "outline" | "destructive"
 }
 
-export function StatusSummaryCard({ label, value, tone }: StatusSummaryCardProps) {
+export function StatusSummaryCard({
+  label,
+  value,
+  tone,
+}: StatusSummaryCardProps) {
   return (
     <div className="rounded-2xl border bg-card p-4 shadow-sm">
       <div className="flex items-center justify-between gap-3">

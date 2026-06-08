@@ -15,7 +15,12 @@ export const BlogSettings: GlobalConfig = {
     afterChange: [revalidateGlobal("blog-settings")],
   },
   fields: [
-    { name: "heroTitle", type: "text", required: true, defaultValue: "TrueRDP Blog" },
+    {
+      name: "heroTitle",
+      type: "text",
+      required: true,
+      defaultValue: "TrueRDP Blog",
+    },
     { name: "heroDescription", type: "textarea" },
     { name: "defaultOgImage", type: "upload", relationTo: "media" },
   ],

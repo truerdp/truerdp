@@ -99,7 +99,9 @@ export function ResetPasswordForm({
                   password.
                 </AlertDescription>
               </Alert>
-              <Button render={<Link href={webPaths.login} />}>Go to login</Button>
+              <Button render={<Link href={webPaths.login} />}>
+                Go to login
+              </Button>
             </FieldGroup>
           ) : (
             <form onSubmit={handleSubmit}>

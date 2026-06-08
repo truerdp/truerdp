@@ -77,7 +77,9 @@ export function useCheckoutReview(orderId: number, hasValidOrderId: boolean) {
       return
     }
     const redirectPath = webPaths.checkoutReviewOrder(orderId)
-    router.push(`${webPaths.login}?redirect=${encodeURIComponent(redirectPath)}`)
+    router.push(
+      `${webPaths.login}?redirect=${encodeURIComponent(redirectPath)}`
+    )
   }, [hasValidOrderId, isProfileError, isProfileLoading, orderId, router])
 
   useEffect(() => {
@@ -85,7 +87,11 @@ export function useCheckoutReview(orderId: number, hasValidOrderId: boolean) {
   }, [order?.invoice?.couponCode])
 
   const existingPendingTransaction = useMemo(() => {
-    return findExistingPendingTransaction(transactions, orderId, hasValidOrderId)
+    return findExistingPendingTransaction(
+      transactions,
+      orderId,
+      hasValidOrderId
+    )
   }, [hasValidOrderId, orderId, transactions])
 
   const billingPayload = useMemo(
@@ -103,7 +109,9 @@ export function useCheckoutReview(orderId: number, hasValidOrderId: boolean) {
       return true
     }
 
-    return JSON.stringify(order.billingDetails) !== JSON.stringify(billingPayload)
+    return (
+      JSON.stringify(order.billingDetails) !== JSON.stringify(billingPayload)
+    )
   }, [billingPayload, order?.billingDetails])
 
   const persistBillingDetails = async (
@@ -144,7 +152,10 @@ export function useCheckoutReview(orderId: number, hasValidOrderId: boolean) {
     return persistBillingDetails(billingOrder, getValues())
   }
 
-  const updateCoupon = async (billingOrder: BillingOrder, code: string | null) => {
+  const updateCoupon = async (
+    billingOrder: BillingOrder,
+    code: string | null
+  ) => {
     try {
       setIsUpdatingCoupon(true)
       const response = await clientApi<{ order: unknown; message: string }>(
@@ -163,7 +174,9 @@ export function useCheckoutReview(orderId: number, hasValidOrderId: boolean) {
       }
     } catch (submitError) {
       const message =
-        submitError instanceof Error ? submitError.message : "Unable to update coupon"
+        submitError instanceof Error
+          ? submitError.message
+          : "Unable to update coupon"
       toast.error(message)
     } finally {
       setIsUpdatingCoupon(false)
@@ -173,7 +186,9 @@ export function useCheckoutReview(orderId: number, hasValidOrderId: boolean) {
   const proceedToPayment = async (billingOrder: BillingOrder) => {
     if (!profile) {
       const redirectPath = webPaths.checkoutReviewOrder(billingOrder.orderId)
-      router.push(`${webPaths.login}?redirect=${encodeURIComponent(redirectPath)}`)
+      router.push(
+        `${webPaths.login}?redirect=${encodeURIComponent(redirectPath)}`
+      )
       return
     }
 

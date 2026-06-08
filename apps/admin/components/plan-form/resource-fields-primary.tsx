@@ -1,4 +1,9 @@
-import { Controller, type Control, type FieldErrors, type UseFormRegister } from "react-hook-form"
+import {
+  Controller,
+  type Control,
+  type FieldErrors,
+  type UseFormRegister,
+} from "react-hook-form"
 import { Input } from "@workspace/ui/components/input"
 import {
   Select,
@@ -62,7 +67,9 @@ export function PlanResourceFieldsPrimary({
             aria-invalid={!!errors.cpuThreads}
             {...register("cpuThreads", { valueAsNumber: true })}
           />
-          {errors.cpuThreads && <FieldError>{errors.cpuThreads.message}</FieldError>}
+          {errors.cpuThreads && (
+            <FieldError>{errors.cpuThreads.message}</FieldError>
+          )}
         </Field>
 
         <Field data-invalid={!!errors.ram}>
@@ -128,7 +135,10 @@ export function PlanResourceFieldsPrimary({
                 onValueChange={field.onChange}
                 disabled={isPending}
               >
-                <SelectTrigger id="plan-storage-type" aria-invalid={!!errors.storageType}>
+                <SelectTrigger
+                  id="plan-storage-type"
+                  aria-invalid={!!errors.storageType}
+                >
                   <SelectValue placeholder="Select storage type" />
                 </SelectTrigger>
                 <SelectContent>
@@ -138,7 +148,9 @@ export function PlanResourceFieldsPrimary({
               </Select>
             )}
           />
-          {errors.storageType && <FieldError>{errors.storageType.message}</FieldError>}
+          {errors.storageType && (
+            <FieldError>{errors.storageType.message}</FieldError>
+          )}
         </Field>
       </div>
     </>

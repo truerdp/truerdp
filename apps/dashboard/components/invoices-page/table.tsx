@@ -5,7 +5,11 @@ import { buildWebCheckoutReviewUrl } from "@/lib/auth"
 import { dashboardPaths } from "@/lib/paths"
 import { formatAmount } from "@/lib/format"
 import { type InvoiceSummary } from "@/hooks/use-invoices"
-import { formatMethod, getInvoiceStatusVariant, isInvoicePayable } from "@/components/invoices-page/formatters"
+import {
+  formatMethod,
+  getInvoiceStatusVariant,
+  isInvoicePayable,
+} from "@/components/invoices-page/formatters"
 import { Badge } from "@workspace/ui/components/badge"
 import { Button } from "@workspace/ui/components/button"
 import {

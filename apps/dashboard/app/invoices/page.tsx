@@ -2,7 +2,10 @@
 
 import { useInvoices } from "@/hooks/use-invoices"
 import { InvoicesTable } from "@/components/invoices-page/table"
-import { InvoicesEmpty, InvoicesSkeleton } from "@/components/invoices-page/states"
+import {
+  InvoicesEmpty,
+  InvoicesSkeleton,
+} from "@/components/invoices-page/states"
 
 function InvoicesHeader() {
   return (

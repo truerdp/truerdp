@@ -20,7 +20,8 @@ function resolvePath(input: PayloadRevalidateBody) {
   if (input.global === "home-page") return "/"
   if (input.global === "faq-page") return "/faq"
   if (input.collection === "blog-posts" && slug) return `/blog/${slug}`
-  if (input.collection === "blog-categories" && slug) return `/blog/category/${slug}`
+  if (input.collection === "blog-categories" && slug)
+    return `/blog/category/${slug}`
   if (input.collection === "blog-tags" && slug) return `/blog/tag/${slug}`
   if (input.collection === "legal-pages" && slug) return `/${slug}`
 
@@ -32,7 +33,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Invalid signature" }, { status: 401 })
   }
 
-  const body = (await request.json().catch(() => null)) as PayloadRevalidateBody | null
+  const body = (await request
+    .json()
+    .catch(() => null)) as PayloadRevalidateBody | null
   const path = body ? resolvePath(body) : null
 
   revalidateTag("cms", "max")
@@ -47,7 +50,10 @@ export async function POST(request: NextRequest) {
     revalidateTag(`cms:${body.slug}`, "max")
   }
 
-  if (body?.collection?.startsWith("blog-") || body?.global === "blog-settings") {
+  if (
+    body?.collection?.startsWith("blog-") ||
+    body?.global === "blog-settings"
+  ) {
     revalidateTag("blog", "max")
     revalidatePath("/blog")
     revalidatePath("/blog/search")

@@ -63,7 +63,9 @@ export function BillingTransactionsCard({ data }: { data: UserDetailsData }) {
                         Invoice {transaction.invoice.invoiceNumber}
                       </div>
                     </div>
-                    <Badge variant={getTransactionStatusVariant(transaction.status)}>
+                    <Badge
+                      variant={getTransactionStatusVariant(transaction.status)}
+                    >
                       {formatStatusLabel(transaction.status)}
                     </Badge>
                   </div>
@@ -139,21 +141,29 @@ export function BillingTransactionsCard({ data }: { data: UserDetailsData }) {
                         {formatMethod(transaction.method)}
                       </TableCell>
                       <TableCell>
-                        <Badge variant={getTransactionStatusVariant(transaction.status)}>
+                        <Badge
+                          variant={getTransactionStatusVariant(
+                            transaction.status
+                          )}
+                        >
                           {formatStatusLabel(transaction.status)}
                         </Badge>
                       </TableCell>
                       <TableCell>
                         {transaction.instance ? (
                           <Link
-                            href={adminPaths.instanceDetails(transaction.instance.id)}
+                            href={adminPaths.instanceDetails(
+                              transaction.instance.id
+                            )}
                             className="text-sm font-medium transition-colors hover:text-primary"
                           >
                             #{transaction.instance.id} •{" "}
                             {transaction.instance.ipAddress || "No IP"}
                           </Link>
                         ) : (
-                          <span className="text-sm text-muted-foreground">-</span>
+                          <span className="text-sm text-muted-foreground">
+                            -
+                          </span>
                         )}
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">

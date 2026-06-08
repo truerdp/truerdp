@@ -53,7 +53,9 @@ export function UserHeroCard({
                 <div className="text-3xl font-semibold tracking-tight">
                   {displayName}
                 </div>
-                <div className="text-sm text-muted-foreground">{user.email}</div>
+                <div className="text-sm text-muted-foreground">
+                  {user.email}
+                </div>
               </div>
 
               <div className="flex flex-wrap items-center gap-2">

@@ -24,7 +24,9 @@ export function PlanDetailsView({ plan }: PlanDetailsViewProps) {
         <div className="mb-4 flex items-start justify-between">
           <div>
             <h1 className="text-3xl font-bold">{plan.name}</h1>
-            <p className="mt-1 text-sm text-muted-foreground">Plan ID #{plan.id}</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Plan ID #{plan.id}
+            </p>
           </div>
           <Badge variant={plan.isActive ? "secondary" : "outline"}>
             {plan.isActive ? "Active" : "Inactive"}
@@ -98,15 +100,21 @@ export function PlanDetailsView({ plan }: PlanDetailsViewProps) {
                   className="flex items-center justify-between rounded-lg border bg-muted/30 p-3"
                 >
                   <div>
-                    <div className="font-medium">{pricing.durationDays} days</div>
-                    <div className="text-xs text-muted-foreground">Duration</div>
+                    <div className="font-medium">
+                      {pricing.durationDays} days
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      Duration
+                    </div>
                   </div>
                   <div className="flex items-center gap-3">
                     <div className="text-right">
                       <div className="font-semibold">
                         {formatUsdFromCents(pricing.priceUsdCents)}
                       </div>
-                      <div className="text-xs text-muted-foreground">per duration</div>
+                      <div className="text-xs text-muted-foreground">
+                        per duration
+                      </div>
                     </div>
                     <div className="flex flex-col gap-1">
                       <Badge

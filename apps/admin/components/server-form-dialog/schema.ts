@@ -21,4 +21,3 @@ export const defaultServerFormValues: ServerFormValues = {
   storage: 80,
   status: "available",
 }
-

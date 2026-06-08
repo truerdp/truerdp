@@ -38,9 +38,14 @@ export function BillingTab({
 }) {
   return (
     <TabsContent value="billing" className="space-y-4">
-      {data.summary.unpaidInvoices > 0 || data.summary.failedTransactions > 0 ? (
+      {data.summary.unpaidInvoices > 0 ||
+      data.summary.failedTransactions > 0 ? (
         <Alert>
-          <HugeiconsIcon icon={Alert02Icon} strokeWidth={2} className="size-4" />
+          <HugeiconsIcon
+            icon={Alert02Icon}
+            strokeWidth={2}
+            className="size-4"
+          />
           <AlertTitle>Billing follow-up recommended</AlertTitle>
           <AlertDescription>
             {data.summary.unpaidInvoices > 0
@@ -57,7 +62,11 @@ export function BillingTab({
         </Alert>
       ) : (
         <Alert>
-          <HugeiconsIcon icon={TaskDone02Icon} strokeWidth={2} className="size-4" />
+          <HugeiconsIcon
+            icon={TaskDone02Icon}
+            strokeWidth={2}
+            className="size-4"
+          />
           <AlertTitle>Billing looks healthy</AlertTitle>
           <AlertDescription>
             No unpaid invoices or failed payments are currently outstanding for
@@ -81,8 +90,14 @@ export function BillingTab({
                   label="Contact"
                   value={`${data.latestBillingDetails.firstName} ${data.latestBillingDetails.lastName}`}
                 />
-                <MetaRow label="Email" value={data.latestBillingDetails.email} />
-                <MetaRow label="Phone" value={data.latestBillingDetails.phone} />
+                <MetaRow
+                  label="Email"
+                  value={data.latestBillingDetails.email}
+                />
+                <MetaRow
+                  label="Phone"
+                  value={data.latestBillingDetails.phone}
+                />
                 <MetaRow
                   label="Company"
                   value={data.latestBillingDetails.companyName || "-"}

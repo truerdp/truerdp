@@ -21,9 +21,7 @@ import {
   FieldGroup,
   FieldLabel,
 } from "@workspace/ui/components/field"
-import {
-  SelectedServerDetails,
-} from "@/components/provision-instance-dialog/selected-server-details"
+import { SelectedServerDetails } from "@/components/provision-instance-dialog/selected-server-details"
 import { ServerSelectField } from "@/components/provision-instance-dialog/server-select-field"
 import {
   provisionSchema,

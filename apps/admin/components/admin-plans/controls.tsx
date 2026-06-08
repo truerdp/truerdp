@@ -39,7 +39,11 @@ export function AdminPlansHeader() {
       </div>
       <Link href="/plans/create">
         <Button>
-          <HugeiconsIcon icon={Add01Icon} strokeWidth={2} data-icon="inline-start" />
+          <HugeiconsIcon
+            icon={Add01Icon}
+            strokeWidth={2}
+            data-icon="inline-start"
+          />
           Create Plan
         </Button>
       </Link>

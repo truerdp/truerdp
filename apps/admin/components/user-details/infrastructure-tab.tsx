@@ -41,7 +41,11 @@ export function InfrastructureTab({ data }: { data: UserDetailsData }) {
     <TabsContent value="infrastructure" className="space-y-4">
       {data.summary.expiringSoonInstances > 0 ? (
         <Alert>
-          <HugeiconsIcon icon={Alert02Icon} strokeWidth={2} className="size-4" />
+          <HugeiconsIcon
+            icon={Alert02Icon}
+            strokeWidth={2}
+            className="size-4"
+          />
           <AlertTitle>Infrastructure follow-up needed</AlertTitle>
           <AlertDescription>
             {data.summary.expiringSoonInstances} instance
@@ -85,7 +89,9 @@ export function InfrastructureTab({ data }: { data: UserDetailsData }) {
                         </div>
                       </div>
                       <div className="flex flex-wrap items-center gap-2">
-                        <Badge variant={getInstanceStatusVariant(instance.status)}>
+                        <Badge
+                          variant={getInstanceStatusVariant(instance.status)}
+                        >
                           {formatStatusLabel(instance.status)}
                         </Badge>
                         {instance.isExpiringSoon ? (
@@ -147,7 +153,11 @@ export function InfrastructureTab({ data }: { data: UserDetailsData }) {
                         </TableCell>
                         <TableCell>
                           <div className="flex flex-wrap items-center gap-2">
-                            <Badge variant={getInstanceStatusVariant(instance.status)}>
+                            <Badge
+                              variant={getInstanceStatusVariant(
+                                instance.status
+                              )}
+                            >
                               {formatStatusLabel(instance.status)}
                             </Badge>
                             {instance.isExpiringSoon ? (

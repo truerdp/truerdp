@@ -85,7 +85,11 @@ export function AdminInstancesTable({
                 <TableCell>
                   {instance.resourceStatus ? (
                     <div className="flex flex-col gap-1">
-                      <Badge variant={getResourceStatusVariant(instance.resourceStatus)}>
+                      <Badge
+                        variant={getResourceStatusVariant(
+                          instance.resourceStatus
+                        )}
+                      >
                         {formatStatus(instance.resourceStatus)}
                       </Badge>
                       {instance.provider && (
@@ -118,7 +122,9 @@ export function AdminInstancesTable({
                 </TableCell>
                 <TableCell>
                   <DropdownMenu>
-                    <DropdownMenuTrigger render={<Button size="icon-sm" variant="outline" />}>
+                    <DropdownMenuTrigger
+                      render={<Button size="icon-sm" variant="outline" />}
+                    >
                       <HugeiconsIcon
                         icon={MoreHorizontalCircle01Icon}
                         strokeWidth={2}
@@ -135,19 +141,25 @@ export function AdminInstancesTable({
                         View
                       </DropdownMenuItem>
                       {needsProvisioning ? (
-                        <DropdownMenuItem onClick={() => onProvision(instance.id)}>
+                        <DropdownMenuItem
+                          onClick={() => onProvision(instance.id)}
+                        >
                           Provision
                         </DropdownMenuItem>
                       ) : null}
                       {instance.status === "suspended" ? (
                         <DropdownMenuItem
-                          onClick={() => onSuspendToggle(instance.id, "unsuspend")}
+                          onClick={() =>
+                            onSuspendToggle(instance.id, "unsuspend")
+                          }
                         >
                           Undo suspension
                         </DropdownMenuItem>
                       ) : instance.status !== "terminated" ? (
                         <DropdownMenuItem
-                          onClick={() => onSuspendToggle(instance.id, "suspend")}
+                          onClick={() =>
+                            onSuspendToggle(instance.id, "suspend")
+                          }
                           variant="destructive"
                         >
                           Suspend

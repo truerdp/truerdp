@@ -84,7 +84,9 @@ export function toBillingFormValues(
   return emptyBillingForm
 }
 
-export function buildBillingPayload(values: BillingFormValues): OrderBillingDetails {
+export function buildBillingPayload(
+  values: BillingFormValues
+): OrderBillingDetails {
   const normalizeRequired = (value: string) => value.trim()
   const normalizeOptional = (value: string) => {
     const trimmed = value.trim()

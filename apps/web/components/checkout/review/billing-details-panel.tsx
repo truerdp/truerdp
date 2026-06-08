@@ -1,4 +1,9 @@
-import { Controller, type Control, type FieldErrors, type UseFormRegister } from "react-hook-form"
+import {
+  Controller,
+  type Control,
+  type FieldErrors,
+  type UseFormRegister,
+} from "react-hook-form"
 
 import { Badge } from "@workspace/ui/components/badge"
 import { Button } from "@workspace/ui/components/button"
@@ -56,7 +61,9 @@ export function BillingDetailsPanel({
             disabled={isSavingBilling}
             aria-invalid={!!errors.firstName}
           />
-          {errors.firstName ? <FieldError>{errors.firstName.message}</FieldError> : null}
+          {errors.firstName ? (
+            <FieldError>{errors.firstName.message}</FieldError>
+          ) : null}
         </Field>
         <Field data-invalid={!!errors.lastName}>
           <FieldLabel htmlFor="billing-last-name">Last name *</FieldLabel>
@@ -67,7 +74,9 @@ export function BillingDetailsPanel({
             disabled={isSavingBilling}
             aria-invalid={!!errors.lastName}
           />
-          {errors.lastName ? <FieldError>{errors.lastName.message}</FieldError> : null}
+          {errors.lastName ? (
+            <FieldError>{errors.lastName.message}</FieldError>
+          ) : null}
         </Field>
         <Field data-invalid={!!errors.email}>
           <FieldLabel htmlFor="billing-email">Billing email *</FieldLabel>
@@ -79,7 +88,9 @@ export function BillingDetailsPanel({
             disabled={isSavingBilling}
             aria-invalid={!!errors.email}
           />
-          {errors.email ? <FieldError>{errors.email.message}</FieldError> : null}
+          {errors.email ? (
+            <FieldError>{errors.email.message}</FieldError>
+          ) : null}
         </Field>
         <Field data-invalid={!!errors.phone}>
           <FieldLabel htmlFor="billing-phone">Phone *</FieldLabel>
@@ -100,7 +111,9 @@ export function BillingDetailsPanel({
               />
             )}
           />
-          {errors.phone ? <FieldError>{errors.phone.message}</FieldError> : null}
+          {errors.phone ? (
+            <FieldError>{errors.phone.message}</FieldError>
+          ) : null}
         </Field>
         <Field>
           <FieldLabel htmlFor="billing-company">Company</FieldLabel>
@@ -121,7 +134,9 @@ export function BillingDetailsPanel({
           />
         </Field>
         <Field data-invalid={!!errors.addressLine1}>
-          <FieldLabel htmlFor="billing-address-line-1">Address line 1 *</FieldLabel>
+          <FieldLabel htmlFor="billing-address-line-1">
+            Address line 1 *
+          </FieldLabel>
           <Input
             id="billing-address-line-1"
             {...register("addressLine1")}
@@ -134,7 +149,9 @@ export function BillingDetailsPanel({
           ) : null}
         </Field>
         <Field>
-          <FieldLabel htmlFor="billing-address-line-2">Address line 2</FieldLabel>
+          <FieldLabel htmlFor="billing-address-line-2">
+            Address line 2
+          </FieldLabel>
           <Input
             id="billing-address-line-2"
             {...register("addressLine2")}
@@ -162,7 +179,9 @@ export function BillingDetailsPanel({
             disabled={isSavingBilling}
             aria-invalid={!!errors.state}
           />
-          {errors.state ? <FieldError>{errors.state.message}</FieldError> : null}
+          {errors.state ? (
+            <FieldError>{errors.state.message}</FieldError>
+          ) : null}
         </Field>
         <Field data-invalid={!!errors.postalCode}>
           <FieldLabel htmlFor="billing-postal-code">Postal code *</FieldLabel>
@@ -186,7 +205,9 @@ export function BillingDetailsPanel({
             disabled={isSavingBilling}
             aria-invalid={!!errors.country}
           />
-          {errors.country ? <FieldError>{errors.country.message}</FieldError> : null}
+          {errors.country ? (
+            <FieldError>{errors.country.message}</FieldError>
+          ) : null}
         </Field>
       </FieldGroup>
 

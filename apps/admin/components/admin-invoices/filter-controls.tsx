@@ -113,7 +113,9 @@ export function InvoiceFilterControls({
               </div>
 
               <div className="flex min-w-0 flex-col gap-1.5">
-                <p className="text-xs text-muted-foreground">Transaction status</p>
+                <p className="text-xs text-muted-foreground">
+                  Transaction status
+                </p>
                 <Select
                   value={transactionStatusFilter}
                   onValueChange={(value) =>
@@ -137,7 +139,9 @@ export function InvoiceFilterControls({
                 <p className="text-xs text-muted-foreground">Method</p>
                 <Select
                   value={methodFilter}
-                  onValueChange={(value) => onMethodChange(value as MethodFilter)}
+                  onValueChange={(value) =>
+                    onMethodChange(value as MethodFilter)
+                  }
                 >
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="Method" />

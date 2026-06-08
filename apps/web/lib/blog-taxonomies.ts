@@ -1,6 +1,10 @@
 import "server-only"
 
-import type { BlogCategory, BlogTag, PayloadTaxonomyDocument } from "@/lib/blog-types"
+import type {
+  BlogCategory,
+  BlogTag,
+  PayloadTaxonomyDocument,
+} from "@/lib/blog-types"
 
 type PayloadListResponse<T> = {
   docs?: T[]
@@ -33,7 +37,9 @@ async function cmsFetch<T>(path: string): Promise<T | null> {
   return (await response.json()) as T
 }
 
-function mapCategory(entry: PayloadTaxonomyDocument | null | undefined): BlogCategory | null {
+function mapCategory(
+  entry: PayloadTaxonomyDocument | null | undefined
+): BlogCategory | null {
   const id = String(entry?.id ?? "").trim()
   const slug = entry?.slug?.trim()
   const name = entry?.name?.trim()
@@ -50,7 +56,9 @@ function mapCategory(entry: PayloadTaxonomyDocument | null | undefined): BlogCat
   }
 }
 
-function mapTag(entry: PayloadTaxonomyDocument | null | undefined): BlogTag | null {
+function mapTag(
+  entry: PayloadTaxonomyDocument | null | undefined
+): BlogTag | null {
   const id = String(entry?.id ?? "").trim()
   const slug = entry?.slug?.trim()
   const name = entry?.name?.trim()
@@ -68,9 +76,11 @@ export async function listBlogCategories() {
       "/api/blog-categories?limit=100&sort=name"
     )
 
-    return result?.docs
-      ?.map((entry) => mapCategory(entry))
-      .filter((entry): entry is BlogCategory => Boolean(entry)) ?? []
+    return (
+      result?.docs
+        ?.map((entry) => mapCategory(entry))
+        .filter((entry): entry is BlogCategory => Boolean(entry)) ?? []
+    )
   } catch {
     return []
   }
@@ -82,9 +92,11 @@ export async function listBlogTags() {
       "/api/blog-tags?limit=100&sort=name"
     )
 
-    return result?.docs
-      ?.map((entry) => mapTag(entry))
-      .filter((entry): entry is BlogTag => Boolean(entry)) ?? []
+    return (
+      result?.docs
+        ?.map((entry) => mapTag(entry))
+        .filter((entry): entry is BlogTag => Boolean(entry)) ?? []
+    )
   } catch {
     return []
   }
@@ -96,9 +108,11 @@ export async function listAllPublishedBlogSlugs() {
       "/api/blog-posts?limit=100&sort=-publishAt"
     )
 
-    return result?.docs
-      ?.map((entry) => entry.slug?.trim())
-      .filter((entry): entry is string => Boolean(entry)) ?? []
+    return (
+      result?.docs
+        ?.map((entry) => entry.slug?.trim())
+        .filter((entry): entry is string => Boolean(entry)) ?? []
+    )
   } catch {
     return []
   }

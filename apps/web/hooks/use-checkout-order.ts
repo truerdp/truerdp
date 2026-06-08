@@ -47,7 +47,9 @@ export function useCheckoutOrder(orderId: number, hasValidOrderId: boolean) {
       return
     }
     const redirectPath = webPaths.checkoutOrder(orderId)
-    router.push(`${webPaths.login}?redirect=${encodeURIComponent(redirectPath)}`)
+    router.push(
+      `${webPaths.login}?redirect=${encodeURIComponent(redirectPath)}`
+    )
   }, [hasValidOrderId, isProfileError, isProfileLoading, orderId, router])
 
   const existingPendingTransaction = useMemo(() => {
@@ -78,7 +80,9 @@ export function useCheckoutOrder(orderId: number, hasValidOrderId: boolean) {
 
     if (!profile) {
       const redirectPath = webPaths.checkoutOrder(order.orderId)
-      router.push(`${webPaths.login}?redirect=${encodeURIComponent(redirectPath)}`)
+      router.push(
+        `${webPaths.login}?redirect=${encodeURIComponent(redirectPath)}`
+      )
       return
     }
 

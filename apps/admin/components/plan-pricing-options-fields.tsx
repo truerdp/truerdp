@@ -83,7 +83,9 @@ export function PlanPricingOptionsFields({
             className="rounded-2xl border border-border/70 bg-muted/30 p-4"
           >
             <div className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_1fr_auto_auto]">
-              <Field data-invalid={!!errors.pricingOptions?.[index]?.durationDays}>
+              <Field
+                data-invalid={!!errors.pricingOptions?.[index]?.durationDays}
+              >
                 <FieldLabel htmlFor={`pricing-duration-${index}`}>
                   Duration (days)
                 </FieldLabel>
@@ -120,7 +122,9 @@ export function PlanPricingOptionsFields({
                   })}
                 />
                 {errors.pricingOptions?.[index]?.priceUsd && (
-                  <FieldError>{errors.pricingOptions[index]?.priceUsd?.message}</FieldError>
+                  <FieldError>
+                    {errors.pricingOptions[index]?.priceUsd?.message}
+                  </FieldError>
                 )}
               </Field>
 

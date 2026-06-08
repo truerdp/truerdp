@@ -23,7 +23,7 @@ export function AdminUserLink({
     <Link
       href={adminPaths.userDetails(userId)}
       className={cn(
-        "group inline-flex flex-col gap-0.5 rounded-md transition-colors hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
+        "group inline-flex flex-col gap-0.5 rounded-md transition-colors hover:text-primary focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none",
         className
       )}
     >

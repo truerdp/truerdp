@@ -32,79 +32,81 @@ export type ConfettiRef = ConfettiApi | null
 
 export const ConfettiContext = createContext<ConfettiApi>({} as ConfettiApi)
 
-const ConfettiComponent = forwardRef<ConfettiRef, ConfettiProps>((props, ref) => {
-  const {
-    options,
-    globalOptions = { resize: true, useWorker: true },
-    manualstart = false,
-    children,
-    ...rest
-  } = props
-  const instanceRef = useRef<ConfettiInstance | null>(null)
+const ConfettiComponent = forwardRef<ConfettiRef, ConfettiProps>(
+  (props, ref) => {
+    const {
+      options,
+      globalOptions = { resize: true, useWorker: true },
+      manualstart = false,
+      children,
+      ...rest
+    } = props
+    const instanceRef = useRef<ConfettiInstance | null>(null)
 
-  const canvasRef = useCallback(
-    (node: HTMLCanvasElement | null) => {
-      if (node) {
-        if (instanceRef.current) {
+    const canvasRef = useCallback(
+      (node: HTMLCanvasElement | null) => {
+        if (node) {
+          if (instanceRef.current) {
+            return
+          }
+
+          instanceRef.current = confetti.create(node, {
+            ...globalOptions,
+            resize: true,
+          })
           return
         }
 
-        instanceRef.current = confetti.create(node, {
-          ...globalOptions,
-          resize: true,
-        })
+        if (instanceRef.current) {
+          instanceRef.current.reset()
+          instanceRef.current = null
+        }
+      },
+      [globalOptions]
+    )
+
+    const fire = useCallback(
+      async (opts: ConfettiOptions = {}) => {
+        try {
+          await instanceRef.current?.({ ...options, ...opts })
+        } catch (error) {
+          console.error("Confetti error:", error)
+        }
+      },
+      [options]
+    )
+
+    const api = useMemo<ConfettiApi>(
+      () => ({
+        fire,
+      }),
+      [fire]
+    )
+
+    useImperativeHandle(ref, () => api, [api])
+
+    useEffect(() => {
+      if (manualstart) {
         return
       }
 
-      if (instanceRef.current) {
-        instanceRef.current.reset()
-        instanceRef.current = null
-      }
-    },
-    [globalOptions]
-  )
+      ;(async () => {
+        try {
+          await fire()
+        } catch (error) {
+          console.error("Confetti effect error:", error)
+        }
+      })()
+    }, [manualstart, fire])
 
-  const fire = useCallback(
-    async (opts: ConfettiOptions = {}) => {
-      try {
-        await instanceRef.current?.({ ...options, ...opts })
-      } catch (error) {
-        console.error("Confetti error:", error)
-      }
-    },
-    [options]
-  )
-
-  const api = useMemo<ConfettiApi>(
-    () => ({
-      fire,
-    }),
-    [fire]
-  )
-
-  useImperativeHandle(ref, () => api, [api])
-
-  useEffect(() => {
-    if (manualstart) {
-      return
-    }
-
-    ;(async () => {
-      try {
-        await fire()
-      } catch (error) {
-        console.error("Confetti effect error:", error)
-      }
-    })()
-  }, [manualstart, fire])
-
-  return (
-    <ConfettiContext.Provider value={api}>
-      <canvas ref={canvasRef} {...rest} />
-      {children}
-    </ConfettiContext.Provider>
-  )
-})
+    return (
+      <ConfettiContext.Provider value={api}>
+        <canvas ref={canvasRef} {...rest} />
+        {children}
+      </ConfettiContext.Provider>
+    )
+  }
+)
 
 ConfettiComponent.displayName = "Confetti"
 

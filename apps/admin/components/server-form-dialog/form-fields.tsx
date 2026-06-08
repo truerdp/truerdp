@@ -1,4 +1,9 @@
-import { Controller, type Control, type FieldErrors, type UseFormRegister } from "react-hook-form"
+import {
+  Controller,
+  type Control,
+  type FieldErrors,
+  type UseFormRegister,
+} from "react-hook-form"
 import { Input } from "@workspace/ui/components/input"
 import {
   Field,
@@ -33,8 +38,14 @@ export function ServerFormFields({
     <FieldGroup className="grid gap-3 pb-6 md:grid-cols-2">
       <Field data-invalid={!!errors.provider}>
         <FieldLabel htmlFor="server-provider">Provider</FieldLabel>
-        <Input id="server-provider" disabled={isPending} {...register("provider")} />
-        <FieldDescription>Use manual for local inventory entries.</FieldDescription>
+        <Input
+          id="server-provider"
+          disabled={isPending}
+          {...register("provider")}
+        />
+        <FieldDescription>
+          Use manual for local inventory entries.
+        </FieldDescription>
         {errors.provider && <FieldError>{errors.provider.message}</FieldError>}
       </Field>
 
@@ -65,7 +76,9 @@ export function ServerFormFields({
       </Field>
 
       <Field className="md:col-span-2" data-invalid={!!errors.externalId}>
-        <FieldLabel htmlFor="server-external-id">External ID (optional)</FieldLabel>
+        <FieldLabel htmlFor="server-external-id">
+          External ID (optional)
+        </FieldLabel>
         <Input
           id="server-external-id"
           disabled={isPending}
@@ -74,13 +87,17 @@ export function ServerFormFields({
         <FieldDescription>
           Cloud provider instance ID or asset identifier.
         </FieldDescription>
-        {errors.externalId && <FieldError>{errors.externalId.message}</FieldError>}
+        {errors.externalId && (
+          <FieldError>{errors.externalId.message}</FieldError>
+        )}
       </Field>
 
       <Field className="md:col-span-2" data-invalid={!!errors.ipAddress}>
         <FieldLabel htmlFor="server-ip">IP Address</FieldLabel>
         <Input id="server-ip" disabled={isPending} {...register("ipAddress")} />
-        {errors.ipAddress && <FieldError>{errors.ipAddress.message}</FieldError>}
+        {errors.ipAddress && (
+          <FieldError>{errors.ipAddress.message}</FieldError>
+        )}
       </Field>
 
       <Field data-invalid={!!errors.cpu}>
@@ -121,4 +138,3 @@ export function ServerFormFields({
     </FieldGroup>
   )
 }
-

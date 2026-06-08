@@ -18,7 +18,10 @@ import { ProvisionInstanceDialog } from "@/components/provision-instance-dialog"
 import { SuspendInstanceDialog } from "@/components/suspend-instance-dialog"
 import { AdminPaginationControls } from "@/components/admin-pagination-controls"
 import { useTerminateInstance } from "@/hooks/use-terminate-instance"
-import { InstancesEmpty, InstancesSkeleton } from "@/components/admin-instances/states"
+import {
+  InstancesEmpty,
+  InstancesSkeleton,
+} from "@/components/admin-instances/states"
 import { AdminInstancesTable } from "@/components/admin-instances/table"
 
 export default function AdminInstancesPage() {

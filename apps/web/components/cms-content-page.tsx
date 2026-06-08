@@ -17,9 +17,9 @@ type FaqItem = {
 function isLexicalValue(value: unknown): value is Record<string, unknown> {
   return Boolean(
     value &&
-      typeof value === "object" &&
-      "root" in value &&
-      typeof (value as { root?: unknown }).root === "object"
+    typeof value === "object" &&
+    "root" in value &&
+    typeof (value as { root?: unknown }).root === "object"
   )
 }
 
@@ -58,7 +58,7 @@ export default async function CmsContentPage({ slug }: { slug: string }) {
       ) : null}
 
       {isLexicalValue(body) ? (
-        <section className="prose prose-neutral mt-8 max-w-none dark:prose-invert">
+        <section className="prose prose-neutral dark:prose-invert mt-8 max-w-none">
           <RichText data={body as unknown as RichTextData} />
         </section>
       ) : null}
@@ -80,5 +80,3 @@ export default async function CmsContentPage({ slug }: { slug: string }) {
     </main>
   )
 }
-
-

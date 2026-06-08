@@ -8,7 +8,10 @@ import { useConfirmTransaction } from "@/hooks/use-confirm-transaction"
 import { useFailTransaction } from "@/hooks/use-fail-transaction"
 import { ProvisionInstanceDialog } from "@/components/provision-instance-dialog"
 import { AdminPaginationControls } from "@/components/admin-pagination-controls"
-import { PendingTransactionsSkeleton, TransactionsEmpty } from "@/components/admin-transactions/states"
+import {
+  PendingTransactionsSkeleton,
+  TransactionsEmpty,
+} from "@/components/admin-transactions/states"
 import { AdminTransactionsTable } from "@/components/admin-transactions/table"
 
 export default function AdminTransactionsPage() {

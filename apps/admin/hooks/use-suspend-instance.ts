@@ -16,7 +16,9 @@ async function invalidateInstanceQueries(
 ) {
   await Promise.all([
     queryClient.invalidateQueries({ queryKey: queryKeys.allInstances() }),
-    queryClient.invalidateQueries({ queryKey: queryKeys.instanceDetails(instanceId) }),
+    queryClient.invalidateQueries({
+      queryKey: queryKeys.instanceDetails(instanceId),
+    }),
     queryClient.invalidateQueries({ queryKey: queryKeys.expiredInstances() }),
     queryClient.invalidateQueries({
       queryKey: queryKeys.expiringSoonInstances(),

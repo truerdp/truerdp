@@ -10,7 +10,9 @@ import type {
   PayloadTaxonomyDocument,
 } from "@/lib/blog-types"
 
-export function toImage(input?: PayloadMediaDocument | string | number | null): BlogImage | null {
+export function toImage(
+  input?: PayloadMediaDocument | string | number | null
+): BlogImage | null {
   if (!input || typeof input !== "object") {
     return null
   }
@@ -19,7 +21,9 @@ export function toImage(input?: PayloadMediaDocument | string | number | null): 
   return url ? { url } : null
 }
 
-function toAuthor(input?: PayloadAuthorDocument | string | number | null): BlogAuthor | null {
+function toAuthor(
+  input?: PayloadAuthorDocument | string | number | null
+): BlogAuthor | null {
   if (!input || typeof input !== "object") {
     return null
   }
@@ -37,7 +41,9 @@ function toAuthor(input?: PayloadAuthorDocument | string | number | null): BlogA
   }
 }
 
-function toCategories(input: PayloadBlogPostDocument["categories"]): BlogCategory[] {
+function toCategories(
+  input: PayloadBlogPostDocument["categories"]
+): BlogCategory[] {
   if (!Array.isArray(input)) {
     return []
   }
@@ -124,7 +130,9 @@ export function estimateReadingTimeMinutes(text: string) {
   return Math.max(1, Math.ceil(wordCount / 220))
 }
 
-export function mapPayloadPost(document: PayloadBlogPostDocument | null | undefined): BlogPost | null {
+export function mapPayloadPost(
+  document: PayloadBlogPostDocument | null | undefined
+): BlogPost | null {
   const id = String(document?.id ?? "").trim()
   const title = document?.title?.trim()
   const slug = document?.slug?.trim()

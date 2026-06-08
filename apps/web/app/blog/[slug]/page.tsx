@@ -1,8 +1,19 @@
 import type { Metadata } from "next"
 import Link from "next/link"
 import { notFound } from "next/navigation"
-import { BlogAuthorByline, BlogPortableBody, BlogTagPill, RelatedPosts } from "@/components/blog/blog-ui"
-import { getBlogPostBySlug, getBlogSettings, getRelatedBlogPosts, getSiteOrigin, portableTextToPlainText } from "@/lib/blog"
+import {
+  BlogAuthorByline,
+  BlogPortableBody,
+  BlogTagPill,
+  RelatedPosts,
+} from "@/components/blog/blog-ui"
+import {
+  getBlogPostBySlug,
+  getBlogSettings,
+  getRelatedBlogPosts,
+  getSiteOrigin,
+  portableTextToPlainText,
+} from "@/lib/blog"
 import { blogPaths } from "@/lib/paths"
 
 type PageProps = { params: Promise<{ slug: string }> }

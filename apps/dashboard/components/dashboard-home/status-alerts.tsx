@@ -1,9 +1,6 @@
 import Link from "next/link"
 import { HugeiconsIcon } from "@hugeicons/react"
-import {
-  ClockAlertIcon,
-  CreditCardIcon,
-} from "@hugeicons/core-free-icons"
+import { ClockAlertIcon, CreditCardIcon } from "@hugeicons/core-free-icons"
 
 import { dashboardPaths } from "@/lib/paths"
 import {

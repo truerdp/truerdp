@@ -18,4 +18,3 @@ export const adminPaths = {
   userDetails: (userId: number) => `/users/${userId}` as Route,
   account: "/account" as Route,
 } as const
-

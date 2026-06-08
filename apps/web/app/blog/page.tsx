@@ -93,7 +93,9 @@ export default async function BlogPage({ searchParams }: PageProps) {
             <h2 className="text-xl font-semibold">Browse topics</h2>
             <div className="flex flex-wrap gap-2">
               {Array.from(
-                new Set(posts.flatMap((post) => post.categories.map((c) => c.slug)))
+                new Set(
+                  posts.flatMap((post) => post.categories.map((c) => c.slug))
+                )
               ).map((slug) => (
                 <BlogTagPill
                   key={slug}

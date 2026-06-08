@@ -35,7 +35,9 @@ export default function InstanceDetails() {
   return (
     <section className="space-y-4">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Instance #{data.id}</h1>
+        <h1 className="text-2xl font-bold tracking-tight">
+          Instance #{data.id}
+        </h1>
         <p className="text-sm text-muted-foreground">
           Review your provisioned instance details.
         </p>

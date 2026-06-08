@@ -49,4 +49,3 @@ export function getCouponExpiryState(expiresAt: string | null) {
     expiryTime: expiryDate ? formatTimeValue(expiryDate) : "",
   }
 }
-
