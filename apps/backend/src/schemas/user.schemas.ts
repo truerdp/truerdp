@@ -1,8 +1,19 @@
+import {
+  billingFieldProperties,
+  billingFieldsRequired,
+} from "./common.schemas.js"
+
 export const errorResponse = {
   type: "object",
   properties: {
     error: { type: "string" },
   },
+}
+
+const billingDetailsSchema = {
+  type: "object",
+  required: billingFieldsRequired,
+  properties: billingFieldProperties,
 }
 
 export const userProfileProperties = {
@@ -12,6 +23,9 @@ export const userProfileProperties = {
   lastName: { type: "string" },
   role: { type: "string" },
   createdAt: { type: "string", format: "date-time" },
+  billingDetails: {
+    anyOf: [billingDetailsSchema, { type: "null" }],
+  },
 }
 
 export const getCurrentUserResponseSchema = {
@@ -36,6 +50,28 @@ export const updateProfileBodySchema = {
     firstName: { type: "string" },
     lastName: { type: "string" },
     email: { type: "string", format: "email" },
+    billingDetails: {
+      type: "object",
+      required: [
+        "phone",
+        "addressLine1",
+        "city",
+        "state",
+        "postalCode",
+        "country",
+      ],
+      properties: {
+        phone: { type: "string" },
+        companyName: { type: "string", nullable: true },
+        taxId: { type: "string", nullable: true },
+        addressLine1: { type: "string" },
+        addressLine2: { type: "string", nullable: true },
+        city: { type: "string" },
+        state: { type: "string" },
+        postalCode: { type: "string" },
+        country: { type: "string" },
+      },
+    },
   },
 }
 

@@ -27,6 +27,7 @@ import {
 import type { Plan } from "@/hooks/use-plans"
 import {
   formatPrice,
+  getEffectivePriceUsdCents,
   getDefaultPricingOption,
 } from "@/components/plans-page-parts"
 
@@ -182,7 +183,7 @@ function PlanPricingPopover({ plan }: { plan: Plan }) {
         <span className="flex flex-col items-start gap-0.5">
           <span className="text-sm font-medium">
             {defaultPricing
-              ? `${formatPrice(defaultPricing.priceUsdCents)} / ${defaultPricing.durationDays}d`
+              ? `${formatPrice(getEffectivePriceUsdCents(defaultPricing))} / ${defaultPricing.durationDays}d`
               : "No pricing"}
           </span>
           <span className="text-xs text-muted-foreground">
@@ -214,8 +215,13 @@ function PlanPricingPopover({ plan }: { plan: Plan }) {
                   <Badge variant="secondary">Default</Badge>
                 ) : null}
                 <span className="text-sm font-semibold">
-                  {formatPrice(pricing.priceUsdCents)}
+                  {formatPrice(getEffectivePriceUsdCents(pricing))}
                 </span>
+                {pricing.promoPriceUsdCents != null ? (
+                  <span className="text-xs text-muted-foreground line-through">
+                    {formatPrice(pricing.priceUsdCents)}
+                  </span>
+                ) : null}
               </div>
             </div>
           ))}

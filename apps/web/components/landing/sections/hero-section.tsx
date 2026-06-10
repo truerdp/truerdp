@@ -10,7 +10,7 @@ import { Badge } from "@workspace/ui/components/badge"
 import { Button } from "@workspace/ui/components/button"
 import { DotPattern } from "@workspace/ui/components/dot-pattern"
 import { TextAnimate } from "@workspace/ui/components/text-animate"
-import { statCardClass } from "./styles"
+import { getEffectivePriceUsdCents, statCardClass } from "./styles"
 import type { HeroContent, PlanPricingOption } from "./types"
 import Image from "next/image"
 import serverImage from "@/assets/images/server.png"
@@ -116,7 +116,7 @@ export function HeroSection({
             </p>
             <p className="mt-1 text-lg font-semibold text-[oklch(0.28_0.12_166)] dark:text-white">
               {cheapestOption
-                ? formatAmount(cheapestOption.priceUsdCents)
+                ? formatAmount(getEffectivePriceUsdCents(cheapestOption))
                 : "-"}
             </p>
           </div>

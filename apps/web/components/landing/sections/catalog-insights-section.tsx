@@ -7,7 +7,11 @@ import { formatAmount } from "@/lib/format"
 import { webPaths } from "@/lib/paths"
 import { Badge } from "@workspace/ui/components/badge"
 import { Button } from "@workspace/ui/components/button"
-import { getLowestPricingOption, sectionEyebrowClass } from "./styles"
+import {
+  getEffectivePriceUsdCents,
+  getLowestPricingOption,
+  sectionEyebrowClass,
+} from "./styles"
 import type { LocationSectionContent, Plan, PlanPricingOption } from "./types"
 
 interface CatalogInsightsSectionProps {
@@ -42,7 +46,10 @@ export function CatalogInsightsSection({
             const lowestOption = groupedPlans
               .map((plan) => getLowestPricingOption(plan))
               .filter((option): option is PlanPricingOption => Boolean(option))
-              .sort((a, b) => a.priceUsdCents - b.priceUsdCents)[0]
+              .sort(
+                (a, b) =>
+                  getEffectivePriceUsdCents(a) - getEffectivePriceUsdCents(b)
+              )[0]
 
             return (
               <Reveal key={location} delayMs={index * 55}>
@@ -73,7 +80,7 @@ export function CatalogInsightsSection({
                     <p className="text-xs text-muted-foreground">Starts at</p>
                     <p className="mt-1 text-lg font-semibold">
                       {lowestOption
-                        ? formatAmount(lowestOption.priceUsdCents)
+                        ? formatAmount(getEffectivePriceUsdCents(lowestOption))
                         : "-"}
                     </p>
                   </div>

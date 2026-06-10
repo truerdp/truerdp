@@ -13,6 +13,16 @@ function formatUsdFromCents(priceUsdCents: number) {
   return formatUsd(priceUsdCents / 100)
 }
 
+function getEffectivePriceUsdCents(pricing: {
+  priceUsdCents: number
+  promoPriceUsdCents: number | null
+}) {
+  return pricing.promoPriceUsdCents != null &&
+    pricing.promoPriceUsdCents < pricing.priceUsdCents
+    ? pricing.promoPriceUsdCents
+    : pricing.priceUsdCents
+}
+
 type PlanDetailsViewProps = {
   plan: Plan
 }
@@ -110,8 +120,13 @@ export function PlanDetailsView({ plan }: PlanDetailsViewProps) {
                   <div className="flex items-center gap-3">
                     <div className="text-right">
                       <div className="font-semibold">
-                        {formatUsdFromCents(pricing.priceUsdCents)}
+                        {formatUsdFromCents(getEffectivePriceUsdCents(pricing))}
                       </div>
+                      {pricing.promoPriceUsdCents != null ? (
+                        <div className="text-xs text-muted-foreground line-through">
+                          {formatUsdFromCents(pricing.priceUsdCents)}
+                        </div>
+                      ) : null}
                       <div className="text-xs text-muted-foreground">
                         per duration
                       </div>

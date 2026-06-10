@@ -9,6 +9,7 @@ import {
   getUserProfileSchema,
   updateProfileSchema,
 } from "../../schemas/user.schemas.js"
+import { buildUserBillingDetails } from "../../services/billing/user-billing.js"
 
 export async function registerUserProfileRoutes(server: FastifyInstance) {
   server.get(
@@ -24,6 +25,15 @@ export async function registerUserProfileRoutes(server: FastifyInstance) {
             email: users.email,
             firstName: users.firstName,
             lastName: users.lastName,
+            billingPhone: users.billingPhone,
+            billingCompanyName: users.billingCompanyName,
+            billingTaxId: users.billingTaxId,
+            billingAddressLine1: users.billingAddressLine1,
+            billingAddressLine2: users.billingAddressLine2,
+            billingCity: users.billingCity,
+            billingState: users.billingState,
+            billingPostalCode: users.billingPostalCode,
+            billingCountry: users.billingCountry,
             role: users.role,
             createdAt: users.createdAt,
           })
@@ -37,7 +47,15 @@ export async function registerUserProfileRoutes(server: FastifyInstance) {
           return reply.status(404).send({ error: "User not found" })
         }
 
-        return user
+        return {
+          id: user.id,
+          email: user.email,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          role: user.role,
+          createdAt: user.createdAt,
+          billingDetails: buildUserBillingDetails(user),
+        }
       } catch (err: unknown) {
         server.log.error(err)
         return reply.status(500).send({
@@ -81,6 +99,19 @@ export async function registerUserProfileRoutes(server: FastifyInstance) {
         }
 
         const nextName = `${body.firstName} ${body.lastName}`.trim()
+        const billingUpdate = body.billingDetails
+          ? {
+              billingPhone: body.billingDetails.phone,
+              billingCompanyName: body.billingDetails.companyName,
+              billingTaxId: body.billingDetails.taxId,
+              billingAddressLine1: body.billingDetails.addressLine1,
+              billingAddressLine2: body.billingDetails.addressLine2,
+              billingCity: body.billingDetails.city,
+              billingState: body.billingDetails.state,
+              billingPostalCode: body.billingDetails.postalCode,
+              billingCountry: body.billingDetails.country,
+            }
+          : {}
 
         const [updatedUser] = await db
           .update(users)
@@ -89,6 +120,7 @@ export async function registerUserProfileRoutes(server: FastifyInstance) {
             email: normalizedEmail,
             firstName: body.firstName,
             lastName: body.lastName,
+            ...billingUpdate,
           })
           .where(eq(users.id, userId))
           .returning({
@@ -96,11 +128,32 @@ export async function registerUserProfileRoutes(server: FastifyInstance) {
             email: users.email,
             firstName: users.firstName,
             lastName: users.lastName,
+            billingPhone: users.billingPhone,
+            billingCompanyName: users.billingCompanyName,
+            billingTaxId: users.billingTaxId,
+            billingAddressLine1: users.billingAddressLine1,
+            billingAddressLine2: users.billingAddressLine2,
+            billingCity: users.billingCity,
+            billingState: users.billingState,
+            billingPostalCode: users.billingPostalCode,
+            billingCountry: users.billingCountry,
             role: users.role,
             createdAt: users.createdAt,
           })
 
-        return updatedUser
+        if (!updatedUser) {
+          return reply.status(404).send({ error: "User not found" })
+        }
+
+        return {
+          id: updatedUser.id,
+          email: updatedUser.email,
+          firstName: updatedUser.firstName,
+          lastName: updatedUser.lastName,
+          role: updatedUser.role,
+          createdAt: updatedUser.createdAt,
+          billingDetails: buildUserBillingDetails(updatedUser),
+        }
       } catch (err: unknown) {
         server.log.error(err)
         return reply.status(400).send({

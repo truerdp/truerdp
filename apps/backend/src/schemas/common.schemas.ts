@@ -8,9 +8,7 @@ export const idParamSchema = {
   },
 }
 
-export const genericObjectResponse = { type: "object" }
 export const stringResponse = { type: "string" }
-export const arrayResponse = { type: "array", items: { type: "object" } }
 
 // Common field definitions
 export const billingFieldProperties = {

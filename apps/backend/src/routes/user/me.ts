@@ -5,6 +5,7 @@ import { users } from "../../schema.js"
 import { verifyAuth } from "../../middleware/auth.js"
 import type { GenericRouteRequest, RouteReply } from "../../types/requests.js"
 import { getCurrentUserSchema } from "../../schemas/user.schemas.js"
+import { buildUserBillingDetails } from "../../services/billing/user-billing.js"
 
 export async function registerUserMeRoutes(server: FastifyInstance) {
   server.get(
@@ -20,6 +21,15 @@ export async function registerUserMeRoutes(server: FastifyInstance) {
             email: users.email,
             firstName: users.firstName,
             lastName: users.lastName,
+            billingPhone: users.billingPhone,
+            billingCompanyName: users.billingCompanyName,
+            billingTaxId: users.billingTaxId,
+            billingAddressLine1: users.billingAddressLine1,
+            billingAddressLine2: users.billingAddressLine2,
+            billingCity: users.billingCity,
+            billingState: users.billingState,
+            billingPostalCode: users.billingPostalCode,
+            billingCountry: users.billingCountry,
             role: users.role,
             createdAt: users.createdAt,
           })
@@ -33,7 +43,17 @@ export async function registerUserMeRoutes(server: FastifyInstance) {
           return reply.status(404).send({ error: "User not found" })
         }
 
-        return { user }
+        return {
+          user: {
+            id: user.id,
+            email: user.email,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            role: user.role,
+            createdAt: user.createdAt,
+            billingDetails: buildUserBillingDetails(user),
+          },
+        }
       } catch (err: unknown) {
         server.log.error(err)
         return reply.status(500).send({ error: "Internal server error" })

@@ -52,7 +52,9 @@ export async function createBillingTransaction(input: {
     throw new BillingError(400, "Billing details are required before payment")
   }
 
-  const pricingSelection = await getPlanPricingById(orderResult.order.planPricingId)
+  const pricingSelection = await getPlanPricingById(
+    orderResult.order.planPricingId
+  )
 
   if (!pricingSelection || !pricingSelection.isActive) {
     throw new BillingError(400, "Order pricing is no longer active")
@@ -69,8 +71,6 @@ export async function createBillingTransaction(input: {
   }
   const orderPlanPriceUsdCentsValue = Number(orderPlanPriceUsdCents)
 
-  const totalAmount = await calculatePrice(input.userId, orderResult.order.planPricingId)
-  const discount = Math.max(0, orderPlanPriceUsdCentsValue - totalAmount)
   const now = new Date()
 
   await expireStaleBillingAttempts({
@@ -102,6 +102,13 @@ export async function createBillingTransaction(input: {
     orderId: orderResult.order.id,
     now,
   })
+
+  const totalAmount =
+    reusableInvoice?.totalAmount ??
+    (await calculatePrice(input.userId, orderResult.order.planPricingId))
+  const discount =
+    reusableInvoice?.discount ??
+    Math.max(0, orderPlanPriceUsdCentsValue - totalAmount)
 
   const created = await db.transaction(async (tx) => {
     let invoice = reusableInvoice
@@ -138,7 +145,10 @@ export async function createBillingTransaction(input: {
       })
       .returning()
 
-    const transaction = requireInsertedRecord(insertedTransactions[0], "transaction")
+    const transaction = requireInsertedRecord(
+      insertedTransactions[0],
+      "transaction"
+    )
 
     return {
       transaction,
@@ -162,9 +172,9 @@ export async function createBillingTransaction(input: {
       .update(transactions)
       .set({ reference: transactionReference })
       .where(eq(transactions.id, created.transaction.id))
-
-    ;(created.transaction as unknown as { reference: string | null }).reference =
-      transactionReference
+    ;(
+      created.transaction as unknown as { reference: string | null }
+    ).reference = transactionReference
   }
   const invoiceCoupon = await getCouponById(created.invoice.couponId)
 

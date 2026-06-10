@@ -11,13 +11,20 @@ const planPricingOptionSchema = {
     id: { type: "integer" },
     durationDays: { type: "integer" },
     priceUsdCents: { type: "integer" },
+    promoPriceUsdCents: { type: ["integer", "null"] },
     isActive: { type: "boolean" },
     dodoProductId: { type: ["string", "null"] },
     dodoSyncStatus: { type: "string" },
     dodoSyncError: { type: ["string", "null"] },
     dodoSyncedAt: { type: ["string", "null"], format: "date-time" },
   },
-  required: ["id", "durationDays", "priceUsdCents", "isActive"],
+  required: [
+    "id",
+    "durationDays",
+    "priceUsdCents",
+    "promoPriceUsdCents",
+    "isActive",
+  ],
 }
 
 const planWithPricingSchema = {

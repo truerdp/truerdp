@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
-import { useForm, type SubmitHandler } from "react-hook-form"
+import { Controller, useForm, type SubmitHandler } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import z from "zod"
 import { toast } from "sonner"
@@ -22,13 +22,18 @@ import {
   FieldLabel,
 } from "@workspace/ui/components/field"
 import { Input } from "@workspace/ui/components/input"
+import { PhoneInput } from "@workspace/ui/components/phone-input"
 import { Spinner } from "@workspace/ui/components/spinner"
 import { authClient } from "@/lib/auth-client"
 import { webPaths } from "@/lib/paths"
 
+const requiredText = (label: string) =>
+  z.string().trim().min(1, `${label} is required`)
+
 const signupSchema = z
   .object({
-    name: z.string().trim().min(1, "Full name is required"),
+    firstName: requiredText("First name"),
+    lastName: requiredText("Last name"),
     email: z
       .string()
       .trim()
@@ -36,6 +41,15 @@ const signupSchema = z
       .email("Enter a valid email address"),
     password: z.string().min(6, "Password must be at least 6 characters"),
     confirmPassword: z.string().min(1, "Please confirm your password"),
+    phone: requiredText("Phone"),
+    companyName: z.string().trim().optional(),
+    taxId: z.string().trim().optional(),
+    addressLine1: requiredText("Address line 1"),
+    addressLine2: z.string().trim().optional(),
+    city: requiredText("City"),
+    state: requiredText("State/Region"),
+    postalCode: requiredText("Postal code"),
+    country: requiredText("Country"),
   })
   .superRefine((value, context) => {
     if (value.password !== value.confirmPassword) {
@@ -53,16 +67,27 @@ export function SignupForm({ ...props }: React.ComponentProps<typeof Card>) {
   const searchParams = useSearchParams()
   const {
     register,
+    control,
     handleSubmit,
     setError,
     formState: { errors, isSubmitting },
   } = useForm<SignupFormValues>({
     resolver: zodResolver(signupSchema),
     defaultValues: {
-      name: "",
+      firstName: "",
+      lastName: "",
       email: "",
       password: "",
       confirmPassword: "",
+      phone: "",
+      companyName: "",
+      taxId: "",
+      addressLine1: "",
+      addressLine2: "",
+      city: "",
+      state: "",
+      postalCode: "",
+      country: "",
     },
   })
   const requestedRedirect = searchParams.get("redirect")
@@ -70,12 +95,12 @@ export function SignupForm({ ...props }: React.ComponentProps<typeof Card>) {
     ? `${webPaths.login}?redirect=${encodeURIComponent(requestedRedirect)}`
     : webPaths.login
   const onSubmit: SubmitHandler<SignupFormValues> = async (values) => {
-    const fullName = values.name.trim()
+    const firstName = values.firstName.trim()
+    const lastName = values.lastName.trim()
+    const fullName = `${firstName} ${lastName}`.trim()
     const email = values.email.trim()
     const password = values.password
-    const nameParts = fullName.split(/\s+/).filter(Boolean)
-    const firstName = nameParts[0] || fullName
-    const lastName = nameParts.slice(1).join(" ") || "User"
+    const optional = (value?: string) => value?.trim() ?? ""
 
     try {
       const callbackURL = `${window.location.origin}${webPaths.verifyEmailSuccess}`
@@ -86,6 +111,15 @@ export function SignupForm({ ...props }: React.ComponentProps<typeof Card>) {
         password,
         firstName,
         lastName,
+        billingPhone: values.phone.trim(),
+        billingCompanyName: optional(values.companyName),
+        billingTaxId: optional(values.taxId),
+        billingAddressLine1: values.addressLine1.trim(),
+        billingAddressLine2: optional(values.addressLine2),
+        billingCity: values.city.trim(),
+        billingState: values.state.trim(),
+        billingPostalCode: values.postalCode.trim(),
+        billingCountry: values.country.trim(),
         callbackURL,
       })
 
@@ -114,20 +148,36 @@ export function SignupForm({ ...props }: React.ComponentProps<typeof Card>) {
       <CardContent>
         <form onSubmit={handleSubmit(onSubmit)}>
           <FieldGroup>
-            <Field data-invalid={!!errors.name}>
-              <FieldLabel htmlFor="name">Full Name</FieldLabel>
-              <Input
-                id="name"
-                type="text"
-                placeholder="John Doe"
-                disabled={isSubmitting}
-                aria-invalid={!!errors.name}
-                {...register("name")}
-              />
-              {errors.name ? (
-                <FieldError>{errors.name.message}</FieldError>
-              ) : null}
-            </Field>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field data-invalid={!!errors.firstName}>
+                <FieldLabel htmlFor="first-name">First Name</FieldLabel>
+                <Input
+                  id="first-name"
+                  type="text"
+                  placeholder="John"
+                  disabled={isSubmitting}
+                  aria-invalid={!!errors.firstName}
+                  {...register("firstName")}
+                />
+                {errors.firstName ? (
+                  <FieldError>{errors.firstName.message}</FieldError>
+                ) : null}
+              </Field>
+              <Field data-invalid={!!errors.lastName}>
+                <FieldLabel htmlFor="last-name">Last Name</FieldLabel>
+                <Input
+                  id="last-name"
+                  type="text"
+                  placeholder="Doe"
+                  disabled={isSubmitting}
+                  aria-invalid={!!errors.lastName}
+                  {...register("lastName")}
+                />
+                {errors.lastName ? (
+                  <FieldError>{errors.lastName.message}</FieldError>
+                ) : null}
+              </Field>
+            </div>
             <Field data-invalid={!!errors.email}>
               <FieldLabel htmlFor="email">Email</FieldLabel>
               <Input
@@ -178,6 +228,142 @@ export function SignupForm({ ...props }: React.ComponentProps<typeof Card>) {
               ) : null}
               <FieldDescription>Please confirm your password.</FieldDescription>
             </Field>
+            <div className="space-y-3 border-t pt-4">
+              <div>
+                <p className="text-sm font-medium">Billing address</p>
+                <p className="text-xs text-muted-foreground">
+                  This address will be used for plan purchases and invoices.
+                </p>
+              </div>
+              <Field data-invalid={!!errors.phone}>
+                <FieldLabel htmlFor="billing-phone">Phone</FieldLabel>
+                <Controller
+                  name="phone"
+                  control={control}
+                  render={({ field }) => (
+                    <PhoneInput
+                      id="billing-phone"
+                      value={field.value}
+                      onChange={(value) => field.onChange(value ?? "")}
+                      onBlur={field.onBlur}
+                      name={field.name}
+                      placeholder="Phone number"
+                      disabled={isSubmitting}
+                      aria-invalid={!!errors.phone}
+                    />
+                  )}
+                />
+                {errors.phone ? (
+                  <FieldError>{errors.phone.message}</FieldError>
+                ) : null}
+              </Field>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Field>
+                  <FieldLabel htmlFor="company-name">Company</FieldLabel>
+                  <Input
+                    id="company-name"
+                    type="text"
+                    placeholder="Company (optional)"
+                    disabled={isSubmitting}
+                    {...register("companyName")}
+                  />
+                </Field>
+                <Field>
+                  <FieldLabel htmlFor="tax-id">GST/VAT ID</FieldLabel>
+                  <Input
+                    id="tax-id"
+                    type="text"
+                    placeholder="GST/VAT ID (optional)"
+                    disabled={isSubmitting}
+                    {...register("taxId")}
+                  />
+                </Field>
+              </div>
+              <Field data-invalid={!!errors.addressLine1}>
+                <FieldLabel htmlFor="address-line-1">Address line 1</FieldLabel>
+                <Input
+                  id="address-line-1"
+                  type="text"
+                  placeholder="Street address"
+                  disabled={isSubmitting}
+                  aria-invalid={!!errors.addressLine1}
+                  {...register("addressLine1")}
+                />
+                {errors.addressLine1 ? (
+                  <FieldError>{errors.addressLine1.message}</FieldError>
+                ) : null}
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="address-line-2">Address line 2</FieldLabel>
+                <Input
+                  id="address-line-2"
+                  type="text"
+                  placeholder="Apartment, suite, unit (optional)"
+                  disabled={isSubmitting}
+                  {...register("addressLine2")}
+                />
+              </Field>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Field data-invalid={!!errors.city}>
+                  <FieldLabel htmlFor="city">City</FieldLabel>
+                  <Input
+                    id="city"
+                    type="text"
+                    placeholder="City"
+                    disabled={isSubmitting}
+                    aria-invalid={!!errors.city}
+                    {...register("city")}
+                  />
+                  {errors.city ? (
+                    <FieldError>{errors.city.message}</FieldError>
+                  ) : null}
+                </Field>
+                <Field data-invalid={!!errors.state}>
+                  <FieldLabel htmlFor="state">State/Region</FieldLabel>
+                  <Input
+                    id="state"
+                    type="text"
+                    placeholder="State or region"
+                    disabled={isSubmitting}
+                    aria-invalid={!!errors.state}
+                    {...register("state")}
+                  />
+                  {errors.state ? (
+                    <FieldError>{errors.state.message}</FieldError>
+                  ) : null}
+                </Field>
+              </div>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Field data-invalid={!!errors.postalCode}>
+                  <FieldLabel htmlFor="postal-code">Postal code</FieldLabel>
+                  <Input
+                    id="postal-code"
+                    type="text"
+                    placeholder="Postal code"
+                    disabled={isSubmitting}
+                    aria-invalid={!!errors.postalCode}
+                    {...register("postalCode")}
+                  />
+                  {errors.postalCode ? (
+                    <FieldError>{errors.postalCode.message}</FieldError>
+                  ) : null}
+                </Field>
+                <Field data-invalid={!!errors.country}>
+                  <FieldLabel htmlFor="country">Country</FieldLabel>
+                  <Input
+                    id="country"
+                    type="text"
+                    placeholder="Country"
+                    disabled={isSubmitting}
+                    aria-invalid={!!errors.country}
+                    {...register("country")}
+                  />
+                  {errors.country ? (
+                    <FieldError>{errors.country.message}</FieldError>
+                  ) : null}
+                </Field>
+              </div>
+            </div>
             <FieldGroup>
               <Field>
                 <Button type="submit" disabled={isSubmitting}>

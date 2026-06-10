@@ -125,6 +125,7 @@ export async function registerAdminPlansFlagsRoutes(server: FastifyInstance) {
             planName: plans.name,
             durationDays: planPricing.durationDays,
             priceUsdCents: planPricing.priceUsdCents,
+            promoPriceUsdCents: planPricing.promoPriceUsdCents,
             dodoProductId: planPricing.dodoProductId,
           })
           .from(planPricing)

@@ -8,6 +8,7 @@ import { clientApi } from "@workspace/api/client"
 import { useOrder } from "@/hooks/use-order"
 import { useProfile } from "@/hooks/use-profile"
 import { useTransactions } from "@/hooks/use-transactions"
+import { findExistingPendingTransaction } from "@/hooks/checkout-helpers"
 import { webPaths } from "@/lib/paths"
 
 export type PaymentMethod =
@@ -53,23 +54,10 @@ export function useCheckoutOrder(orderId: number, hasValidOrderId: boolean) {
   }, [hasValidOrderId, isProfileError, isProfileLoading, orderId, router])
 
   const existingPendingTransaction = useMemo(() => {
-    if (!transactions || !hasValidOrderId) {
-      return null
-    }
-
-    const now = Date.now()
-
-    return (
-      transactions.find((transaction) => {
-        const expiresAt = new Date(transaction.invoice.expiresAt).getTime()
-        return (
-          transaction.order.id === orderId &&
-          transaction.status === "pending" &&
-          transaction.invoice.status === "unpaid" &&
-          !Number.isNaN(expiresAt) &&
-          expiresAt >= now
-        )
-      }) ?? null
+    return findExistingPendingTransaction(
+      transactions,
+      orderId,
+      hasValidOrderId
     )
   }, [hasValidOrderId, orderId, transactions])
 
@@ -98,6 +86,12 @@ export function useCheckoutOrder(orderId: number, hasValidOrderId: boolean) {
           },
         }
       )
+
+      if (!Number.isInteger(transaction.id) || transaction.id <= 0) {
+        throw new Error(
+          "Payment transaction was created without a reference. Please refresh and try again."
+        )
+      }
 
       if (transaction.gatewayRedirectUrl) {
         window.location.assign(transaction.gatewayRedirectUrl)

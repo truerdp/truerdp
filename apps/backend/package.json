@@ -16,6 +16,7 @@
     "db:studio": "tsx node_modules/drizzle-kit/bin.cjs studio",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
+    "openapi:audit": "tsx src/scripts/audit-openapi-response-schemas.ts",
     "openapi:export": "tsx src/scripts/export-openapi.ts"
   },
   "dependencies": {

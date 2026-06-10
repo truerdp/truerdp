@@ -13,11 +13,18 @@ export function findExistingPendingTransaction(
 
   return (
     transactions.find((transaction) => {
+      if (
+        transaction.order?.id !== orderId ||
+        transaction.status !== "pending" ||
+        transaction.invoice?.status !== "unpaid" ||
+        !transaction.invoice.expiresAt
+      ) {
+        return false
+      }
+
       const expiresAt = new Date(transaction.invoice.expiresAt).getTime()
+
       return (
-        transaction.order.id === orderId &&
-        transaction.status === "pending" &&
-        transaction.invoice.status === "unpaid" &&
         !Number.isNaN(expiresAt) &&
         expiresAt >= now
       )

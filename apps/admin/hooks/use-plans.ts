@@ -8,6 +8,7 @@ export interface PlanPricingOption {
   id: number
   durationDays: number
   priceUsdCents: number
+  promoPriceUsdCents: number | null
   isActive: boolean
   dodoProductId?: string | null
   dodoSyncStatus?: "pending" | "synced" | "failed"

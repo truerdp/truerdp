@@ -41,6 +41,10 @@ function getDefaultEditableValues(plan: Plan): PlanFormValues {
       pricingId: option.id,
       durationDays: option.durationDays,
       priceUsd: toPriceUsd(option.priceUsdCents),
+      promoPriceUsd:
+        option.promoPriceUsdCents == null
+          ? null
+          : toPriceUsd(option.promoPriceUsdCents),
       isActive: option.isActive,
     })),
   }
@@ -88,6 +92,10 @@ export function PlanDetails({ planId }: PlanDetailsProps) {
           id: option.pricingId,
           durationDays: option.durationDays,
           priceUsdCents: Math.round(option.priceUsd * 100),
+          promoPriceUsdCents:
+            option.promoPriceUsd == null
+              ? null
+              : Math.round(option.promoPriceUsd * 100),
           isActive: option.isActive ?? true,
         })),
       },

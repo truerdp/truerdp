@@ -4,6 +4,10 @@ function toPriceUsd(priceUsdCents: number) {
   return priceUsdCents / 100
 }
 
+function toOptionalPriceUsd(priceUsdCents: number | null | undefined) {
+  return priceUsdCents == null ? null : toPriceUsd(priceUsdCents)
+}
+
 export const planFormSchema = z
   .object({
     name: z.string().trim().min(1, "Plan name is required"),
@@ -31,6 +35,11 @@ export const planFormSchema = z
             .int()
             .positive("Duration must be greater than 0"),
           priceUsd: z.number().nonnegative("Price cannot be negative"),
+          promoPriceUsd: z
+            .number()
+            .nonnegative("Promo price cannot be negative")
+            .nullable()
+            .optional(),
           isActive: z.boolean(),
         })
       )
@@ -49,6 +58,17 @@ export const planFormSchema = z
       }
 
       seenDurations.add(option.durationDays)
+
+      if (
+        option.promoPriceUsd != null &&
+        option.promoPriceUsd >= option.priceUsd
+      ) {
+        context.addIssue({
+          code: "custom",
+          path: ["pricingOptions", index, "promoPriceUsd"],
+          message: "Promo price must be lower than regular price",
+        })
+      }
     })
   })
 
@@ -75,6 +95,7 @@ export const defaultPlanFormValues: PlanFormValues = {
     {
       durationDays: 30,
       priceUsd: toPriceUsd(500),
+      promoPriceUsd: toOptionalPriceUsd(null),
       pricingId: undefined,
       isActive: true,
     },

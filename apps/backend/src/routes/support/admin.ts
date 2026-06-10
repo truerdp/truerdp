@@ -11,6 +11,10 @@ import {
   getTicket,
   getTicketThread,
   replySchema,
+  supportMessageOnlyResponseSchema,
+  supportTicketCreatedResponseSchema,
+  supportTicketListItemResponseSchema,
+  supportTicketThreadResponseSchema,
   ticketIdParamsSchema,
   ticketListSelect,
 } from "./shared.js"
@@ -18,7 +22,20 @@ import {
 export function registerAdminSupportRoutes(server: FastifyInstance) {
   server.get(
     "/admin/support/tickets",
-    { preHandler: verifyAuth },
+    {
+      preHandler: verifyAuth,
+      schema: {
+        tags: ["Support"],
+        summary: "List all support tickets",
+        security: [{ bearerAuth: [] }],
+        response: {
+          200: {
+            type: "array",
+            items: supportTicketListItemResponseSchema,
+          },
+        },
+      },
+    },
     async (request: GenericRouteRequest, reply) => {
       try {
         if (!requireAdmin(request.user, reply)) {
@@ -39,7 +56,26 @@ export function registerAdminSupportRoutes(server: FastifyInstance) {
 
   server.post(
     "/admin/support/tickets",
-    { preHandler: verifyAuth },
+    {
+      preHandler: verifyAuth,
+      schema: {
+        tags: ["Support"],
+        summary: "Create support ticket for user",
+        security: [{ bearerAuth: [] }],
+        body: {
+          type: "object",
+          required: ["userId", "subject", "message"],
+          properties: {
+            userId: { type: "integer" },
+            subject: { type: "string" },
+            message: { type: "string" },
+          },
+        },
+        response: {
+          201: supportTicketCreatedResponseSchema,
+        },
+      },
+    },
     async (request: GenericRouteRequest, reply) => {
       try {
         if (!requireAdmin(request.user, reply)) {
@@ -99,7 +135,24 @@ export function registerAdminSupportRoutes(server: FastifyInstance) {
 
   server.get(
     "/admin/support/tickets/:id",
-    { preHandler: verifyAuth },
+    {
+      preHandler: verifyAuth,
+      schema: {
+        tags: ["Support"],
+        summary: "Get support ticket with thread",
+        security: [{ bearerAuth: [] }],
+        params: {
+          type: "object",
+          required: ["id"],
+          properties: {
+            id: { type: "integer" },
+          },
+        },
+        response: {
+          200: supportTicketThreadResponseSchema,
+        },
+      },
+    },
     async (request: GenericRouteRequest, reply) => {
       try {
         if (!requireAdmin(request.user, reply)) {
@@ -126,7 +179,31 @@ export function registerAdminSupportRoutes(server: FastifyInstance) {
 
   server.post(
     "/admin/support/tickets/:id/reply",
-    { preHandler: verifyAuth },
+    {
+      preHandler: verifyAuth,
+      schema: {
+        tags: ["Support"],
+        summary: "Reply to support ticket as admin",
+        security: [{ bearerAuth: [] }],
+        params: {
+          type: "object",
+          required: ["id"],
+          properties: {
+            id: { type: "integer" },
+          },
+        },
+        body: {
+          type: "object",
+          required: ["message"],
+          properties: {
+            message: { type: "string" },
+          },
+        },
+        response: {
+          200: supportMessageOnlyResponseSchema,
+        },
+      },
+    },
     async (request: GenericRouteRequest, reply) => {
       try {
         if (!requireAdmin(request.user, reply)) {
@@ -173,7 +250,24 @@ export function registerAdminSupportRoutes(server: FastifyInstance) {
   for (const action of ["close", "reopen"] as const) {
     server.post(
       `/admin/support/tickets/:id/${action}`,
-      { preHandler: verifyAuth },
+      {
+        preHandler: verifyAuth,
+        schema: {
+          tags: ["Support"],
+          summary: action === "close" ? "Close ticket" : "Reopen ticket",
+          security: [{ bearerAuth: [] }],
+          params: {
+            type: "object",
+            required: ["id"],
+            properties: {
+              id: { type: "integer" },
+            },
+          },
+          response: {
+            200: supportMessageOnlyResponseSchema,
+          },
+        },
+      },
       async (request: GenericRouteRequest, reply) => {
         try {
           if (!requireAdmin(request.user, reply)) {

@@ -71,7 +71,8 @@ export function AdminInstancesTable({
                 <TableCell>
                   <AdminUserLink
                     userId={instance.userId}
-                    primary={`User #${instance.userId}`}
+                    primary={instance.userEmail ?? `User #${instance.userId}`}
+                    secondary={`User #${instance.userId}`}
                   />
                 </TableCell>
                 <TableCell>

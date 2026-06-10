@@ -61,6 +61,7 @@ export function PlanPricingOptionsFields({
             append({
               durationDays: 30,
               priceUsd: 0,
+              promoPriceUsd: null,
               pricingId: undefined,
               isActive: true,
             })
@@ -82,7 +83,7 @@ export function PlanPricingOptionsFields({
             key={field.id}
             className="rounded-2xl border border-border/70 bg-muted/30 p-4"
           >
-            <div className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_1fr_auto_auto]">
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_1fr_1fr_auto_auto]">
               <Field
                 data-invalid={!!errors.pricingOptions?.[index]?.durationDays}
               >
@@ -124,6 +125,32 @@ export function PlanPricingOptionsFields({
                 {errors.pricingOptions?.[index]?.priceUsd && (
                   <FieldError>
                     {errors.pricingOptions[index]?.priceUsd?.message}
+                  </FieldError>
+                )}
+              </Field>
+
+              <Field
+                data-invalid={!!errors.pricingOptions?.[index]?.promoPriceUsd}
+              >
+                <FieldLabel htmlFor={`pricing-promo-price-${index}`}>
+                  Promo Price (USD)
+                </FieldLabel>
+                <Input
+                  id={`pricing-promo-price-${index}`}
+                  type="number"
+                  min={0}
+                  step="0.01"
+                  placeholder="Optional"
+                  disabled={isPending}
+                  aria-invalid={!!errors.pricingOptions?.[index]?.promoPriceUsd}
+                  {...register(`pricingOptions.${index}.promoPriceUsd`, {
+                    setValueAs: (value) =>
+                      value === "" || value == null ? null : Number(value),
+                  })}
+                />
+                {errors.pricingOptions?.[index]?.promoPriceUsd && (
+                  <FieldError>
+                    {errors.pricingOptions[index]?.promoPriceUsd?.message}
                   </FieldError>
                 )}
               </Field>

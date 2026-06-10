@@ -1,6 +1,7 @@
 import { db } from "../db.js"
 import { planPricing } from "../schema.js"
 import { eq } from "drizzle-orm"
+import { getEffectivePlanPriceUsdCents } from "./plan/pricing.js"
 
 export async function calculatePrice(_userId: number, planPricingId: number) {
   const pricingResult = await db
@@ -15,5 +16,5 @@ export async function calculatePrice(_userId: number, planPricingId: number) {
     throw new Error("Invalid plan pricing")
   }
 
-  return pricing.priceUsdCents
+  return getEffectivePlanPriceUsdCents(pricing)
 }

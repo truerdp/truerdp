@@ -35,9 +35,16 @@ export function getLowestPricingOption(plan: Plan): PlanPricingOption | null {
 
   return (
     [...plan.pricingOptions].sort(
-      (a, b) => a.priceUsdCents - b.priceUsdCents
+      (a, b) => getEffectivePriceUsdCents(a) - getEffectivePriceUsdCents(b)
     )[0] ?? null
   )
+}
+
+export function getEffectivePriceUsdCents(pricing: PlanPricingOption) {
+  return pricing.promoPriceUsdCents != null &&
+    pricing.promoPriceUsdCents < pricing.priceUsdCents
+    ? pricing.promoPriceUsdCents
+    : pricing.priceUsdCents
 }
 
 export const defaultFooterColumns: FooterColumn[] = [

@@ -61,6 +61,69 @@
                         "createdAt": {
                           "type": "string",
                           "format": "date-time"
+                        },
+                        "billingDetails": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "required": [
+                                "firstName",
+                                "lastName",
+                                "email",
+                                "phone",
+                                "addressLine1",
+                                "city",
+                                "state",
+                                "postalCode",
+                                "country"
+                              ],
+                              "properties": {
+                                "firstName": {
+                                  "type": "string"
+                                },
+                                "lastName": {
+                                  "type": "string"
+                                },
+                                "email": {
+                                  "type": "string",
+                                  "format": "email"
+                                },
+                                "phone": {
+                                  "type": "string"
+                                },
+                                "companyName": {
+                                  "type": "string",
+                                  "nullable": true
+                                },
+                                "taxId": {
+                                  "type": "string",
+                                  "nullable": true
+                                },
+                                "addressLine1": {
+                                  "type": "string"
+                                },
+                                "addressLine2": {
+                                  "type": "string",
+                                  "nullable": true
+                                },
+                                "city": {
+                                  "type": "string"
+                                },
+                                "state": {
+                                  "type": "string"
+                                },
+                                "postalCode": {
+                                  "type": "string"
+                                },
+                                "country": {
+                                  "type": "string"
+                                }
+                              }
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
                         }
                       }
                     }
@@ -109,6 +172,69 @@
                     "createdAt": {
                       "type": "string",
                       "format": "date-time"
+                    },
+                    "billingDetails": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "required": [
+                            "firstName",
+                            "lastName",
+                            "email",
+                            "phone",
+                            "addressLine1",
+                            "city",
+                            "state",
+                            "postalCode",
+                            "country"
+                          ],
+                          "properties": {
+                            "firstName": {
+                              "type": "string"
+                            },
+                            "lastName": {
+                              "type": "string"
+                            },
+                            "email": {
+                              "type": "string",
+                              "format": "email"
+                            },
+                            "phone": {
+                              "type": "string"
+                            },
+                            "companyName": {
+                              "type": "string",
+                              "nullable": true
+                            },
+                            "taxId": {
+                              "type": "string",
+                              "nullable": true
+                            },
+                            "addressLine1": {
+                              "type": "string"
+                            },
+                            "addressLine2": {
+                              "type": "string",
+                              "nullable": true
+                            },
+                            "city": {
+                              "type": "string"
+                            },
+                            "state": {
+                              "type": "string"
+                            },
+                            "postalCode": {
+                              "type": "string"
+                            },
+                            "country": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
                     }
                   }
                 }
@@ -173,6 +299,49 @@
                   "email": {
                     "type": "string",
                     "format": "email"
+                  },
+                  "billingDetails": {
+                    "type": "object",
+                    "required": [
+                      "phone",
+                      "addressLine1",
+                      "city",
+                      "state",
+                      "postalCode",
+                      "country"
+                    ],
+                    "properties": {
+                      "phone": {
+                        "type": "string"
+                      },
+                      "companyName": {
+                        "type": "string",
+                        "nullable": true
+                      },
+                      "taxId": {
+                        "type": "string",
+                        "nullable": true
+                      },
+                      "addressLine1": {
+                        "type": "string"
+                      },
+                      "addressLine2": {
+                        "type": "string",
+                        "nullable": true
+                      },
+                      "city": {
+                        "type": "string"
+                      },
+                      "state": {
+                        "type": "string"
+                      },
+                      "postalCode": {
+                        "type": "string"
+                      },
+                      "country": {
+                        "type": "string"
+                      }
+                    }
                   }
                 }
               }
@@ -210,6 +379,69 @@
                     "createdAt": {
                       "type": "string",
                       "format": "date-time"
+                    },
+                    "billingDetails": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "required": [
+                            "firstName",
+                            "lastName",
+                            "email",
+                            "phone",
+                            "addressLine1",
+                            "city",
+                            "state",
+                            "postalCode",
+                            "country"
+                          ],
+                          "properties": {
+                            "firstName": {
+                              "type": "string"
+                            },
+                            "lastName": {
+                              "type": "string"
+                            },
+                            "email": {
+                              "type": "string",
+                              "format": "email"
+                            },
+                            "phone": {
+                              "type": "string"
+                            },
+                            "companyName": {
+                              "type": "string",
+                              "nullable": true
+                            },
+                            "taxId": {
+                              "type": "string",
+                              "nullable": true
+                            },
+                            "addressLine1": {
+                              "type": "string"
+                            },
+                            "addressLine2": {
+                              "type": "string",
+                              "nullable": true
+                            },
+                            "city": {
+                              "type": "string"
+                            },
+                            "state": {
+                              "type": "string"
+                            },
+                            "postalCode": {
+                              "type": "string"
+                            },
+                            "country": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
                     }
                   }
                 }
@@ -428,6 +660,12 @@
                             "priceUsdCents": {
                               "type": "integer"
                             },
+                            "promoPriceUsdCents": {
+                              "type": [
+                                "null",
+                                "integer"
+                              ]
+                            },
                             "isActive": {
                               "type": "boolean"
                             },
@@ -458,6 +696,7 @@
                             "id",
                             "durationDays",
                             "priceUsdCents",
+                            "promoPriceUsdCents",
                             "isActive"
                           ]
                         }
@@ -596,9 +835,12 @@
                   "type": "object",
                   "properties": {
                     "orderId": {
-                      "type": "string"
+                      "type": "integer"
                     }
-                  }
+                  },
+                  "required": [
+                    "orderId"
+                  ]
                 }
               }
             }
@@ -648,7 +890,219 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object"
+                  "type": "object",
+                  "properties": {
+                    "orderId": {
+                      "type": "integer"
+                    },
+                    "userId": {
+                      "type": "integer"
+                    },
+                    "kind": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "string"
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "updatedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "billingDetails": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "firstName": {
+                              "type": "string"
+                            },
+                            "lastName": {
+                              "type": "string"
+                            },
+                            "email": {
+                              "type": "string",
+                              "format": "email"
+                            },
+                            "phone": {
+                              "type": "string"
+                            },
+                            "companyName": {
+                              "type": "string",
+                              "nullable": true
+                            },
+                            "taxId": {
+                              "type": "string",
+                              "nullable": true
+                            },
+                            "addressLine1": {
+                              "type": "string"
+                            },
+                            "addressLine2": {
+                              "type": "string",
+                              "nullable": true
+                            },
+                            "city": {
+                              "type": "string"
+                            },
+                            "state": {
+                              "type": "string"
+                            },
+                            "postalCode": {
+                              "type": "string"
+                            },
+                            "country": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "firstName",
+                            "lastName",
+                            "email",
+                            "phone",
+                            "addressLine1",
+                            "city",
+                            "state",
+                            "postalCode",
+                            "country"
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "plan": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "integer"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "cpu": {
+                          "type": "integer"
+                        },
+                        "ram": {
+                          "type": "integer"
+                        },
+                        "storage": {
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name",
+                        "cpu",
+                        "ram",
+                        "storage"
+                      ]
+                    },
+                    "pricing": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "integer"
+                        },
+                        "durationDays": {
+                          "type": "integer"
+                        },
+                        "priceUsdCents": {
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "durationDays",
+                        "priceUsdCents"
+                      ]
+                    },
+                    "invoice": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "integer"
+                            },
+                            "invoiceNumber": {
+                              "type": "string"
+                            },
+                            "subtotal": {
+                              "type": "integer"
+                            },
+                            "discount": {
+                              "type": "integer"
+                            },
+                            "totalAmount": {
+                              "type": "integer"
+                            },
+                            "currency": {
+                              "type": "string"
+                            },
+                            "couponId": {
+                              "type": [
+                                "integer",
+                                "null"
+                              ]
+                            },
+                            "couponCode": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "status": {
+                              "type": "string"
+                            },
+                            "expiresAt": {
+                              "type": "string",
+                              "format": "date-time"
+                            },
+                            "paidAt": {
+                              "type": [
+                                "string",
+                                "null"
+                              ],
+                              "format": "date-time"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "invoiceNumber",
+                            "subtotal",
+                            "discount",
+                            "totalAmount",
+                            "currency",
+                            "couponId",
+                            "couponCode",
+                            "status",
+                            "expiresAt",
+                            "paidAt"
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "orderId",
+                    "userId",
+                    "kind",
+                    "status",
+                    "createdAt",
+                    "updatedAt",
+                    "billingDetails",
+                    "plan",
+                    "pricing",
+                    "invoice"
+                  ]
                 }
               }
             }
@@ -782,12 +1236,70 @@
                       "type": "string"
                     },
                     "orderId": {
-                      "type": "string"
+                      "type": "integer"
                     },
                     "billingDetails": {
-                      "type": "object"
+                      "type": "object",
+                      "properties": {
+                        "firstName": {
+                          "type": "string"
+                        },
+                        "lastName": {
+                          "type": "string"
+                        },
+                        "email": {
+                          "type": "string",
+                          "format": "email"
+                        },
+                        "phone": {
+                          "type": "string"
+                        },
+                        "companyName": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "taxId": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "addressLine1": {
+                          "type": "string"
+                        },
+                        "addressLine2": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "city": {
+                          "type": "string"
+                        },
+                        "state": {
+                          "type": "string"
+                        },
+                        "postalCode": {
+                          "type": "string"
+                        },
+                        "country": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "firstName",
+                        "lastName",
+                        "email",
+                        "phone",
+                        "addressLine1",
+                        "city",
+                        "state",
+                        "postalCode",
+                        "country"
+                      ]
                     }
-                  }
+                  },
+                  "required": [
+                    "message",
+                    "orderId",
+                    "billingDetails"
+                  ]
                 }
               }
             }
@@ -858,9 +1370,225 @@
                       "type": "string"
                     },
                     "order": {
-                      "type": "object"
+                      "type": "object",
+                      "properties": {
+                        "orderId": {
+                          "type": "integer"
+                        },
+                        "userId": {
+                          "type": "integer"
+                        },
+                        "kind": {
+                          "type": "string"
+                        },
+                        "status": {
+                          "type": "string"
+                        },
+                        "createdAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "updatedAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "billingDetails": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "firstName": {
+                                  "type": "string"
+                                },
+                                "lastName": {
+                                  "type": "string"
+                                },
+                                "email": {
+                                  "type": "string",
+                                  "format": "email"
+                                },
+                                "phone": {
+                                  "type": "string"
+                                },
+                                "companyName": {
+                                  "type": "string",
+                                  "nullable": true
+                                },
+                                "taxId": {
+                                  "type": "string",
+                                  "nullable": true
+                                },
+                                "addressLine1": {
+                                  "type": "string"
+                                },
+                                "addressLine2": {
+                                  "type": "string",
+                                  "nullable": true
+                                },
+                                "city": {
+                                  "type": "string"
+                                },
+                                "state": {
+                                  "type": "string"
+                                },
+                                "postalCode": {
+                                  "type": "string"
+                                },
+                                "country": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "firstName",
+                                "lastName",
+                                "email",
+                                "phone",
+                                "addressLine1",
+                                "city",
+                                "state",
+                                "postalCode",
+                                "country"
+                              ]
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "plan": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "integer"
+                            },
+                            "name": {
+                              "type": "string"
+                            },
+                            "cpu": {
+                              "type": "integer"
+                            },
+                            "ram": {
+                              "type": "integer"
+                            },
+                            "storage": {
+                              "type": "integer"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "name",
+                            "cpu",
+                            "ram",
+                            "storage"
+                          ]
+                        },
+                        "pricing": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "integer"
+                            },
+                            "durationDays": {
+                              "type": "integer"
+                            },
+                            "priceUsdCents": {
+                              "type": "integer"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "durationDays",
+                            "priceUsdCents"
+                          ]
+                        },
+                        "invoice": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "integer"
+                                },
+                                "invoiceNumber": {
+                                  "type": "string"
+                                },
+                                "subtotal": {
+                                  "type": "integer"
+                                },
+                                "discount": {
+                                  "type": "integer"
+                                },
+                                "totalAmount": {
+                                  "type": "integer"
+                                },
+                                "currency": {
+                                  "type": "string"
+                                },
+                                "couponId": {
+                                  "type": [
+                                    "integer",
+                                    "null"
+                                  ]
+                                },
+                                "couponCode": {
+                                  "type": [
+                                    "string",
+                                    "null"
+                                  ]
+                                },
+                                "status": {
+                                  "type": "string"
+                                },
+                                "expiresAt": {
+                                  "type": "string",
+                                  "format": "date-time"
+                                },
+                                "paidAt": {
+                                  "type": [
+                                    "string",
+                                    "null"
+                                  ],
+                                  "format": "date-time"
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "invoiceNumber",
+                                "subtotal",
+                                "discount",
+                                "totalAmount",
+                                "currency",
+                                "couponId",
+                                "couponCode",
+                                "status",
+                                "expiresAt",
+                                "paidAt"
+                              ]
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      },
+                      "required": [
+                        "orderId",
+                        "userId",
+                        "kind",
+                        "status",
+                        "createdAt",
+                        "updatedAt",
+                        "billingDetails",
+                        "plan",
+                        "pricing",
+                        "invoice"
+                      ]
                     }
-                  }
+                  },
+                  "required": [
+                    "message",
+                    "order"
+                  ]
                 }
               }
             }
@@ -928,7 +1656,22 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object"
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "integer"
+                    },
+                    "gatewayRedirectUrl": {
+                      "type": [
+                        "null",
+                        "string"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "gatewayRedirectUrl"
+                  ]
                 }
               }
             }
@@ -968,7 +1711,225 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "type": "object"
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "integer"
+                      },
+                      "userId": {
+                        "type": "integer"
+                      },
+                      "user": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "integer"
+                          },
+                          "firstName": {
+                            "type": "string"
+                          },
+                          "lastName": {
+                            "type": "string"
+                          },
+                          "email": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "firstName",
+                          "lastName",
+                          "email"
+                        ]
+                      },
+                      "amount": {
+                        "type": "integer"
+                      },
+                      "method": {
+                        "type": "string"
+                      },
+                      "status": {
+                        "type": "string"
+                      },
+                      "createdAt": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "confirmedAt": {
+                        "type": [
+                          "null",
+                          "string"
+                        ],
+                        "format": "date-time"
+                      },
+                      "reference": {
+                        "type": [
+                          "null",
+                          "string"
+                        ]
+                      },
+                      "failureReason": {
+                        "type": [
+                          "null",
+                          "string"
+                        ]
+                      },
+                      "kind": {
+                        "type": "string"
+                      },
+                      "order": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "integer"
+                          },
+                          "status": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "status"
+                        ]
+                      },
+                      "pricing": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "integer"
+                          },
+                          "durationDays": {
+                            "type": "integer"
+                          },
+                          "priceUsdCents": {
+                            "type": [
+                              "null",
+                              "integer"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "durationDays",
+                          "priceUsdCents"
+                        ]
+                      },
+                      "invoice": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "integer"
+                          },
+                          "invoiceNumber": {
+                            "type": "string"
+                          },
+                          "status": {
+                            "type": "string"
+                          },
+                          "totalAmount": {
+                            "type": "integer"
+                          },
+                          "currency": {
+                            "type": "string"
+                          },
+                          "expiresAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "paidAt": {
+                            "type": [
+                              "null",
+                              "string"
+                            ],
+                            "format": "date-time"
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "invoiceNumber",
+                          "status",
+                          "totalAmount",
+                          "currency",
+                          "expiresAt",
+                          "paidAt",
+                          "createdAt"
+                        ]
+                      },
+                      "plan": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "integer"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "cpu": {
+                            "type": "integer"
+                          },
+                          "ram": {
+                            "type": "integer"
+                          },
+                          "storage": {
+                            "type": "integer"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name",
+                          "cpu",
+                          "ram",
+                          "storage"
+                        ]
+                      },
+                      "instance": {
+                        "anyOf": [
+                          {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "integer"
+                              },
+                              "ipAddress": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "ipAddress"
+                            ]
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "userId",
+                      "user",
+                      "amount",
+                      "method",
+                      "status",
+                      "createdAt",
+                      "confirmedAt",
+                      "reference",
+                      "failureReason",
+                      "kind",
+                      "order",
+                      "pricing",
+                      "invoice",
+                      "plan",
+                      "instance"
+                    ]
                   }
                 }
               }
@@ -1011,7 +1972,124 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "type": "object"
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "integer"
+                      },
+                      "invoiceNumber": {
+                        "type": "string"
+                      },
+                      "status": {
+                        "type": "string"
+                      },
+                      "totalAmount": {
+                        "type": "integer"
+                      },
+                      "currency": {
+                        "type": "string"
+                      },
+                      "createdAt": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "expiresAt": {
+                        "type": [
+                          "null",
+                          "string"
+                        ],
+                        "format": "date-time"
+                      },
+                      "paidAt": {
+                        "type": [
+                          "null",
+                          "string"
+                        ],
+                        "format": "date-time"
+                      },
+                      "transaction": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": [
+                              "null",
+                              "integer"
+                            ]
+                          },
+                          "reference": {
+                            "type": [
+                              "null",
+                              "string"
+                            ]
+                          },
+                          "status": {
+                            "type": [
+                              "null",
+                              "string"
+                            ]
+                          },
+                          "method": {
+                            "type": [
+                              "null",
+                              "string"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "reference",
+                          "status",
+                          "method"
+                        ]
+                      },
+                      "order": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "integer"
+                          },
+                          "status": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "status"
+                        ]
+                      },
+                      "plan": {
+                        "type": "object",
+                        "properties": {
+                          "name": {
+                            "type": "string"
+                          },
+                          "durationDays": {
+                            "type": "integer"
+                          },
+                          "kind": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "name",
+                          "durationDays",
+                          "kind"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "invoiceNumber",
+                      "status",
+                      "totalAmount",
+                      "currency",
+                      "createdAt",
+                      "expiresAt",
+                      "paidAt",
+                      "transaction",
+                      "order",
+                      "plan"
+                    ]
                   }
                 }
               }
@@ -1062,7 +2140,27 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object"
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "duplicate": {
+                      "type": "boolean"
+                    },
+                    "eventId": {
+                      "type": "string"
+                    },
+                    "processingStatus": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message",
+                    "duplicate",
+                    "eventId",
+                    "processingStatus"
+                  ]
                 }
               }
             }
@@ -1714,7 +2812,49 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "type": "object"
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "integer"
+                      },
+                      "status": {
+                        "type": "string"
+                      },
+                      "ipAddress": {
+                        "type": [
+                          "null",
+                          "string"
+                        ]
+                      },
+                      "username": {
+                        "type": [
+                          "null",
+                          "string"
+                        ]
+                      },
+                      "startDate": {
+                        "type": [
+                          "null",
+                          "string"
+                        ],
+                        "format": "date-time"
+                      },
+                      "expiryDate": {
+                        "type": [
+                          "null",
+                          "string"
+                        ],
+                        "format": "date-time"
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "status",
+                      "ipAddress",
+                      "username",
+                      "startDate",
+                      "expiryDate"
+                    ]
                   }
                 }
               }
@@ -1765,7 +2905,49 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object"
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "integer"
+                    },
+                    "status": {
+                      "type": "string"
+                    },
+                    "ipAddress": {
+                      "type": [
+                        "null",
+                        "string"
+                      ]
+                    },
+                    "username": {
+                      "type": [
+                        "null",
+                        "string"
+                      ]
+                    },
+                    "startDate": {
+                      "type": [
+                        "null",
+                        "string"
+                      ],
+                      "format": "date-time"
+                    },
+                    "expiryDate": {
+                      "type": [
+                        "null",
+                        "string"
+                      ],
+                      "format": "date-time"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "status",
+                    "ipAddress",
+                    "username",
+                    "startDate",
+                    "expiryDate"
+                  ]
                 }
               }
             }
@@ -1972,9 +3154,13 @@
                       "type": "string"
                     },
                     "orderId": {
-                      "type": "string"
+                      "type": "integer"
                     }
-                  }
+                  },
+                  "required": [
+                    "message",
+                    "orderId"
+                  ]
                 }
               }
             }
@@ -2188,7 +3374,68 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "type": "object"
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "integer"
+                      },
+                      "userId": {
+                        "type": "integer"
+                      },
+                      "subject": {
+                        "type": "string"
+                      },
+                      "status": {
+                        "type": "string"
+                      },
+                      "createdAt": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "updatedAt": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "lastMessageAt": {
+                        "type": [
+                          "null",
+                          "string"
+                        ]
+                      },
+                      "user": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "integer"
+                          },
+                          "firstName": {
+                            "type": "string"
+                          },
+                          "lastName": {
+                            "type": "string"
+                          },
+                          "email": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "firstName",
+                          "lastName",
+                          "email"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "userId",
+                      "subject",
+                      "status",
+                      "createdAt",
+                      "updatedAt",
+                      "lastMessageAt",
+                      "user"
+                    ]
                   }
                 }
               }
@@ -2240,9 +3487,43 @@
                       "type": "string"
                     },
                     "ticket": {
-                      "type": "object"
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "integer"
+                        },
+                        "userId": {
+                          "type": "integer"
+                        },
+                        "subject": {
+                          "type": "string"
+                        },
+                        "status": {
+                          "type": "string"
+                        },
+                        "createdAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "updatedAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "userId",
+                        "subject",
+                        "status",
+                        "createdAt",
+                        "updatedAt"
+                      ]
                     }
-                  }
+                  },
+                  "required": [
+                    "message",
+                    "ticket"
+                  ]
                 }
               }
             }
@@ -2280,15 +3561,131 @@
                   "type": "object",
                   "properties": {
                     "ticket": {
-                      "type": "object"
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "integer"
+                        },
+                        "userId": {
+                          "type": "integer"
+                        },
+                        "subject": {
+                          "type": "string"
+                        },
+                        "status": {
+                          "type": "string"
+                        },
+                        "createdAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "updatedAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "userId",
+                        "subject",
+                        "status",
+                        "createdAt",
+                        "updatedAt"
+                      ]
                     },
                     "messages": {
                       "type": "array",
                       "items": {
-                        "type": "object"
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "integer"
+                          },
+                          "ticketId": {
+                            "type": "integer"
+                          },
+                          "senderType": {
+                            "type": "string"
+                          },
+                          "senderUserId": {
+                            "type": [
+                              "null",
+                              "integer"
+                            ]
+                          },
+                          "message": {
+                            "type": "string"
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "sender": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "id": {
+                                    "type": [
+                                      "integer",
+                                      "null"
+                                    ]
+                                  },
+                                  "firstName": {
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  },
+                                  "lastName": {
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  },
+                                  "email": {
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  },
+                                  "role": {
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "id",
+                                  "firstName",
+                                  "lastName",
+                                  "email",
+                                  "role"
+                                ]
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "ticketId",
+                          "senderType",
+                          "senderUserId",
+                          "message",
+                          "createdAt",
+                          "sender"
+                        ]
                       }
                     }
-                  }
+                  },
+                  "required": [
+                    "ticket",
+                    "messages"
+                  ]
                 }
               }
             }
@@ -2346,7 +3743,10 @@
                     "message": {
                       "type": "string"
                     }
-                  }
+                  },
+                  "required": [
+                    "message"
+                  ]
                 }
               }
             }
@@ -2386,7 +3786,10 @@
                     "message": {
                       "type": "string"
                     }
-                  }
+                  },
+                  "required": [
+                    "message"
+                  ]
                 }
               }
             }
@@ -2426,7 +3829,10 @@
                     "message": {
                       "type": "string"
                     }
-                  }
+                  },
+                  "required": [
+                    "message"
+                  ]
                 }
               }
             }
@@ -2436,92 +3842,489 @@
     },
     "/admin/support/tickets": {
       "get": {
+        "summary": "List all support tickets",
+        "tags": [
+          "Support"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "responses": {
           "200": {
-            "description": "Default Response"
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "integer"
+                      },
+                      "userId": {
+                        "type": "integer"
+                      },
+                      "subject": {
+                        "type": "string"
+                      },
+                      "status": {
+                        "type": "string"
+                      },
+                      "createdAt": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "updatedAt": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "lastMessageAt": {
+                        "type": [
+                          "null",
+                          "string"
+                        ]
+                      },
+                      "user": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "integer"
+                          },
+                          "firstName": {
+                            "type": "string"
+                          },
+                          "lastName": {
+                            "type": "string"
+                          },
+                          "email": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "firstName",
+                          "lastName",
+                          "email"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "userId",
+                      "subject",
+                      "status",
+                      "createdAt",
+                      "updatedAt",
+                      "lastMessageAt",
+                      "user"
+                    ]
+                  }
+                }
+              }
+            }
           }
         }
       },
       "post": {
+        "summary": "Create support ticket for user",
+        "tags": [
+          "Support"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "userId",
+                  "subject",
+                  "message"
+                ],
+                "properties": {
+                  "userId": {
+                    "type": "integer"
+                  },
+                  "subject": {
+                    "type": "string"
+                  },
+                  "message": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "responses": {
-          "200": {
-            "description": "Default Response"
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "ticket": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "integer"
+                        },
+                        "userId": {
+                          "type": "integer"
+                        },
+                        "subject": {
+                          "type": "string"
+                        },
+                        "status": {
+                          "type": "string"
+                        },
+                        "createdAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "updatedAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "userId",
+                        "subject",
+                        "status",
+                        "createdAt",
+                        "updatedAt"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "message",
+                    "ticket"
+                  ]
+                }
+              }
+            }
           }
         }
       }
     },
     "/admin/support/tickets/{id}": {
       "get": {
+        "summary": "Get support ticket with thread",
+        "tags": [
+          "Support"
+        ],
         "parameters": [
           {
             "schema": {
-              "type": "string"
+              "type": "integer"
             },
             "in": "path",
             "name": "id",
             "required": true
           }
         ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "responses": {
           "200": {
-            "description": "Default Response"
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ticket": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "integer"
+                        },
+                        "userId": {
+                          "type": "integer"
+                        },
+                        "subject": {
+                          "type": "string"
+                        },
+                        "status": {
+                          "type": "string"
+                        },
+                        "createdAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "updatedAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "userId",
+                        "subject",
+                        "status",
+                        "createdAt",
+                        "updatedAt"
+                      ]
+                    },
+                    "messages": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "integer"
+                          },
+                          "ticketId": {
+                            "type": "integer"
+                          },
+                          "senderType": {
+                            "type": "string"
+                          },
+                          "senderUserId": {
+                            "type": [
+                              "null",
+                              "integer"
+                            ]
+                          },
+                          "message": {
+                            "type": "string"
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "sender": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "id": {
+                                    "type": [
+                                      "integer",
+                                      "null"
+                                    ]
+                                  },
+                                  "firstName": {
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  },
+                                  "lastName": {
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  },
+                                  "email": {
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  },
+                                  "role": {
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "id",
+                                  "firstName",
+                                  "lastName",
+                                  "email",
+                                  "role"
+                                ]
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "ticketId",
+                          "senderType",
+                          "senderUserId",
+                          "message",
+                          "createdAt",
+                          "sender"
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "ticket",
+                    "messages"
+                  ]
+                }
+              }
+            }
           }
         }
       }
     },
     "/admin/support/tickets/{id}/reply": {
       "post": {
+        "summary": "Reply to support ticket as admin",
+        "tags": [
+          "Support"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "message"
+                ],
+                "properties": {
+                  "message": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
         "parameters": [
           {
             "schema": {
-              "type": "string"
+              "type": "integer"
             },
             "in": "path",
             "name": "id",
             "required": true
           }
         ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "responses": {
           "200": {
-            "description": "Default Response"
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ]
+                }
+              }
+            }
           }
         }
       }
     },
     "/admin/support/tickets/{id}/close": {
       "post": {
+        "summary": "Close ticket",
+        "tags": [
+          "Support"
+        ],
         "parameters": [
           {
             "schema": {
-              "type": "string"
+              "type": "integer"
             },
             "in": "path",
             "name": "id",
             "required": true
           }
         ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "responses": {
           "200": {
-            "description": "Default Response"
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ]
+                }
+              }
+            }
           }
         }
       }
     },
     "/admin/support/tickets/{id}/reopen": {
       "post": {
+        "summary": "Reopen ticket",
+        "tags": [
+          "Support"
+        ],
         "parameters": [
           {
             "schema": {
-              "type": "string"
+              "type": "integer"
             },
             "in": "path",
             "name": "id",
             "required": true
           }
         ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "responses": {
           "200": {
-            "description": "Default Response"
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ]
+                }
+              }
+            }
           }
         }
       }

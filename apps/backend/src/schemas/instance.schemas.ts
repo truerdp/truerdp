@@ -13,6 +13,26 @@ export const errorResponse = {
   },
 }
 
+export const instanceSummaryResponseSchema = {
+  type: "object",
+  properties: {
+    id: { type: "integer" },
+    status: { type: "string" },
+    ipAddress: { type: ["string", "null"] },
+    username: { type: ["string", "null"] },
+    startDate: { type: ["string", "null"], format: "date-time" },
+    expiryDate: { type: ["string", "null"], format: "date-time" },
+  },
+  required: [
+    "id",
+    "status",
+    "ipAddress",
+    "username",
+    "startDate",
+    "expiryDate",
+  ],
+}
+
 export const listInstancesSchema = {
   tags: ["Instances"],
   summary: "List user instances",
@@ -20,7 +40,7 @@ export const listInstancesSchema = {
   response: {
     200: {
       type: "array",
-      items: { type: "object" },
+      items: instanceSummaryResponseSchema,
     },
     500: errorResponse,
   },
@@ -32,7 +52,7 @@ export const getInstanceSchema = {
   security: [{ bearerAuth: [] }],
   params: idParamSchema,
   response: {
-    200: { type: "object" },
+    200: instanceSummaryResponseSchema,
     404: errorResponse,
     403: errorResponse,
     500: errorResponse,
@@ -76,8 +96,9 @@ export const renewInstanceSchema = {
       type: "object",
       properties: {
         message: { type: "string" },
-        orderId: { type: "string" },
+        orderId: { type: "integer" },
       },
+      required: ["message", "orderId"],
     },
     400: errorResponse,
     403: errorResponse,

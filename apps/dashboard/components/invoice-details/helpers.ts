@@ -2,7 +2,9 @@ import { format } from "date-fns"
 
 import type { InvoiceSummary } from "@/hooks/use-invoices"
 
-export function formatMethod(method: InvoiceSummary["transaction"]["method"]) {
+export function formatMethod(
+  method: NonNullable<InvoiceSummary["transaction"]>["method"] | null
+) {
   if (!method) {
     return "-"
   }

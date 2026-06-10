@@ -103,14 +103,57 @@ export const auth = betterAuth({
       firstName: {
         type: "string",
         input: true,
-        required: false,
-        defaultValue: "User",
+        required: true,
       },
       lastName: {
         type: "string",
         input: true,
+        required: true,
+      },
+      billingPhone: {
+        type: "string",
+        input: true,
+        required: true,
+      },
+      billingCompanyName: {
+        type: "string",
+        input: true,
         required: false,
-        defaultValue: "User",
+      },
+      billingTaxId: {
+        type: "string",
+        input: true,
+        required: false,
+      },
+      billingAddressLine1: {
+        type: "string",
+        input: true,
+        required: true,
+      },
+      billingAddressLine2: {
+        type: "string",
+        input: true,
+        required: false,
+      },
+      billingCity: {
+        type: "string",
+        input: true,
+        required: true,
+      },
+      billingState: {
+        type: "string",
+        input: true,
+        required: true,
+      },
+      billingPostalCode: {
+        type: "string",
+        input: true,
+        required: true,
+      },
+      billingCountry: {
+        type: "string",
+        input: true,
+        required: true,
       },
     },
   },

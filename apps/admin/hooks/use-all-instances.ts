@@ -7,6 +7,7 @@ import { queryKeys } from "@/lib/query-keys"
 export interface Instance {
   id: number
   userId: number
+  userEmail: string | null
   status:
     | "pending"
     | "provisioning"

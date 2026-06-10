@@ -2,7 +2,11 @@ import { Reveal } from "@/components/landing/reveal"
 import { PlanCheckoutButton } from "@/components/home-checkout-actions"
 import { formatAmount } from "@/lib/format"
 import { Badge } from "@workspace/ui/components/badge"
-import { getLowestPricingOption, sectionEyebrowClass } from "./styles"
+import {
+  getEffectivePriceUsdCents,
+  getLowestPricingOption,
+  sectionEyebrowClass,
+} from "./styles"
 import type { Plan } from "./types"
 
 interface ComparisonSectionProps {
@@ -51,7 +55,11 @@ export function ComparisonSection({
                   <Badge variant="secondary" className="rounded-full">
                     {plan.pricingOptions.length > 0
                       ? formatAmount(
-                          getLowestPricingOption(plan)?.priceUsdCents || 0
+                          getLowestPricingOption(plan)
+                            ? getEffectivePriceUsdCents(
+                                getLowestPricingOption(plan)!
+                              )
+                            : 0
                         )
                       : "N/A"}
                   </Badge>
@@ -74,7 +82,12 @@ export function ComparisonSection({
                           {option.durationDays} days
                         </p>
                         <p className="text-xs text-muted-foreground">
-                          {formatAmount(option.priceUsdCents)}
+                          {formatAmount(getEffectivePriceUsdCents(option))}
+                          {option.promoPriceUsdCents != null ? (
+                            <span className="ml-2 line-through">
+                              {formatAmount(option.priceUsdCents)}
+                            </span>
+                          ) : null}
                         </p>
                       </div>
                       <PlanCheckoutButton planPricingId={option.id} />

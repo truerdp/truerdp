@@ -6,6 +6,7 @@ import {
   syncDodoDiscountForCoupon,
   syncDodoProductForPlanPricing,
 } from "../../services/dodo-payments.js"
+import { getEffectivePlanPriceUsdCents } from "../../services/plan/pricing.js"
 import { getErrorMessage } from "../../utils/error.js"
 
 export type DodoSyncResult = {
@@ -18,6 +19,7 @@ export type PlanPricingSyncTarget = {
   planName: string
   durationDays: number
   priceUsdCents: number
+  promoPriceUsdCents: number | null
   dodoProductId: string | null
 }
 
@@ -31,7 +33,7 @@ export async function syncPlanPricingToDodo(
       planPricingId: pricing.id,
       planName: pricing.planName,
       durationDays: pricing.durationDays,
-      priceUsdCents: pricing.priceUsdCents,
+      priceUsdCents: getEffectivePlanPriceUsdCents(pricing),
       existingDodoProductId: pricing.dodoProductId,
     })
 

@@ -45,17 +45,11 @@ export default function CheckoutReviewPage() {
     order,
     isLoading,
     error,
-    errors,
-    control,
-    register,
-    isSavingBilling,
     isUpdatingCoupon,
     couponCode,
     setCouponCode,
     existingPendingTransaction,
     hasSavedBillingDetails,
-    hasUnsavedBillingChanges,
-    saveBillingDetails,
     updateCoupon,
     proceedToPayment,
   } = useCheckoutReview(orderId, hasValidOrderId)
@@ -121,15 +115,8 @@ export default function CheckoutReviewPage() {
             />
 
             <BillingDetailsPanel
-              errors={errors}
-              control={control}
-              register={register}
-              isSavingBilling={isSavingBilling}
-              hasSavedBillingDetails={hasSavedBillingDetails}
-              canSave={!isSavingBilling && order.status === "pending_payment"}
-              onSave={() => {
-                void saveBillingDetails(order)
-              }}
+              details={order.billingDetails}
+              isComplete={hasSavedBillingDetails}
             />
 
             <OrderPricingPanel
@@ -151,13 +138,13 @@ export default function CheckoutReviewPage() {
               onClick={() => {
                 void proceedToPayment(order)
               }}
-              disabled={order.status !== "pending_payment" || isSavingBilling}
+              disabled={
+                order.status !== "pending_payment" || !hasSavedBillingDetails
+              }
             >
-              {!hasSavedBillingDetails || hasUnsavedBillingChanges
-                ? "Save billing & continue to payment"
-                : existingPendingTransaction
-                  ? "Continue to payment (reuse invoice)"
-                  : "Continue to payment"}
+              {existingPendingTransaction
+                ? "Continue to payment (reuse invoice)"
+                : "Continue to payment"}
               <HugeiconsIcon
                 icon={ArrowRight01Icon}
                 strokeWidth={2}

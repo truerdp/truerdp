@@ -2,7 +2,6 @@ import {
   idParamSchema,
   billingFieldProperties,
   billingFieldsRequired,
-  genericObjectResponse,
 } from "./common.schemas.js"
 
 export const errorResponse = {
@@ -24,11 +23,102 @@ export const createOrderBodySchema = {
 export const createOrderResponseSchema = {
   type: "object",
   properties: {
-    orderId: { type: "string" },
+    orderId: { type: "integer" },
   },
+  required: ["orderId"],
 }
 
-export const getOrderResponseSchema = genericObjectResponse
+export const orderPlanSchema = {
+  type: "object",
+  properties: {
+    id: { type: "integer" },
+    name: { type: "string" },
+    cpu: { type: "integer" },
+    ram: { type: "integer" },
+    storage: { type: "integer" },
+  },
+  required: ["id", "name", "cpu", "ram", "storage"],
+}
+
+export const orderPricingSchema = {
+  type: "object",
+  properties: {
+    id: { type: "integer" },
+    durationDays: { type: "integer" },
+    priceUsdCents: { type: "integer" },
+  },
+  required: ["id", "durationDays", "priceUsdCents"],
+}
+
+export const orderInvoiceSchema = {
+  type: "object",
+  properties: {
+    id: { type: "integer" },
+    invoiceNumber: { type: "string" },
+    subtotal: { type: "integer" },
+    discount: { type: "integer" },
+    totalAmount: { type: "integer" },
+    currency: { type: "string" },
+    couponId: { type: ["integer", "null"] },
+    couponCode: { type: ["string", "null"] },
+    status: { type: "string" },
+    expiresAt: { type: "string", format: "date-time" },
+    paidAt: { type: ["string", "null"], format: "date-time" },
+  },
+  required: [
+    "id",
+    "invoiceNumber",
+    "subtotal",
+    "discount",
+    "totalAmount",
+    "currency",
+    "couponId",
+    "couponCode",
+    "status",
+    "expiresAt",
+    "paidAt",
+  ],
+}
+
+export const orderBillingDetailsSchema = {
+  type: "object",
+  properties: billingFieldProperties,
+  required: billingFieldsRequired,
+}
+
+export const billingOrderResponseSchema = {
+  type: "object",
+  properties: {
+    orderId: { type: "integer" },
+    userId: { type: "integer" },
+    kind: { type: "string" },
+    status: { type: "string" },
+    createdAt: { type: "string", format: "date-time" },
+    updatedAt: { type: "string", format: "date-time" },
+    billingDetails: {
+      anyOf: [orderBillingDetailsSchema, { type: "null" }],
+    },
+    plan: orderPlanSchema,
+    pricing: orderPricingSchema,
+    invoice: {
+      anyOf: [orderInvoiceSchema, { type: "null" }],
+    },
+  },
+  required: [
+    "orderId",
+    "userId",
+    "kind",
+    "status",
+    "createdAt",
+    "updatedAt",
+    "billingDetails",
+    "plan",
+    "pricing",
+    "invoice",
+  ],
+}
+
+export const getOrderResponseSchema = billingOrderResponseSchema
 
 export const updateBillingBodySchema = {
   type: "object",
@@ -40,9 +130,10 @@ export const updateBillingResponseSchema = {
   type: "object",
   properties: {
     message: { type: "string" },
-    orderId: { type: "string" },
-    billingDetails: { type: "object" },
+    orderId: { type: "integer" },
+    billingDetails: orderBillingDetailsSchema,
   },
+  required: ["message", "orderId", "billingDetails"],
 }
 
 export const couponBodySchema = {
@@ -56,8 +147,9 @@ export const couponResponseSchema = {
   type: "object",
   properties: {
     message: { type: "string" },
-    order: { type: "object" },
+    order: billingOrderResponseSchema,
   },
+  required: ["message", "order"],
 }
 
 export const createOrderSchema = {

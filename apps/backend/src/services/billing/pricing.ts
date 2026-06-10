@@ -9,6 +9,7 @@ export async function getDefaultPlanPricingForPlan(planId: number) {
       planId: planPricing.planId,
       durationDays: planPricing.durationDays,
       priceUsdCents: planPricing.priceUsdCents,
+      promoPriceUsdCents: planPricing.promoPriceUsdCents,
       isActive: planPricing.isActive,
     })
     .from(planPricing)
@@ -26,6 +27,7 @@ export async function getPlanPricingById(planPricingId: number) {
       planId: planPricing.planId,
       durationDays: planPricing.durationDays,
       priceUsdCents: planPricing.priceUsdCents,
+      promoPriceUsdCents: planPricing.promoPriceUsdCents,
       isActive: planPricing.isActive,
       plan: {
         id: plans.id,

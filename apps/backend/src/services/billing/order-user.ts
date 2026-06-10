@@ -1,7 +1,10 @@
 import { eq } from "drizzle-orm"
 import { db } from "../../db.js"
 import { invoices, orders } from "../../schema.js"
-import { assertOrderHasNoTransactions, validateCouponForOrder } from "./order-coupons.js"
+import {
+  assertOrderHasNoTransactions,
+  validateCouponForOrder,
+} from "./order-coupons.js"
 import {
   formatBillingOrderResponse,
   getBillingOrderById,
@@ -26,7 +29,9 @@ export async function getBillingOrderForUser(userId: number, orderId: number) {
 
   return formatBillingOrderResponse({
     ...record,
-    invoice: invoice ? { ...invoice, couponCode: coupon?.code ?? null } : invoice,
+    invoice: invoice
+      ? { ...invoice, couponCode: coupon?.code ?? null }
+      : invoice,
   })
 }
 
@@ -46,7 +51,14 @@ export async function updateBillingDetailsForUser(input: {
   }
 
   if (record.order.status !== "pending_payment") {
-    throw new BillingError(400, "Billing details can only be updated pre-payment")
+    throw new BillingError(
+      400,
+      "Billing details can only be updated pre-payment"
+    )
+  }
+
+  if (record.order.billingDetails) {
+    throw new BillingError(400, "Billing details are locked for this order")
   }
 
   await db

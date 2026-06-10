@@ -53,10 +53,34 @@ export interface BillingOrder {
   } | null
 }
 
+export function isBillingOrder(value: unknown): value is BillingOrder {
+  if (!value || typeof value !== "object") {
+    return false
+  }
+
+  const order = value as Partial<BillingOrder>
+
+  return Boolean(
+    typeof order.orderId === "number" &&
+      order.plan &&
+      typeof order.plan.name === "string" &&
+      order.pricing &&
+      typeof order.pricing.durationDays === "number"
+  )
+}
+
 export function useOrder(orderId: number | null) {
   return useQuery<BillingOrder>({
     queryKey: ["order", orderId],
-    queryFn: () => clientApi(`/orders/${orderId}`),
+    queryFn: async () => {
+      const order = await clientApi(`/orders/${orderId}`)
+
+      if (!isBillingOrder(order)) {
+        throw new Error("Order details are incomplete. Please refresh.")
+      }
+
+      return order
+    },
     enabled: orderId != null,
     retry: false,
   })

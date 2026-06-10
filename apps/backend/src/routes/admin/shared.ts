@@ -22,12 +22,38 @@ export const optionalReasonSchema = z.object({
   reason: z.string().trim().min(3).max(500).optional(),
 })
 
-export const planPricingInputSchema = z.object({
+const planPricingInputBaseSchema = z.object({
   id: z.number().int().positive().optional(),
   durationDays: z.number().int().positive(),
   priceUsdCents: z.number().int().nonnegative(),
+  promoPriceUsdCents: z.number().int().nonnegative().optional().nullable(),
   isActive: z.boolean().default(true),
 })
+
+function hasValidPromoPrice(value: {
+  priceUsdCents: number
+  promoPriceUsdCents?: number | null
+}) {
+  return (
+    value.promoPriceUsdCents == null ||
+    value.promoPriceUsdCents < value.priceUsdCents
+  )
+}
+
+export const planPricingInputSchema = planPricingInputBaseSchema.refine(
+  (value) => hasValidPromoPrice(value),
+  {
+    message: "Promo price must be lower than regular price",
+    path: ["promoPriceUsdCents"],
+  }
+)
+
+const createPlanPricingInputSchema = planPricingInputBaseSchema
+  .omit({ id: true })
+  .refine((value) => hasValidPromoPrice(value), {
+    message: "Promo price must be lower than regular price",
+    path: ["promoPriceUsdCents"],
+  })
 
 export const createPlanSchema = z.object({
   name: z.string().trim().min(1),
@@ -47,7 +73,7 @@ export const createPlanSchema = z.object({
   planLocation: z.string().trim().min(1).default("USA"),
   isActive: z.boolean().default(true),
   isFeatured: z.boolean().default(false),
-  pricingOptions: z.array(planPricingInputSchema.omit({ id: true })).min(1),
+  pricingOptions: z.array(createPlanPricingInputSchema).min(1),
 })
 
 export const updatePlanSchema = z.object({

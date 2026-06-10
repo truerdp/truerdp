@@ -65,7 +65,7 @@ export function InvoicesTable({ invoices }: InvoicesTableProps) {
                   {invoice.invoiceNumber}
                 </Link>
                 <span className="text-xs text-muted-foreground">
-                  TX {invoice.transaction.reference || "-"}
+                  TX {invoice.transaction?.reference || "-"}
                 </span>
               </div>
             </TableCell>
@@ -90,7 +90,7 @@ export function InvoicesTable({ invoices }: InvoicesTableProps) {
               </Badge>
             </TableCell>
             <TableCell className="text-sm">
-              {formatMethod(invoice.transaction.method)}
+              {formatMethod(invoice.transaction?.method ?? null)}
             </TableCell>
             <TableCell className="text-sm text-muted-foreground">
               {formatDateTime(invoice.createdAt)}

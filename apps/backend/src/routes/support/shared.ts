@@ -20,6 +20,103 @@ export const ticketIdParamsSchema = z.object({
   id: z.coerce.number().int().positive(),
 })
 
+export const supportUserSummaryResponseSchema = {
+  type: "object",
+  properties: {
+    id: { type: ["integer", "null"] },
+    firstName: { type: ["string", "null"] },
+    lastName: { type: ["string", "null"] },
+    email: { type: ["string", "null"] },
+    role: { type: ["string", "null"] },
+  },
+  required: ["id", "firstName", "lastName", "email", "role"],
+}
+
+export const supportTicketResponseSchema = {
+  type: "object",
+  properties: {
+    id: { type: "integer" },
+    userId: { type: "integer" },
+    subject: { type: "string" },
+    status: { type: "string" },
+    createdAt: { type: "string", format: "date-time" },
+    updatedAt: { type: "string", format: "date-time" },
+  },
+  required: ["id", "userId", "subject", "status", "createdAt", "updatedAt"],
+}
+
+export const supportTicketListItemResponseSchema = {
+  type: "object",
+  properties: {
+    ...supportTicketResponseSchema.properties,
+    lastMessageAt: { type: ["string", "null"] },
+    user: {
+      type: "object",
+      properties: {
+        id: { type: "integer" },
+        firstName: { type: "string" },
+        lastName: { type: "string" },
+        email: { type: "string" },
+      },
+      required: ["id", "firstName", "lastName", "email"],
+    },
+  },
+  required: [...supportTicketResponseSchema.required, "lastMessageAt", "user"],
+}
+
+export const supportMessageResponseSchema = {
+  type: "object",
+  properties: {
+    id: { type: "integer" },
+    ticketId: { type: "integer" },
+    senderType: { type: "string" },
+    senderUserId: { type: ["integer", "null"] },
+    message: { type: "string" },
+    createdAt: { type: "string", format: "date-time" },
+    sender: {
+      anyOf: [supportUserSummaryResponseSchema, { type: "null" }],
+    },
+  },
+  required: [
+    "id",
+    "ticketId",
+    "senderType",
+    "senderUserId",
+    "message",
+    "createdAt",
+    "sender",
+  ],
+}
+
+export const supportTicketThreadResponseSchema = {
+  type: "object",
+  properties: {
+    ticket: supportTicketResponseSchema,
+    messages: {
+      type: "array",
+      items: supportMessageResponseSchema,
+    },
+  },
+  required: ["ticket", "messages"],
+}
+
+export const supportTicketCreatedResponseSchema = {
+  type: "object",
+  properties: {
+    message: { type: "string" },
+    ticket: supportTicketResponseSchema,
+  },
+  required: ["message", "ticket"],
+}
+
+export const supportMessageOnlyResponseSchema = {
+  type: "object",
+  properties: {
+    message: { type: "string" },
+  },
+  required: ["message"],
+}
+
 export async function getTicketForUser(ticketId: number, userId: number) {
   const result = await db
     .select()

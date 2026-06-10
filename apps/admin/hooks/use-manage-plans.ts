@@ -9,6 +9,7 @@ export interface PlanPricingInput {
   id?: number
   durationDays: number
   priceUsdCents: number
+  promoPriceUsdCents?: number | null
   isActive: boolean
 }
 

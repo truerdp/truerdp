@@ -7,6 +7,7 @@ export interface PlanPricingOption {
   id: number
   durationDays: number
   priceUsdCents: number
+  promoPriceUsdCents: number | null
 }
 
 export interface Plan {

@@ -25,11 +25,22 @@ export function formatPrice(priceUsdCents: number) {
   }).format(priceUsdCents / 100)
 }
 
+export function getEffectivePriceUsdCents(pricing: {
+  priceUsdCents: number
+  promoPriceUsdCents?: number | null
+}) {
+  return pricing.promoPriceUsdCents != null &&
+    pricing.promoPriceUsdCents < pricing.priceUsdCents
+    ? pricing.promoPriceUsdCents
+    : pricing.priceUsdCents
+}
+
 export function getDefaultPricingOption(
   pricingOptions: Array<{
     id: number
     durationDays: number
     priceUsdCents: number
+    promoPriceUsdCents?: number | null
     isActive: boolean
   }>,
   defaultPricingId: number | null

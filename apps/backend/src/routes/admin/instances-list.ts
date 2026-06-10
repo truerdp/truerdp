@@ -6,6 +6,7 @@ import {
   instances,
   resources,
   servers,
+  users,
 } from "../../schema.js"
 import { verifyAuth } from "../../middleware/auth.js"
 import { requireAdmin } from "../../middleware/require-admin.js"
@@ -14,7 +15,9 @@ import { adminQuerySchemas } from "./shared.js"
 
 const { adminListPaginationQuerySchema } = adminQuerySchemas
 
-export async function registerAdminInstancesListRoutes(server: FastifyInstance) {
+export async function registerAdminInstancesListRoutes(
+  server: FastifyInstance
+) {
   server.get(
     "/admin/instances",
     { preHandler: verifyAuth },
@@ -39,6 +42,7 @@ export async function registerAdminInstancesListRoutes(server: FastifyInstance) 
           .select({
             id: instances.id,
             userId: instances.userId,
+            userEmail: users.email,
             status: instances.status,
             startDate: instances.startDate,
             expiryDate: instances.expiryDate,
@@ -66,6 +70,7 @@ export async function registerAdminInstancesListRoutes(server: FastifyInstance) 
           )`,
           })
           .from(instances)
+          .leftJoin(users, eq(instances.userId, users.id))
           .leftJoin(resources, eq(resources.instanceId, instances.id))
           .leftJoin(servers, eq(resources.serverId, servers.id))
           .orderBy(desc(instances.createdAt))

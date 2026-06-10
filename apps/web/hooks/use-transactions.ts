@@ -10,7 +10,7 @@ export interface Transaction {
   status: "pending" | "confirmed" | "failed"
   createdAt: string
   confirmedAt: string | null
-  reference: string
+  reference: string | null
   order: {
     id: number
     status: "pending_payment" | "processing" | "completed" | "cancelled"
@@ -33,7 +33,7 @@ export interface Transaction {
   pricing: {
     id: number
     durationDays: number
-    priceUsdCents: number
+    priceUsdCents: number | null
   }
 }
 

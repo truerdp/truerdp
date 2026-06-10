@@ -27,6 +27,7 @@ import {
   type PlanStatusFilter,
 } from "@/components/admin-plans/controls"
 import { AdminPlansTable } from "@/components/admin-plans/table"
+import { getEffectivePriceUsdCents } from "@/components/plans-page-parts"
 
 export default function AdminPlansPage() {
   const { data, isLoading, isError, error } = usePlans()
@@ -73,7 +74,10 @@ export default function AdminPlansPage() {
           b.pricingOptions.find((option) => option.id === b.defaultPricingId) ??
           b.pricingOptions[0]
 
-        return (aDefault?.priceUsdCents ?? 0) - (bDefault?.priceUsdCents ?? 0)
+        return (
+          (aDefault ? getEffectivePriceUsdCents(aDefault) : 0) -
+          (bDefault ? getEffectivePriceUsdCents(bDefault) : 0)
+        )
       }
 
       return a.name.localeCompare(b.name)

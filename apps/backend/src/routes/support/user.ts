@@ -10,6 +10,10 @@ import {
   getTicketForUser,
   getTicketThread,
   replySchema,
+  supportMessageOnlyResponseSchema,
+  supportTicketCreatedResponseSchema,
+  supportTicketListItemResponseSchema,
+  supportTicketThreadResponseSchema,
   ticketIdParamsSchema,
   ticketListSelect,
 } from "./shared.js"
@@ -26,7 +30,7 @@ export function registerUserSupportRoutes(server: FastifyInstance) {
         response: {
           200: {
             type: "array",
-            items: { type: "object" },
+            items: supportTicketListItemResponseSchema,
           },
         },
       },
@@ -65,13 +69,7 @@ export function registerUserSupportRoutes(server: FastifyInstance) {
           },
         },
         response: {
-          201: {
-            type: "object",
-            properties: {
-              message: { type: "string" },
-              ticket: { type: "object" },
-            },
-          },
+          201: supportTicketCreatedResponseSchema,
         },
       },
     },
@@ -136,13 +134,7 @@ export function registerUserSupportRoutes(server: FastifyInstance) {
           },
         },
         response: {
-          200: {
-            type: "object",
-            properties: {
-              ticket: { type: "object" },
-              messages: { type: "array", items: { type: "object" } },
-            },
-          },
+          200: supportTicketThreadResponseSchema,
         },
       },
     },
@@ -189,12 +181,7 @@ export function registerUserSupportRoutes(server: FastifyInstance) {
           },
         },
         response: {
-          200: {
-            type: "object",
-            properties: {
-              message: { type: "string" },
-            },
-          },
+          200: supportMessageOnlyResponseSchema,
         },
       },
     },
@@ -255,12 +242,7 @@ export function registerUserSupportRoutes(server: FastifyInstance) {
             },
           },
           response: {
-            200: {
-              type: "object",
-              properties: {
-                message: { type: "string" },
-              },
-            },
+            200: supportMessageOnlyResponseSchema,
           },
         },
       },

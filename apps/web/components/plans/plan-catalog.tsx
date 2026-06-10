@@ -12,12 +12,17 @@ import { Button } from "@workspace/ui/components/button"
 import { PlanCheckoutButton } from "@/components/home-checkout-actions"
 import { formatAmount } from "@/lib/format"
 import { webPaths } from "@/lib/paths"
-import { getLowestPricingOption, groupPlansBy } from "./plan-utils"
+import {
+  getEffectivePriceUsdCents,
+  getLowestPricingOption,
+  groupPlansBy,
+} from "./plan-utils"
 
 export interface PlanPricingOption {
   id: number
   durationDays: number
   priceUsdCents: number
+  promoPriceUsdCents: number | null
 }
 
 export interface MarketingPlan {
@@ -42,7 +47,7 @@ export interface MarketingPlan {
   pricingOptions: PlanPricingOption[]
 }
 
-export { getLowestPricingOption, groupPlansBy }
+export { getEffectivePriceUsdCents, getLowestPricingOption, groupPlansBy }
 
 const catalogCardTones = {
   blue: "border-[oklch(0.8_0.08_205)]/70 bg-[linear-gradient(150deg,oklch(0.995_0.012_205),oklch(0.95_0.04_205))] dark:bg-[linear-gradient(150deg,oklch(0.23_0.055_218),oklch(0.17_0.035_250))]",
@@ -98,6 +103,9 @@ export function PlanGrid({ plans }: { plans: MarketingPlan[] }) {
     <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
       {plans.map((plan, index) => {
         const lowestOption = getLowestPricingOption(plan)
+        const pricingOptions = [...plan.pricingOptions].sort(
+          (a, b) => a.durationDays - b.durationDays
+        )
         const tone = toneKeys[index % toneKeys.length] ?? "blue"
         return (
           <article
@@ -156,19 +164,42 @@ export function PlanGrid({ plans }: { plans: MarketingPlan[] }) {
               </Badge>
             </div>
 
-            <div className="mt-5 flex items-center justify-between border-t border-black/10 pt-4 dark:border-white/10">
-              <div>
+            <div className="mt-5 border-t border-black/10 pt-4 dark:border-white/10">
+              <div className="flex items-center justify-between gap-3">
                 <p className="text-xs text-muted-foreground">Starts at</p>
                 <p className="text-xl font-semibold">
                   {lowestOption
-                    ? formatAmount(lowestOption.priceUsdCents)
+                    ? formatAmount(getEffectivePriceUsdCents(lowestOption))
                     : "-"}
                 </p>
               </div>
-              {lowestOption ? (
-                <PlanCheckoutButton planPricingId={lowestOption.id} />
+
+              {pricingOptions.length > 0 ? (
+                <div className="mt-3 flex flex-col gap-2">
+                  {pricingOptions.map((option) => (
+                    <div
+                      key={option.id}
+                      className="flex items-center justify-between gap-3 rounded-xl border border-white/70 bg-white/60 px-3 py-2.5 shadow-xs dark:border-white/10 dark:bg-white/7"
+                    >
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium">
+                          {option.durationDays} days
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {formatAmount(getEffectivePriceUsdCents(option))}
+                          {option.promoPriceUsdCents != null ? (
+                            <span className="ml-2 line-through">
+                              {formatAmount(option.priceUsdCents)}
+                            </span>
+                          ) : null}
+                        </p>
+                      </div>
+                      <PlanCheckoutButton planPricingId={option.id} />
+                    </div>
+                  ))}
+                </div>
               ) : (
-                <Button size="sm" variant="outline" disabled>
+                <Button className="mt-3" size="sm" variant="outline" disabled>
                   Unavailable
                 </Button>
               )}

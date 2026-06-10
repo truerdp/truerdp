@@ -217,6 +217,7 @@ server.post(
           planName: instanceOwner.planName,
           ipAddress: allocated.server.ipAddress,
           username: allocated.resource.username ?? null,
+          password: body.password ?? null,
         }).catch((emailError) => {
           server.log.error(emailError)
         })

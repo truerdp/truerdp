@@ -2,6 +2,7 @@ export type PlanPricingOption = {
   id: number
   durationDays: number
   priceUsdCents: number
+  promoPriceUsdCents: number | null
   isActive: boolean
   dodoProductId: string | null
   dodoSyncStatus: "pending" | "synced" | "failed"
@@ -61,6 +62,7 @@ export function mapPlanRows(rows: PlanPricingJoinRow[]) {
         id: row.pricing.id,
         durationDays: row.pricing.durationDays,
         priceUsdCents: row.pricing.priceUsdCents,
+        promoPriceUsdCents: row.pricing.promoPriceUsdCents,
         isActive: row.pricing.isActive,
         dodoProductId: row.pricing.dodoProductId,
         dodoSyncStatus: row.pricing.dodoSyncStatus,
@@ -80,7 +82,9 @@ export function mapPlanRows(rows: PlanPricingJoinRow[]) {
     })
 
     if (!plan.defaultPricingId) {
-      const defaultPricing = plan.pricingOptions.find((option) => option.isActive)
+      const defaultPricing = plan.pricingOptions.find(
+        (option) => option.isActive
+      )
       plan.defaultPricingId = defaultPricing?.id ?? null
     }
   }

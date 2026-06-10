@@ -17,6 +17,13 @@ function assertEmailSent(
   )
 }
 
+function getWebBaseUrl() {
+  return (process.env.WEB_BASE_URL?.trim() || "http://localhost:3000").replace(
+    /\/$/,
+    ""
+  )
+}
+
 export async function sendPasswordResetEmail(input: {
   to: string
   resetUrl: string
@@ -51,23 +58,37 @@ export async function sendVerificationEmail(input: {
   to: string
   verificationUrl: string
 }) {
+  const safeVerificationUrl = escapeHtml(input.verificationUrl)
+  const logoUrl = `${getWebBaseUrl()}/favicon-96x96.png`
+  const safeLogoUrl = escapeHtml(logoUrl)
+
   const result = await sendManagedEmail({
     templateKey: "email_verification",
     to: input.to,
     variables: {
       verificationUrl: input.verificationUrl,
+      logoUrl,
     },
     fallbackSubject: "Verify your TrueRDP email",
-    fallbackText: `Verify your email: ${input.verificationUrl}\n\nIf you did not create this account, you can ignore this email.`,
+    fallbackText: `Verify your TrueRDP email: ${input.verificationUrl}\n\nIf the button does not work, open this link directly:\n${input.verificationUrl}\n\nIf you did not create this account, you can ignore this email.`,
     fallbackHtml: `
-      <div style="font-family: Arial, sans-serif; color: #10231b; line-height: 1.6;">
-        <h1 style="font-size: 22px;">Verify your email</h1>
-        <p>Please confirm your email address to activate your TrueRDP account.</p>
-        <p>
-          <a href="${escapeHtml(input.verificationUrl)}" style="display: inline-block; padding: 12px 18px; border-radius: 999px; background: #0f6b4f; color: #ffffff; text-decoration: none; font-weight: 700;">
-            Verify email
-          </a>
-        </p>
+      <div style="margin: 0; padding: 32px 18px; background: #f5f8f7; font-family: Arial, sans-serif; color: #10231b; line-height: 1.6; text-align: center;">
+        <div style="margin: 0 auto; max-width: 520px; border-radius: 24px; background: #ffffff; padding: 34px 28px; box-shadow: 0 16px 40px rgba(16, 35, 27, 0.08); text-align: center;">
+          <img src="${safeLogoUrl}" width="64" height="64" alt="TrueRDP logo" style="display: block; margin: 0 auto 14px; border: 0; outline: none; text-decoration: none;" />
+          <div style="margin-bottom: 24px; font-size: 22px; font-weight: 800; letter-spacing: 0.02em; color: #10231b;">TrueRDP</div>
+          <h1 style="margin: 0; font-size: 26px; line-height: 1.25; color: #10231b;">Verify your email</h1>
+          <p style="margin: 14px auto 0; max-width: 390px; font-size: 15px; color: #4f675d;">Please confirm your email address to activate your TrueRDP account.</p>
+          <p style="margin: 28px 0 0;">
+            <a href="${safeVerificationUrl}" style="display: inline-block; padding: 13px 24px; border-radius: 999px; background: #0f6b4f; color: #ffffff; text-decoration: none; font-weight: 700;">
+              Verify email
+            </a>
+          </p>
+          <p style="margin: 26px auto 0; max-width: 420px; font-size: 13px; color: #5d746b;">If the button does not work, click this link directly:</p>
+          <p style="margin: 8px auto 0; max-width: 420px; font-size: 13px; line-height: 1.5; word-break: break-all;">
+            <a href="${safeVerificationUrl}" style="color: #0f6b4f; text-decoration: underline;">${safeVerificationUrl}</a>
+          </p>
+          <p style="margin: 24px auto 0; max-width: 390px; font-size: 12px; color: #7b8d86;">If you did not create this account, you can ignore this email.</p>
+        </div>
       </div>
     `,
     tags: [{ name: "category", value: "email_verification" }],

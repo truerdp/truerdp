@@ -1,4 +1,10 @@
-import { escapeHtml, getDashboardBaseUrl, sendManagedEmail } from "../core.js"
+import {
+  buildBrandedEmailHtml,
+  escapeHtml,
+  getDashboardBaseUrl,
+  getWebBaseUrl,
+  sendManagedEmail,
+} from "../core.js"
 
 export async function sendInvoiceCreatedEmail(input: {
   to: string
@@ -17,11 +23,19 @@ export async function sendInvoiceCreatedEmail(input: {
   const safeInvoiceNumber = escapeHtml(input.invoiceNumber)
   const safePlanName = escapeHtml(input.planName)
   const safeAmount = escapeHtml(input.amount)
-  const safeInvoiceUrl = escapeHtml(invoiceUrl)
   const expiry = input.expiresAt.toLocaleString("en-US", {
     dateStyle: "medium",
     timeStyle: "short",
   })
+  const safeExpiry = escapeHtml(expiry)
+  const detailsHtml = `
+    <p style="margin: 0; font-size: 15px; color: #10231b;">Hi ${safeName}, your invoice <strong>${safeInvoiceNumber}</strong> for <strong>${safePlanName}</strong> is ready.</p>
+    <div style="margin: 22px auto 0; border-radius: 16px; background: #f5f8f7; padding: 18px; text-align: center;">
+      <p style="margin: 0; font-size: 13px; color: #5d746b;">Amount due</p>
+      <p style="margin: 6px 0 0; font-size: 24px; font-weight: 800; color: #10231b;">${safeAmount}</p>
+      <p style="margin: 12px 0 0; font-size: 13px; color: #5d746b;">Payment window expires on ${safeExpiry}.</p>
+    </div>
+  `
 
   return sendManagedEmail({
     templateKey: "invoice_created",
@@ -33,22 +47,20 @@ export async function sendInvoiceCreatedEmail(input: {
       amount: input.amount,
       expiry,
       invoiceUrl,
+      logoUrl: `${getWebBaseUrl()}/favicon-96x96.png`,
     },
     fallbackSubject: `Invoice ${input.invoiceNumber} created`,
     fallbackText: `Hi ${input.firstName}, invoice ${input.invoiceNumber} for ${input.planName} is ready. Amount due: ${input.amount}. Pay before ${expiry}: ${invoiceUrl}`,
-    fallbackHtml: `
-      <div style="font-family: Arial, sans-serif; color: #10231b; line-height: 1.6;">
-        <h1 style="font-size: 22px;">Invoice created</h1>
-        <p>Hi ${safeName}, your invoice <strong>${safeInvoiceNumber}</strong> for <strong>${safePlanName}</strong> is ready.</p>
-        <p style="font-size: 18px; font-weight: 700;">Amount due: ${safeAmount}</p>
-        <p style="font-size: 13px; color: #5d746b;">Payment window expires on ${escapeHtml(expiry)}.</p>
-        <p>
-          <a href="${safeInvoiceUrl}" style="display: inline-block; padding: 12px 18px; border-radius: 999px; background: #0f6b4f; color: #ffffff; text-decoration: none; font-weight: 700;">
-            View invoice
-          </a>
-        </p>
-      </div>
-    `,
+    fallbackHtml: buildBrandedEmailHtml({
+      title: "Invoice created",
+      intro: "Your invoice is ready and waiting in your dashboard.",
+      bodyHtml: detailsHtml,
+      buttonHref: invoiceUrl,
+      buttonLabel: "View invoice",
+      directLinkLabel:
+        "If the button does not work, click this link directly:",
+      footer: "You can pay this invoice from your dashboard.",
+    }),
     tags: [{ name: "category", value: "invoice_created" }],
   })
 }
@@ -71,7 +83,6 @@ export async function sendPaymentConfirmedEmail(input: {
   const safeInvoiceNumber = escapeHtml(input.invoiceNumber)
   const safePlanName = escapeHtml(input.planName)
   const safeAmount = escapeHtml(input.amount)
-  const safeInvoiceUrl = escapeHtml(invoiceUrl)
   const paidAt = input.paidAt.toLocaleString("en-US", {
     dateStyle: "medium",
     timeStyle: "short",
@@ -79,6 +90,20 @@ export async function sendPaymentConfirmedEmail(input: {
   const referenceText = input.transactionReference
     ? ` Transaction: ${input.transactionReference}.`
     : ""
+  const safePaidAt = escapeHtml(paidAt)
+  const safeReference = input.transactionReference
+    ? escapeHtml(input.transactionReference)
+    : "-"
+  const receiptHtml = `
+    <p style="margin: 0; font-size: 15px; color: #10231b;">Hi ${safeName}, we received your payment for <strong>${safePlanName}</strong>.</p>
+    <div style="margin: 22px auto 0; border-radius: 16px; background: #f5f8f7; padding: 18px; text-align: center;">
+      <p style="margin: 0; font-size: 13px; color: #5d746b;">Paid</p>
+      <p style="margin: 6px 0 0; font-size: 24px; font-weight: 800; color: #10231b;">${safeAmount}</p>
+      <p style="margin: 12px 0 0; font-size: 14px; color: #10231b;">Invoice <strong>${safeInvoiceNumber}</strong> is marked as paid.</p>
+      <p style="margin: 8px 0 0; font-size: 13px; color: #5d746b;">Transaction: ${safeReference}</p>
+      <p style="margin: 8px 0 0; font-size: 13px; color: #5d746b;">Paid at ${safePaidAt}.</p>
+    </div>
+  `
 
   return sendManagedEmail({
     templateKey: "payment_confirmed",
@@ -91,23 +116,20 @@ export async function sendPaymentConfirmedEmail(input: {
       transactionReference: input.transactionReference ?? "",
       paidAt,
       invoiceUrl,
+      logoUrl: `${getWebBaseUrl()}/favicon-96x96.png`,
     },
     fallbackSubject: `Payment confirmed for ${input.invoiceNumber}`,
     fallbackText: `Hi ${input.firstName}, we received your payment of ${input.amount} for ${input.planName}. Invoice: ${input.invoiceNumber}.${referenceText} Paid at ${paidAt}. ${invoiceUrl}`,
-    fallbackHtml: `
-      <div style="font-family: Arial, sans-serif; color: #10231b; line-height: 1.6;">
-        <h1 style="font-size: 22px;">Payment confirmed</h1>
-        <p>Hi ${safeName}, we received your payment for <strong>${safePlanName}</strong>.</p>
-        <p style="font-size: 18px; font-weight: 700;">Paid: ${safeAmount}</p>
-        <p>Invoice <strong>${safeInvoiceNumber}</strong> is now marked as paid.</p>
-        <p style="font-size: 13px; color: #5d746b;">Paid at ${escapeHtml(paidAt)}.</p>
-        <p>
-          <a href="${safeInvoiceUrl}" style="display: inline-block; padding: 12px 18px; border-radius: 999px; background: #0f6b4f; color: #ffffff; text-decoration: none; font-weight: 700;">
-            View receipt
-          </a>
-        </p>
-      </div>
-    `,
+    fallbackHtml: buildBrandedEmailHtml({
+      title: "Payment confirmed",
+      intro: "Your payment was received and your invoice has been updated.",
+      bodyHtml: receiptHtml,
+      buttonHref: invoiceUrl,
+      buttonLabel: "View receipt",
+      directLinkLabel:
+        "If the button does not work, click this link directly:",
+      footer: "Provisioning will continue from your dashboard order status.",
+    }),
     tags: [{ name: "category", value: "payment_confirmed" }],
   })
 }

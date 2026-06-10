@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm"
 import { db } from "../../db.js"
-import { instances, invoices, orders } from "../../schema.js"
+import { instances, invoices, orders, users } from "../../schema.js"
 import { calculatePrice } from "../pricing.js"
 import { sendInvoiceCreatedNotification } from "./notifications.js"
 import { formatBillingOrderResponse } from "./order-query.js"
@@ -13,6 +13,7 @@ import {
   getOrderPlanPriceUsdCents,
   requireInsertedRecord,
 } from "./shared.js"
+import { buildUserBillingDetails } from "./user-billing.js"
 
 export async function createBillingOrder(input: {
   userId: number
@@ -27,6 +28,38 @@ export async function createBillingOrder(input: {
 
   if (!pricingSelection.plan.isActive) {
     throw new BillingError(400, "Selected plan is inactive")
+  }
+
+  const [billingUser] = await db
+    .select({
+      firstName: users.firstName,
+      lastName: users.lastName,
+      email: users.email,
+      billingPhone: users.billingPhone,
+      billingCompanyName: users.billingCompanyName,
+      billingTaxId: users.billingTaxId,
+      billingAddressLine1: users.billingAddressLine1,
+      billingAddressLine2: users.billingAddressLine2,
+      billingCity: users.billingCity,
+      billingState: users.billingState,
+      billingPostalCode: users.billingPostalCode,
+      billingCountry: users.billingCountry,
+    })
+    .from(users)
+    .where(eq(users.id, input.userId))
+    .limit(1)
+
+  if (!billingUser) {
+    throw new BillingError(404, "User not found")
+  }
+
+  const billingDetails = buildUserBillingDetails(billingUser)
+
+  if (!billingDetails) {
+    throw new BillingError(
+      400,
+      "Complete your billing address before starting checkout"
+    )
   }
 
   const orderKind = input.instanceId ? "renewal" : "new_purchase"
@@ -52,7 +85,8 @@ export async function createBillingOrder(input: {
       throw new BillingError(400, "Renewal must use the instance plan")
     }
 
-    const isExpired = instance.expiryDate != null && instance.expiryDate < new Date()
+    const isExpired =
+      instance.expiryDate != null && instance.expiryDate < new Date()
 
     if (instance.status === "suspended") {
       throw new BillingError(400, "Suspended instances cannot be renewed")
@@ -64,7 +98,8 @@ export async function createBillingOrder(input: {
   }
 
   const planPriceUsdCents =
-    pricingSelection.priceUsdCents ?? (pricingSelection as { price?: number }).price
+    pricingSelection.priceUsdCents ??
+    (pricingSelection as { price?: number }).price
 
   if (!Number.isFinite(planPriceUsdCents)) {
     throw new BillingError(500, "Plan pricing is missing a valid price")
@@ -85,6 +120,7 @@ export async function createBillingOrder(input: {
       planName: pricingSelection.plan.name,
       ...buildOrderPriceInsertValue(planPriceUsdCentsValue),
       durationDays: pricingSelection.durationDays,
+      billingDetails,
       status: "pending_payment",
     } as typeof orders.$inferInsert
 

@@ -3,6 +3,7 @@ import { Reveal } from "@/components/landing/reveal"
 import { formatAmount } from "@/lib/format"
 import { Badge } from "@workspace/ui/components/badge"
 import {
+  getEffectivePriceUsdCents,
   getLowestPricingOption,
   planCardStyles,
   sectionEyebrowClass,
@@ -61,7 +62,7 @@ export function FeaturedPlansSection({
                 <Badge variant="secondary" className="rounded-full">
                   {getLowestPricingOption(plan)
                     ? formatAmount(
-                        getLowestPricingOption(plan)?.priceUsdCents || 0
+                        getEffectivePriceUsdCents(getLowestPricingOption(plan)!)
                       )
                     : "N/A"}
                 </Badge>
@@ -88,7 +89,12 @@ export function FeaturedPlansSection({
                         {option.durationDays} days
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        {formatAmount(option.priceUsdCents)}
+                        {formatAmount(getEffectivePriceUsdCents(option))}
+                        {option.promoPriceUsdCents != null ? (
+                          <span className="ml-2 line-through">
+                            {formatAmount(option.priceUsdCents)}
+                          </span>
+                        ) : null}
                       </p>
                     </div>
                     <PlanCheckoutButton planPricingId={option.id} />

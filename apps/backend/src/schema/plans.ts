@@ -51,6 +51,7 @@ export const planPricing = pgTable(
 
     durationDays: integer("duration_days").notNull(),
     priceUsdCents: integer("price").notNull(),
+    promoPriceUsdCents: integer("promo_price"),
 
     dodoProductId: text("dodo_product_id"),
     dodoSyncStatus: text("dodo_sync_status", {

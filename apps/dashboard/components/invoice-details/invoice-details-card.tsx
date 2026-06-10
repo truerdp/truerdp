@@ -89,14 +89,14 @@ export function InvoiceDetailsCard({ invoice }: InvoiceDetailsCardProps) {
         <Separator />
         <LabelRow
           label="Method"
-          value={formatMethod(invoice.transaction.method)}
+          value={formatMethod(invoice.transaction?.method ?? null)}
         />
         <div className="flex items-center justify-between gap-4">
           <span className="text-sm text-muted-foreground">
             Transaction Reference
           </span>
           <span className="font-mono text-sm">
-            {invoice.transaction.reference || "-"}
+            {invoice.transaction?.reference || "-"}
           </span>
         </div>
         <Separator />

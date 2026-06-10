@@ -45,14 +45,8 @@ function runDev() {
   ensureLocalEnv("apps/backend/.env", "apps/backend/.env.example")
 
   if (canUseInfisical()) {
-    run("infisical", [
-      "run",
-      "--path=/",
-      "--",
-      "node",
-      "scripts/workflow.mjs",
-      "dev:no-infisical",
-    ])
+    syncLocalBackendEnvFromInfisical()
+    runDevWithoutInfisical()
     return
   }
 
@@ -60,6 +54,16 @@ function runDev() {
     "Infisical is not configured for this shell; using local .env files."
   )
   runDevWithoutInfisical()
+}
+
+function syncLocalBackendEnvFromInfisical() {
+  run("infisical", [
+    "export",
+    "--env=dev",
+    "--path=/",
+    "--format=dotenv",
+    "--output-file=apps/backend/.env",
+  ])
 }
 
 function runDevWithoutInfisical() {

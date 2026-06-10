@@ -74,6 +74,7 @@ export async function registerAdminPlansUpdateRoutes(server: FastifyInstance) {
             .select({
               id: planPricing.id,
               durationDays: planPricing.durationDays,
+              promoPriceUsdCents: planPricing.promoPriceUsdCents,
               dodoProductId: planPricing.dodoProductId,
             })
             .from(planPricing)
@@ -101,6 +102,7 @@ export async function registerAdminPlansUpdateRoutes(server: FastifyInstance) {
                 .set({
                   durationDays: option.durationDays,
                   priceUsdCents: option.priceUsdCents,
+                  promoPriceUsdCents: option.promoPriceUsdCents ?? null,
                   isActive: option.isActive,
                   dodoSyncStatus: "pending",
                   dodoSyncError: null,
@@ -113,6 +115,7 @@ export async function registerAdminPlansUpdateRoutes(server: FastifyInstance) {
                 planName: body.name,
                 durationDays: option.durationDays,
                 priceUsdCents: option.priceUsdCents,
+                promoPriceUsdCents: option.promoPriceUsdCents ?? null,
                 dodoProductId: matchedById.dodoProductId,
               })
               continue
@@ -127,6 +130,7 @@ export async function registerAdminPlansUpdateRoutes(server: FastifyInstance) {
                 .update(planPricing)
                 .set({
                   priceUsdCents: option.priceUsdCents,
+                  promoPriceUsdCents: option.promoPriceUsdCents ?? null,
                   isActive: option.isActive,
                   dodoSyncStatus: "pending",
                   dodoSyncError: null,
@@ -139,6 +143,7 @@ export async function registerAdminPlansUpdateRoutes(server: FastifyInstance) {
                 planName: body.name,
                 durationDays: option.durationDays,
                 priceUsdCents: option.priceUsdCents,
+                promoPriceUsdCents: option.promoPriceUsdCents ?? null,
                 dodoProductId: matchedByDuration.dodoProductId,
               })
               continue
@@ -150,6 +155,7 @@ export async function registerAdminPlansUpdateRoutes(server: FastifyInstance) {
                 planId,
                 durationDays: option.durationDays,
                 priceUsdCents: option.priceUsdCents,
+                promoPriceUsdCents: option.promoPriceUsdCents ?? null,
                 isActive: option.isActive,
               })
               .returning({
@@ -166,6 +172,7 @@ export async function registerAdminPlansUpdateRoutes(server: FastifyInstance) {
               planName: body.name,
               durationDays: option.durationDays,
               priceUsdCents: option.priceUsdCents,
+              promoPriceUsdCents: option.promoPriceUsdCents ?? null,
               dodoProductId: null,
             })
           }

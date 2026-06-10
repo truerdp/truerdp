@@ -1,4 +1,10 @@
-import { escapeHtml, getDashboardBaseUrl, sendManagedEmail } from "../core.js"
+import {
+  buildBrandedEmailHtml,
+  escapeHtml,
+  getDashboardBaseUrl,
+  getWebBaseUrl,
+  sendManagedEmail,
+} from "../core.js"
 
 export async function sendProvisionedEmail(input: {
   to: string
@@ -7,6 +13,7 @@ export async function sendProvisionedEmail(input: {
   planName: string
   ipAddress: string
   username: string | null
+  password: string | null
 }) {
   const instanceUrl = new URL(
     `/instances/${input.instanceId}`,
@@ -16,7 +23,16 @@ export async function sendProvisionedEmail(input: {
   const safePlanName = escapeHtml(input.planName)
   const safeIp = escapeHtml(input.ipAddress)
   const safeUser = escapeHtml(input.username ?? "Not set")
-  const safeUrl = escapeHtml(instanceUrl)
+  const safePassword = escapeHtml(input.password ?? "Not set")
+  const detailsHtml = `
+    <p style="margin: 0; font-size: 15px; color: #10231b;">Hi ${safeName}, your <strong>${safePlanName}</strong> instance is now provisioned.</p>
+    <div style="margin: 22px auto 0; border-radius: 16px; background: #f5f8f7; padding: 18px; text-align: left;">
+      <p style="margin: 0 0 10px; font-size: 13px; color: #5d746b;">Connection details</p>
+      <p style="margin: 0; font-size: 14px; color: #10231b;"><strong>IP:</strong> ${safeIp}</p>
+      <p style="margin: 8px 0 0; font-size: 14px; color: #10231b;"><strong>Username:</strong> ${safeUser}</p>
+      <p style="margin: 8px 0 0; font-size: 14px; color: #10231b;"><strong>Password:</strong> ${safePassword}</p>
+    </div>
+  `
 
   return sendManagedEmail({
     templateKey: "instance_provisioned",
@@ -27,22 +43,22 @@ export async function sendProvisionedEmail(input: {
       planName: input.planName,
       ipAddress: input.ipAddress,
       username: input.username ?? "",
+      password: input.password ?? "",
       instanceUrl,
+      logoUrl: `${getWebBaseUrl()}/favicon-96x96.png`,
     },
     fallbackSubject: `Instance #${input.instanceId} is ready`,
-    fallbackText: `Hi ${input.firstName}, your ${input.planName} instance is ready. IP: ${input.ipAddress}. Username: ${input.username ?? "Not set"}. View: ${instanceUrl}`,
-    fallbackHtml: `
-      <div style="font-family: Arial, sans-serif; color: #10231b; line-height: 1.6;">
-        <h1 style="font-size: 22px;">Your instance is ready</h1>
-        <p>Hi ${safeName}, your <strong>${safePlanName}</strong> instance is now provisioned.</p>
-        <p><strong>IP:</strong> ${safeIp}<br /><strong>Username:</strong> ${safeUser}</p>
-        <p>
-          <a href="${safeUrl}" style="display: inline-block; padding: 12px 18px; border-radius: 999px; background: #0f6b4f; color: #ffffff; text-decoration: none; font-weight: 700;">
-            Open instance details
-          </a>
-        </p>
-      </div>
-    `,
+    fallbackText: `Hi ${input.firstName}, your ${input.planName} instance is ready. IP: ${input.ipAddress}. Username: ${input.username ?? "Not set"}. Password: ${input.password ?? "Not set"}. View: ${instanceUrl}`,
+    fallbackHtml: buildBrandedEmailHtml({
+      title: "Your instance is ready",
+      intro: "Your TrueRDP instance has been provisioned and is ready to use.",
+      bodyHtml: detailsHtml,
+      buttonHref: instanceUrl,
+      buttonLabel: "Open instance details",
+      directLinkLabel:
+        "If the button does not work, click this link directly:",
+      footer: "Keep these credentials private and do not share them.",
+    }),
     tags: [{ name: "category", value: "instance_provisioned" }],
   })
 }

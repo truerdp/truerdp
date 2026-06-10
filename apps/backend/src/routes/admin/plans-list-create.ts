@@ -92,6 +92,7 @@ export async function registerAdminPlansListCreateRoutes(
                 planId: plan.id,
                 durationDays: option.durationDays,
                 priceUsdCents: option.priceUsdCents,
+                promoPriceUsdCents: option.promoPriceUsdCents ?? null,
                 isActive: option.isActive,
               }))
             )
@@ -99,6 +100,7 @@ export async function registerAdminPlansListCreateRoutes(
               id: planPricing.id,
               durationDays: planPricing.durationDays,
               priceUsdCents: planPricing.priceUsdCents,
+              promoPriceUsdCents: planPricing.promoPriceUsdCents,
               dodoProductId: planPricing.dodoProductId,
             })
 
@@ -107,6 +109,7 @@ export async function registerAdminPlansListCreateRoutes(
               id: planPricing.id,
               durationDays: planPricing.durationDays,
               priceUsdCents: planPricing.priceUsdCents,
+              promoPriceUsdCents: planPricing.promoPriceUsdCents,
               dodoProductId: planPricing.dodoProductId,
             })
             .from(planPricing)
@@ -120,6 +123,7 @@ export async function registerAdminPlansListCreateRoutes(
                 planName: body.name,
                 durationDays: pricing.durationDays,
                 priceUsdCents: pricing.priceUsdCents,
+                promoPriceUsdCents: pricing.promoPriceUsdCents,
                 dodoProductId: pricing.dodoProductId,
               })
             ),

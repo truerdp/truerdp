@@ -51,6 +51,13 @@ export function getDashboardBaseUrl() {
   return process.env.DASHBOARD_BASE_URL?.trim() || "http://localhost:3001"
 }
 
+export function getWebBaseUrl() {
+  return (process.env.WEB_BASE_URL?.trim() || "http://localhost:3000").replace(
+    /\/$/,
+    ""
+  )
+}
+
 export function getAdminAlertRecipients() {
   return (process.env.ADMIN_ALERT_EMAILS ?? "")
     .split(",")
@@ -65,6 +72,61 @@ export function escapeHtml(value: string) {
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#039;")
+}
+
+export function buildBrandedEmailHtml(input: {
+  title: string
+  intro: string
+  bodyHtml: string
+  buttonHref?: string
+  buttonLabel?: string
+  directLinkLabel?: string
+  footer?: string
+}) {
+  const logoUrl = `${getWebBaseUrl()}/favicon-96x96.png`
+  const safeLogoUrl = escapeHtml(logoUrl)
+  const safeTitle = escapeHtml(input.title)
+  const safeIntro = escapeHtml(input.intro)
+  const safeButtonHref = input.buttonHref ? escapeHtml(input.buttonHref) : ""
+  const safeButtonLabel = input.buttonLabel
+    ? escapeHtml(input.buttonLabel)
+    : ""
+  const safeDirectLinkLabel = escapeHtml(
+    input.directLinkLabel ?? "If the button does not work, click this link directly:"
+  )
+  const safeFooter = input.footer ? escapeHtml(input.footer) : ""
+
+  return `
+    <div style="margin: 0; padding: 32px 18px; background: #f5f8f7; font-family: Arial, sans-serif; color: #10231b; line-height: 1.6; text-align: center;">
+      <div style="margin: 0 auto; max-width: 540px; border-radius: 24px; background: #ffffff; padding: 34px 28px; box-shadow: 0 16px 40px rgba(16, 35, 27, 0.08); text-align: center;">
+        <img src="${safeLogoUrl}" width="64" height="64" alt="TrueRDP logo" style="display: block; margin: 0 auto 14px; border: 0; outline: none; text-decoration: none;" />
+        <div style="margin-bottom: 24px; font-size: 22px; font-weight: 800; letter-spacing: 0.02em; color: #10231b;">TrueRDP</div>
+        <h1 style="margin: 0; font-size: 26px; line-height: 1.25; color: #10231b;">${safeTitle}</h1>
+        <p style="margin: 14px auto 0; max-width: 420px; font-size: 15px; color: #4f675d;">${safeIntro}</p>
+        <div style="margin: 26px auto 0; max-width: 440px; text-align: center;">${input.bodyHtml}</div>
+        ${
+          safeButtonHref && safeButtonLabel
+            ? `
+              <p style="margin: 28px 0 0;">
+                <a href="${safeButtonHref}" style="display: inline-block; padding: 13px 24px; border-radius: 999px; background: #0f6b4f; color: #ffffff; text-decoration: none; font-weight: 700;">
+                  ${safeButtonLabel}
+                </a>
+              </p>
+              <p style="margin: 26px auto 0; max-width: 420px; font-size: 13px; color: #5d746b;">${safeDirectLinkLabel}</p>
+              <p style="margin: 8px auto 0; max-width: 420px; font-size: 13px; line-height: 1.5; word-break: break-all;">
+                <a href="${safeButtonHref}" style="color: #0f6b4f; text-decoration: underline;">${safeButtonHref}</a>
+              </p>
+            `
+            : ""
+        }
+        ${
+          safeFooter
+            ? `<p style="margin: 24px auto 0; max-width: 390px; font-size: 12px; color: #7b8d86;">${safeFooter}</p>`
+            : ""
+        }
+      </div>
+    </div>
+  `
 }
 
 function interpolateTemplate(

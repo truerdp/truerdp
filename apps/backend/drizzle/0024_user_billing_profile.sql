@@ -1,0 +1,9 @@
+ALTER TABLE "users" ADD COLUMN "billing_phone" text;
+ALTER TABLE "users" ADD COLUMN "billing_company_name" text;
+ALTER TABLE "users" ADD COLUMN "billing_tax_id" text;
+ALTER TABLE "users" ADD COLUMN "billing_address_line_1" text;
+ALTER TABLE "users" ADD COLUMN "billing_address_line_2" text;
+ALTER TABLE "users" ADD COLUMN "billing_city" text;
+ALTER TABLE "users" ADD COLUMN "billing_state" text;
+ALTER TABLE "users" ADD COLUMN "billing_postal_code" text;
+ALTER TABLE "users" ADD COLUMN "billing_country" text;
