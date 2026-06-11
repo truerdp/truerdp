@@ -14,7 +14,7 @@ export function JourneySection({
   return (
     <section
       id="how-it-works"
-      className="mx-auto mt-32 mb-24 w-full max-w-6xl scroll-mt-20 px-6"
+      className="mx-auto my-20 w-full max-w-6xl scroll-mt-20 px-6"
     >
       <Reveal className="mb-20">
         <p className={sectionEyebrowClass}>{content.eyebrow}</p>

@@ -36,6 +36,10 @@ export async function registerAdminCouponsUpdateStatusRoutes(
             value: body.value,
             appliesTo: body.appliesTo,
             maxUses: body.maxUses ?? null,
+            maxUsesPerCustomer:
+              body.maxUsesPerCustomer === undefined
+                ? 1
+                : body.maxUsesPerCustomer,
             expiresAt: body.expiresAt ? new Date(body.expiresAt) : null,
             isActive: body.isActive,
             dodoSyncStatus: "pending",

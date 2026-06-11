@@ -27,6 +27,7 @@ const webUrl = process.env.WEB_BASE_URL ?? "http://localhost:3000"
 export default buildConfig({
   admin: {
     user: Users.slug,
+    suppressHydrationWarning: true,
     importMap: {
       baseDir: path.resolve(dirname),
     },

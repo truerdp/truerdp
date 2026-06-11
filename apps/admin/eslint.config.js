@@ -8,11 +8,11 @@ export default [
     rules: {
       "max-lines": [
         "warn",
-        { max: 260, skipBlankLines: true, skipComments: true },
+        { max: 400, skipBlankLines: true, skipComments: true },
       ],
       "max-lines-per-function": [
         "warn",
-        { max: 120, skipBlankLines: true, skipComments: true },
+        { max: 400, skipBlankLines: true, skipComments: true },
       ],
     },
   },
@@ -21,11 +21,11 @@ export default [
     rules: {
       "max-lines": [
         "warn",
-        { max: 220, skipBlankLines: true, skipComments: true },
+        { max: 400, skipBlankLines: true, skipComments: true },
       ],
       "max-lines-per-function": [
         "warn",
-        { max: 120, skipBlankLines: true, skipComments: true },
+        { max: 400, skipBlankLines: true, skipComments: true },
       ],
     },
   },

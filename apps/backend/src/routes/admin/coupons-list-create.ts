@@ -29,6 +29,7 @@ export async function registerAdminCouponsListCreateRoutes(
             value: coupons.value,
             appliesTo: coupons.appliesTo,
             maxUses: coupons.maxUses,
+            maxUsesPerCustomer: coupons.maxUsesPerCustomer,
             expiresAt: coupons.expiresAt,
             dodoDiscountId: coupons.dodoDiscountId,
             dodoSyncStatus: coupons.dodoSyncStatus,
@@ -37,13 +38,11 @@ export async function registerAdminCouponsListCreateRoutes(
             isActive: coupons.isActive,
             createdAt: coupons.createdAt,
             updatedAt: coupons.updatedAt,
-            usageCount: sql<number>`(
-            select count(*)::int
-            from ${couponUsages} cu
-            where cu.coupon_id = ${coupons.id}
-          )`,
+            usageCount: sql<number>`count(${couponUsages.id})::int`,
           })
           .from(coupons)
+          .leftJoin(couponUsages, eq(couponUsages.couponId, coupons.id))
+          .groupBy(coupons.id)
           .orderBy(desc(coupons.createdAt))
       } catch (err: unknown) {
         server.log.error(err)
@@ -73,6 +72,10 @@ export async function registerAdminCouponsListCreateRoutes(
             value: body.value,
             appliesTo: body.appliesTo,
             maxUses: body.maxUses ?? null,
+            maxUsesPerCustomer:
+              body.maxUsesPerCustomer === undefined
+                ? 1
+                : body.maxUsesPerCustomer,
             expiresAt: body.expiresAt ? new Date(body.expiresAt) : null,
             isActive: body.isActive,
             dodoSyncStatus: "pending",

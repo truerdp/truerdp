@@ -5,6 +5,7 @@ export type Coupon = {
   value: number
   appliesTo: "all" | "new_purchase" | "renewal"
   maxUses: number | null
+  maxUsesPerCustomer: number | null
   expiresAt: string | null
   dodoSyncStatus: "pending" | "synced" | "failed"
   dodoSyncError: string | null
@@ -18,6 +19,7 @@ export type CouponInput = {
   value: number
   appliesTo: "all" | "new_purchase" | "renewal"
   maxUses: number | null
+  maxUsesPerCustomer: number | null
   expiresAt: string | null
   isActive: boolean
 }
@@ -28,6 +30,7 @@ export const emptyCouponForm: CouponInput = {
   value: 10,
   appliesTo: "all",
   maxUses: null,
+  maxUsesPerCustomer: 1,
   expiresAt: null,
   isActive: true,
 }

@@ -7,6 +7,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import z from "zod"
 import { toast } from "sonner"
 import { Button } from "@workspace/ui/components/button"
+import { BillingLocationFields } from "@workspace/ui/components/billing-location-fields"
 import {
   Card,
   CardContent,
@@ -70,6 +71,8 @@ export function SignupForm({ ...props }: React.ComponentProps<typeof Card>) {
     control,
     handleSubmit,
     setError,
+    setValue,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm<SignupFormValues>({
     resolver: zodResolver(signupSchema),
@@ -91,6 +94,9 @@ export function SignupForm({ ...props }: React.ComponentProps<typeof Card>) {
     },
   })
   const requestedRedirect = searchParams.get("redirect")
+  const country = watch("country")
+  const state = watch("state")
+  const city = watch("city")
   const loginHref = requestedRedirect
     ? `${webPaths.login}?redirect=${encodeURIComponent(requestedRedirect)}`
     : webPaths.login
@@ -303,36 +309,35 @@ export function SignupForm({ ...props }: React.ComponentProps<typeof Card>) {
                   {...register("addressLine2")}
                 />
               </Field>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <Field data-invalid={!!errors.city}>
-                  <FieldLabel htmlFor="city">City</FieldLabel>
-                  <Input
-                    id="city"
-                    type="text"
-                    placeholder="City"
-                    disabled={isSubmitting}
-                    aria-invalid={!!errors.city}
-                    {...register("city")}
-                  />
-                  {errors.city ? (
-                    <FieldError>{errors.city.message}</FieldError>
-                  ) : null}
-                </Field>
-                <Field data-invalid={!!errors.state}>
-                  <FieldLabel htmlFor="state">State/Region</FieldLabel>
-                  <Input
-                    id="state"
-                    type="text"
-                    placeholder="State or region"
-                    disabled={isSubmitting}
-                    aria-invalid={!!errors.state}
-                    {...register("state")}
-                  />
-                  {errors.state ? (
-                    <FieldError>{errors.state.message}</FieldError>
-                  ) : null}
-                </Field>
-              </div>
+              <BillingLocationFields
+                country={country}
+                state={state}
+                city={city}
+                disabled={isSubmitting}
+                errors={{
+                  country: errors.country?.message,
+                  state: errors.state?.message,
+                  city: errors.city?.message,
+                }}
+                onCountryChange={(value) =>
+                  setValue("country", value, {
+                    shouldDirty: true,
+                    shouldValidate: true,
+                  })
+                }
+                onStateChange={(value) =>
+                  setValue("state", value, {
+                    shouldDirty: true,
+                    shouldValidate: true,
+                  })
+                }
+                onCityChange={(value) =>
+                  setValue("city", value, {
+                    shouldDirty: true,
+                    shouldValidate: true,
+                  })
+                }
+              />
               <div className="grid gap-4 sm:grid-cols-2">
                 <Field data-invalid={!!errors.postalCode}>
                   <FieldLabel htmlFor="postal-code">Postal code</FieldLabel>
@@ -346,20 +351,6 @@ export function SignupForm({ ...props }: React.ComponentProps<typeof Card>) {
                   />
                   {errors.postalCode ? (
                     <FieldError>{errors.postalCode.message}</FieldError>
-                  ) : null}
-                </Field>
-                <Field data-invalid={!!errors.country}>
-                  <FieldLabel htmlFor="country">Country</FieldLabel>
-                  <Input
-                    id="country"
-                    type="text"
-                    placeholder="Country"
-                    disabled={isSubmitting}
-                    aria-invalid={!!errors.country}
-                    {...register("country")}
-                  />
-                  {errors.country ? (
-                    <FieldError>{errors.country.message}</FieldError>
                   ) : null}
                 </Field>
               </div>

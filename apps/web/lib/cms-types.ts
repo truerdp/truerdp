@@ -48,6 +48,9 @@ export type SiteSettings = {
 export type HomePageDocument = {
   title?: string
   summary?: string | null
+  offerMarquee?: {
+    message?: string
+  }
   hero?: {
     badge?: string
     headline?: string

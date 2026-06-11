@@ -32,6 +32,7 @@ export const coupons = pgTable(
     appliesTo: couponAppliesToEnum("applies_to").default("all").notNull(),
 
     maxUses: integer("max_uses"),
+    maxUsesPerCustomer: integer("max_uses_per_customer").default(1),
     expiresAt: timestamp("expires_at"),
 
     dodoDiscountId: text("dodo_discount_id"),
@@ -118,10 +119,6 @@ export const couponUsages = pgTable(
     couponIdIdx: index("coupon_usages_coupon_id_idx").on(table.couponId),
     userIdIdx: index("coupon_usages_user_id_idx").on(table.userId),
     invoiceIdIdx: index("coupon_usages_invoice_id_idx").on(table.invoiceId),
-    couponUserUnique: uniqueIndex("coupon_usages_coupon_user_unique").on(
-      table.couponId,
-      table.userId
-    ),
   })
 )
 

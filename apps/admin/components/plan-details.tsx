@@ -169,7 +169,7 @@ export function PlanDetails({ planId }: PlanDetailsProps) {
             isPending={updatePlan.isPending}
             showBackButton={false}
           />
-          <div className="mt-4 flex justify-end">
+          {/* <div className="mt-4 flex justify-end">
             <Button
               variant="outline"
               onClick={() => setIsEditing(false)}
@@ -177,7 +177,7 @@ export function PlanDetails({ planId }: PlanDetailsProps) {
             >
               Cancel Edit
             </Button>
-          </div>
+          </div> */}
         </div>
       ) : (
         <PlanDetailsView plan={plan} />

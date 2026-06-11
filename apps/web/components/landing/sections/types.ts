@@ -26,6 +26,10 @@ export interface HeroContent {
   trustLine: string
 }
 
+export interface OfferMarqueeContent {
+  message: string
+}
+
 export interface ValueProp {
   title: string
   description: string
@@ -118,6 +122,7 @@ export interface FooterContent {
 export interface HomeSectionsInput {
   displayClassName: string
   hero: HeroContent
+  offerMarquee: OfferMarqueeContent | null
   valueProps: ValueProp[]
   journeySection: JourneySectionContent
   valuePropsSection: SectionIntro

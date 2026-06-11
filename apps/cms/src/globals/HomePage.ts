@@ -34,6 +34,11 @@ export const HomePage: GlobalConfig = {
     },
     { name: "summary", type: "textarea" },
     {
+      name: "offerMarquee",
+      type: "group",
+      fields: [{ name: "message", type: "text" }],
+    },
+    {
       name: "hero",
       type: "group",
       fields: [

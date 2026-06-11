@@ -78,6 +78,7 @@ export default function CouponsPage() {
       value: coupon.value,
       appliesTo: coupon.appliesTo,
       maxUses: coupon.maxUses,
+      maxUsesPerCustomer: coupon.maxUsesPerCustomer,
       expiresAt: coupon.expiresAt,
       isActive: coupon.isActive,
     })
@@ -159,6 +160,9 @@ export default function CouponsPage() {
         }}
         onMaxUsesChange={(maxUses) => {
           setForm((current) => ({ ...current, maxUses }))
+        }}
+        onMaxUsesPerCustomerChange={(maxUsesPerCustomer) => {
+          setForm((current) => ({ ...current, maxUsesPerCustomer }))
         }}
         onExpiryDateChange={setExpiryDatePart}
         onExpiryTimeChange={setExpiryTimePart}

@@ -80,6 +80,7 @@ export default async function Page() {
       <HomeSections
         displayClassName={displayFont.className}
         hero={homeContent.hero}
+        offerMarquee={homeContent.offerMarquee}
         valueProps={homeContent.valueProps}
         journeySection={homeContent.journeySection}
         valuePropsSection={homeContent.valuePropsSection}

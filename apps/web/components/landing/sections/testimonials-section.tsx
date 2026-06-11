@@ -1,4 +1,5 @@
 import { Reveal } from "@/components/landing/reveal"
+import { Marquee } from "@workspace/ui/components/marquee"
 import { sectionEyebrowClass, valuePropStyles } from "./styles"
 import type { TestimonialsContent } from "./types"
 
@@ -30,29 +31,34 @@ export function TestimonialsSection({
         </div>
       </Reveal>
 
-      <div className="mt-5 grid gap-4 md:grid-cols-3">
-        {content.items.map((testimonial, index) => (
-          <Reveal key={testimonial.name} delayMs={index * 80}>
-            <article
-              className={`h-full rounded-2xl border p-5 shadow-sm ${
-                valuePropStyles[index % valuePropStyles.length]?.card ?? ""
-              } dark:border-white/10`}
-            >
-              <p className="text-lg leading-none text-[oklch(0.66_0.14_78)]">
-                ★★★★★
-              </p>
-              <p className="mt-4 text-sm leading-6 text-foreground/78 dark:text-white/72">
-                “{testimonial.quote}”
-              </p>
-              <div className="mt-5 border-t border-black/10 pt-4 dark:border-white/10">
-                <p className="font-semibold">{testimonial.name}</p>
-                <p className="text-sm text-muted-foreground">
-                  {testimonial.role}
+      <div className="mt-5 overflow-hidden">
+        <Marquee
+          pauseOnHover
+          className="p-0 py-2 [--duration:38s] [--gap:1rem]"
+        >
+          {content.items.map((testimonial, index) => (
+            <Reveal key={testimonial.name} delayMs={index * 80}>
+              <article
+                className={`h-full w-[min(22rem,80vw)] shrink-0 rounded-2xl border p-5 shadow-sm ${
+                  valuePropStyles[index % valuePropStyles.length]?.card ?? ""
+                } dark:border-white/10`}
+              >
+                <p className="text-lg leading-none text-[oklch(0.66_0.14_78)]">
+                  ★★★★★
                 </p>
-              </div>
-            </article>
-          </Reveal>
-        ))}
+                <p className="mt-4 text-sm leading-6 text-foreground/78 dark:text-white/72">
+                  “{testimonial.quote}”
+                </p>
+                <div className="mt-5 border-t border-black/10 pt-4 dark:border-white/10">
+                  <p className="font-semibold">{testimonial.name}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {testimonial.role}
+                  </p>
+                </div>
+              </article>
+            </Reveal>
+          ))}
+        </Marquee>
       </div>
     </section>
   )

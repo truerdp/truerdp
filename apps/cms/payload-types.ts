@@ -758,6 +758,9 @@ export interface HomePage {
   id: number;
   title: string;
   summary?: string | null;
+  offerMarquee?: {
+    message?: string | null;
+  };
   hero?: {
     badge?: string | null;
     headline?: string | null;
@@ -940,6 +943,11 @@ export interface BlogSettingsSelect<T extends boolean = true> {
 export interface HomePageSelect<T extends boolean = true> {
   title?: T;
   summary?: T;
+  offerMarquee?:
+    | T
+    | {
+        message?: T;
+      };
   hero?:
     | T
     | {

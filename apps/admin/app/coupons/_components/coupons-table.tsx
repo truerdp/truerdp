@@ -35,7 +35,8 @@ export function CouponsTable({
             <TableHead>Code</TableHead>
             <TableHead>Value</TableHead>
             <TableHead>Applies to</TableHead>
-            <TableHead>Usage</TableHead>
+            <TableHead>Total usage</TableHead>
+            <TableHead>Per customer</TableHead>
             <TableHead>Status</TableHead>
             <TableHead>Dodo</TableHead>
             <TableHead className="w-32">Action</TableHead>
@@ -44,11 +45,11 @@ export function CouponsTable({
         <TableBody>
           {isLoading ? (
             <TableRow>
-              <TableCell colSpan={7}>Loading coupons...</TableCell>
+              <TableCell colSpan={8}>Loading coupons...</TableCell>
             </TableRow>
           ) : coupons.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={7}>No coupons created yet.</TableCell>
+              <TableCell colSpan={8}>No coupons created yet.</TableCell>
             </TableRow>
           ) : (
             coupons.map((coupon) => (
@@ -59,6 +60,9 @@ export function CouponsTable({
                 <TableCell>
                   {coupon.usageCount}
                   {coupon.maxUses ? ` / ${coupon.maxUses}` : ""}
+                </TableCell>
+                <TableCell>
+                  {coupon.maxUsesPerCustomer ?? "Unlimited"}
                 </TableCell>
                 <TableCell>
                   <Badge variant={coupon.isActive ? "default" : "outline"}>

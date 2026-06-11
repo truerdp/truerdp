@@ -18,6 +18,8 @@ export function mapHomePageToCms(document: HomePageDocument): CmsPage {
     title: document.title ?? fallbackPages.homepage.title,
     summary: document.summary ?? fallbackPages.homepage.summary,
     content: {
+      offerMarquee:
+        document.offerMarquee ?? fallbackPages.homepage.content.offerMarquee,
       hero: document.hero ?? fallbackPages.homepage.content.hero,
       valueProps:
         document.valueProps ?? fallbackPages.homepage.content.valueProps,

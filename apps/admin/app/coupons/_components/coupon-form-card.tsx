@@ -36,6 +36,7 @@ type CouponFormCardProps = {
   onValueChange: (value: number) => void
   onAppliesToChange: (value: CouponInput["appliesTo"] | null) => void
   onMaxUsesChange: (value: number | null) => void
+  onMaxUsesPerCustomerChange: (value: number | null) => void
   onExpiryDateChange: (value: Date | undefined) => void
   onExpiryTimeChange: (value: string) => void
   onClearExpiry: () => void
@@ -55,6 +56,7 @@ export function CouponFormCard({
   onValueChange,
   onAppliesToChange,
   onMaxUsesChange,
+  onMaxUsesPerCustomerChange,
   onExpiryDateChange,
   onExpiryTimeChange,
   onClearExpiry,
@@ -126,6 +128,20 @@ export function CouponFormCard({
           />
         </Field>
         <Field>
+          <FieldLabel>Uses per customer</FieldLabel>
+          <Input
+            type="number"
+            min={1}
+            value={form.maxUsesPerCustomer ?? ""}
+            onChange={(event) =>
+              onMaxUsesPerCustomerChange(
+                event.target.value ? Number(event.target.value) : null
+              )
+            }
+            placeholder="Unlimited"
+          />
+        </Field>
+        <Field>
           <FieldLabel>Expires at</FieldLabel>
           <div className="space-y-2">
             <Popover>
@@ -166,7 +182,7 @@ export function CouponFormCard({
           <Switch checked={form.isActive} onCheckedChange={onActiveChange} />
           <span className="text-sm">Active</span>
         </div>
-        <div className="flex items-end gap-2 md:col-span-2">
+        <div className="flex items-end gap-2">
           <Button onClick={onSave} disabled={isSaving || !form.code.trim()}>
             {editingId ? "Update coupon" : "Create coupon"}
           </Button>

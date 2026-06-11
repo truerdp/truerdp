@@ -130,6 +130,7 @@ export const couponInputSchema = z
     value: z.number().int().positive(),
     appliesTo: z.enum(["all", "new_purchase", "renewal"]).default("all"),
     maxUses: z.number().int().positive().nullable().optional(),
+    maxUsesPerCustomer: z.number().int().positive().nullable().optional(),
     expiresAt: z.string().datetime().nullable().optional(),
     isActive: z.boolean().default(true),
   })

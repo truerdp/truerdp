@@ -4,6 +4,7 @@ import { FaqPreviewSection } from "./faq-preview-section"
 import { FeaturedPlansSection } from "./featured-plans-section"
 import { FinalCtaSection } from "./final-cta-section"
 import { HeroSection } from "./hero-section"
+import { OfferMarqueeSection } from "./offer-marquee-section"
 import { JourneySection } from "./journey-section"
 import { LiveSupportSection } from "./live-support-section"
 import { TestimonialsSection } from "./testimonials-section"
@@ -13,6 +14,7 @@ import type { HomeSectionsInput } from "./types"
 export function HomeSections({
   displayClassName,
   hero,
+  offerMarquee,
   valueProps,
   journeySection,
   valuePropsSection,
@@ -41,12 +43,14 @@ export function HomeSections({
         cheapestOption={cheapestOption}
       />
 
+      {offerMarquee?.message ? (
+        <OfferMarqueeSection message={offerMarquee.message} />
+      ) : null}
+
       <JourneySection
         displayClassName={displayClassName}
         content={journeySection}
       />
-
-      <ValuePropsSection section={valuePropsSection} valueProps={valueProps} />
 
       {featuredPlans.length > 0 ? (
         <FeaturedPlansSection
@@ -56,6 +60,8 @@ export function HomeSections({
           description={sections.featuredPlansDescription}
         />
       ) : null}
+
+      <ValuePropsSection section={valuePropsSection} valueProps={valueProps} />
 
       {plans.length > 0 ? (
         <CatalogInsightsSection

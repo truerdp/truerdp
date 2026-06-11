@@ -7,6 +7,7 @@ import {
 
 export function buildPrimaryHomeSections(cmsContent: Record<string, unknown>) {
   const cmsHero = readRecord(cmsContent.hero)
+  const cmsOfferMarquee = readRecord(cmsContent.offerMarquee)
   const hero = {
     badge: readText(cmsHero.badge, "Premium RDP plans with instant checkout"),
     headline: readText(
@@ -33,6 +34,11 @@ export function buildPrimaryHomeSections(cmsContent: Record<string, unknown>) {
       "Transparent plan specs, checkout-ready pricing, and a clean path from selection to provisioning."
     ),
   }
+
+  const offerMarqueeMessage = readText(cmsOfferMarquee.message, "")
+  const offerMarquee = offerMarqueeMessage
+    ? { message: offerMarqueeMessage }
+    : null
 
   const cmsValueProps = Array.isArray(cmsContent.valueProps)
     ? (cmsContent.valueProps as Array<Record<string, unknown>>)
@@ -163,6 +169,7 @@ export function buildPrimaryHomeSections(cmsContent: Record<string, unknown>) {
 
   return {
     hero,
+    offerMarquee,
     valueProps,
     valuePropsSection,
     journeySection,

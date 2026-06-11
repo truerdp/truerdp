@@ -4,6 +4,7 @@ import { FormEvent, useEffect, useState } from "react"
 import { useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
 import { clientApi } from "@workspace/api/client"
+import { BillingLocationFields } from "@workspace/ui/components/billing-location-fields"
 import { Button } from "@workspace/ui/components/button"
 import {
   Card,
@@ -246,30 +247,17 @@ export function AccountForm({ profile }: AccountFormProps) {
                   }
                 />
               </Field>
-              <div className="grid gap-4 md:grid-cols-2">
-                <Field>
-                  <FieldLabel htmlFor="city">City</FieldLabel>
-                  <Input
-                    id="city"
-                    value={billing.city}
-                    disabled={isSaving}
-                    onChange={(event) =>
-                      updateBillingField("city", event.target.value)
-                    }
-                  />
-                </Field>
-                <Field>
-                  <FieldLabel htmlFor="state">State/Region</FieldLabel>
-                  <Input
-                    id="state"
-                    value={billing.state}
-                    disabled={isSaving}
-                    onChange={(event) =>
-                      updateBillingField("state", event.target.value)
-                    }
-                  />
-                </Field>
-              </div>
+              <BillingLocationFields
+                country={billing.country}
+                state={billing.state}
+                city={billing.city}
+                disabled={isSaving}
+                onCountryChange={(value) =>
+                  updateBillingField("country", value)
+                }
+                onStateChange={(value) => updateBillingField("state", value)}
+                onCityChange={(value) => updateBillingField("city", value)}
+              />
               <div className="grid gap-4 md:grid-cols-2">
                 <Field>
                   <FieldLabel htmlFor="postal-code">Postal code</FieldLabel>
@@ -279,17 +267,6 @@ export function AccountForm({ profile }: AccountFormProps) {
                     disabled={isSaving}
                     onChange={(event) =>
                       updateBillingField("postalCode", event.target.value)
-                    }
-                  />
-                </Field>
-                <Field>
-                  <FieldLabel htmlFor="country">Country</FieldLabel>
-                  <Input
-                    id="country"
-                    value={billing.country}
-                    disabled={isSaving}
-                    onChange={(event) =>
-                      updateBillingField("country", event.target.value)
                     }
                   />
                 </Field>

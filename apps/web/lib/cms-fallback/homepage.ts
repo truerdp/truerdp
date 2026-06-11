@@ -5,6 +5,9 @@ export const fallbackHomepagePage: CmsPage = {
   title: "TrueRDP Plans",
   summary: "Browse plans and start checkout.",
   content: {
+    offerMarquee: {
+      message: "Launch Offer: Use code TRUE10 for 10% off your first order",
+    },
     hero: {
       badge: "Instant setup workflow",
       headline: "Choose a TrueRDP plan and start your order in minutes",

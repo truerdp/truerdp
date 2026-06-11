@@ -1,6 +1,12 @@
 import { and, eq, inArray, sql } from "drizzle-orm"
 import { db } from "../../db.js"
-import { couponUsages, coupons, invoices, orders, transactions } from "../../schema.js"
+import {
+  couponUsages,
+  coupons,
+  invoices,
+  orders,
+  transactions,
+} from "../../schema.js"
 import { BillingError } from "./shared.js"
 
 export async function assertOrderHasNoTransactions(orderId: number) {
@@ -75,16 +81,26 @@ export async function validateCouponForOrder(input: {
     throw new BillingError(400, "Coupon is not valid for this order")
   }
 
-  const existingUsage = await db
-    .select({ id: couponUsages.id })
+  const customerUsageCountResult = await db
+    .select({ count: sql<number>`count(*)::int` })
     .from(couponUsages)
     .where(
-      and(eq(couponUsages.couponId, coupon.id), eq(couponUsages.userId, input.userId))
+      and(
+        eq(couponUsages.couponId, coupon.id),
+        eq(couponUsages.userId, input.userId)
+      )
     )
-    .limit(1)
 
-  if (existingUsage[0]) {
-    throw new BillingError(400, "Coupon has already been used")
+  const customerUsageCount = customerUsageCountResult[0]?.count ?? 0
+
+  if (
+    coupon.maxUsesPerCustomer != null &&
+    customerUsageCount >= coupon.maxUsesPerCustomer
+  ) {
+    throw new BillingError(
+      400,
+      "Coupon per-customer usage limit has been reached"
+    )
   }
 
   if (coupon.maxUses != null) {
