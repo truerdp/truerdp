@@ -1,6 +1,9 @@
 import { FastifyInstance } from "fastify"
+import { eq } from "drizzle-orm"
+import { db } from "../../db.js"
 import { verifyAuth } from "../../middleware/auth.js"
 import { requireAdmin } from "../../middleware/require-admin.js"
+import { users } from "../../schema.js"
 import type { GenericRouteRequest } from "../../types/requests.js"
 import {
   listAdminInvoices,
@@ -14,7 +17,8 @@ import {
   listAdminAuditLogs,
 } from "../../services/admin-audit.js"
 import { getErrorMessage } from "../../utils/error.js"
-import { adminQuerySchemas } from "./shared.js"
+import { buildUserBillingDetails } from "../../services/billing/user-billing.js"
+import { adminBillingDetailsUpdateSchema, adminQuerySchemas } from "./shared.js"
 
 const {
   adminListPaginationQuerySchema,
@@ -69,6 +73,145 @@ export async function registerAdminUsersBillingRoutes(server: FastifyInstance) {
         server.log.error(err)
         return reply.status(500).send({
           error: "Internal server error",
+        })
+      }
+    }
+  )
+
+  server.patch(
+    "/admin/users/:id/billing",
+    {
+      preHandler: verifyAuth,
+      schema: {
+        tags: ["Admin"],
+        summary: "Update a user's stored billing profile",
+        params: {
+          type: "object",
+          required: ["id"],
+          properties: {
+            id: { type: "integer" },
+          },
+        },
+        body: {
+          type: "object",
+          required: [
+            "phone",
+            "addressLine1",
+            "city",
+            "state",
+            "postalCode",
+            "country",
+            "reason",
+          ],
+          properties: {
+            phone: { type: "string" },
+            companyName: { type: "string", nullable: true },
+            taxId: { type: "string", nullable: true },
+            addressLine1: { type: "string" },
+            addressLine2: { type: "string", nullable: true },
+            city: { type: "string" },
+            state: { type: "string" },
+            postalCode: { type: "string" },
+            country: { type: "string" },
+            reason: { type: "string" },
+          },
+        },
+        response: {
+          200: {
+            type: "object",
+            properties: {
+              message: { type: "string" },
+              billingDetails: {
+                anyOf: [
+                  {
+                    type: "object",
+                    properties: {
+                      firstName: { type: "string" },
+                      lastName: { type: "string" },
+                      email: { type: "string" },
+                      phone: { type: "string" },
+                      companyName: { type: "string", nullable: true },
+                      taxId: { type: "string", nullable: true },
+                      addressLine1: { type: "string" },
+                      addressLine2: { type: "string", nullable: true },
+                      city: { type: "string" },
+                      state: { type: "string" },
+                      postalCode: { type: "string" },
+                      country: { type: "string" },
+                    },
+                  },
+                  { type: "null" },
+                ],
+              },
+            },
+          },
+        },
+      },
+    },
+    async (request: GenericRouteRequest, reply) => {
+      try {
+        const userId = Number((request.params as Record<string, unknown>).id)
+
+        if (!requireAdmin(request.user, reply)) {
+          return
+        }
+
+        if (Number.isNaN(userId)) {
+          return reply.status(400).send({ error: "Invalid user id" })
+        }
+
+        const body = adminBillingDetailsUpdateSchema.parse(request.body ?? {})
+        const [currentUser] = await db
+          .select()
+          .from(users)
+          .where(eq(users.id, userId))
+          .limit(1)
+
+        if (!currentUser) {
+          return reply.status(404).send({ error: "User not found" })
+        }
+
+        const beforeState = buildUserBillingDetails(currentUser)
+        const [updatedUser] = await db
+          .update(users)
+          .set({
+            billingPhone: body.phone,
+            billingCompanyName: body.companyName,
+            billingTaxId: body.taxId,
+            billingAddressLine1: body.addressLine1,
+            billingAddressLine2: body.addressLine2,
+            billingCity: body.city,
+            billingState: body.state,
+            billingPostalCode: body.postalCode,
+            billingCountry: body.country,
+          })
+          .where(eq(users.id, userId))
+          .returning()
+
+        if (!updatedUser) {
+          return reply.status(404).send({ error: "User not found" })
+        }
+
+        const billingDetails = buildUserBillingDetails(updatedUser)
+
+        await createAdminAuditLog({
+          adminUserId: request.user!.userId,
+          action: "user.billing_profile.update",
+          entityType: "user",
+          entityId: userId,
+          reason: body.reason,
+          beforeState,
+          afterState: billingDetails,
+        })
+
+        return {
+          message: "Billing profile updated",
+          billingDetails,
+        }
+      } catch (err: unknown) {
+        server.log.error(err)
+        return reply.status(400).send({
+          error: getErrorMessage(err),
         })
       }
     }

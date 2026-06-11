@@ -4,14 +4,13 @@ import * as React from "react"
 import { City, Country, State } from "country-state-city"
 
 import {
-  Combobox,
-  ComboboxContent,
-  ComboboxEmpty,
-  ComboboxGroup,
-  ComboboxInput,
-  ComboboxItem,
-  ComboboxList,
-} from "@workspace/ui/components/combobox"
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@workspace/ui/components/select"
 import { Field, FieldError, FieldLabel } from "@workspace/ui/components/field"
 
 type LocationFieldMessages = {
@@ -37,7 +36,6 @@ type BillingLocationFieldsProps = {
 }
 
 const countries = Country.getAllCountries()
-const countryOptions = countries.map((country) => country.name)
 
 function findCountryCode(countryName: string) {
   return (
@@ -83,12 +81,16 @@ function BillingLocationFields({
       <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-2">
         <Field data-invalid={!!errors?.country}>
           <FieldLabel htmlFor={ids?.country ?? "country"}>Country</FieldLabel>
-          <LocationCombobox
+          <LocationSelect
+            key="country"
             id={ids?.country ?? "country"}
             value={country}
-            options={countryOptions}
+            options={countries.map((countryOption) => ({
+              key: countryOption.isoCode,
+              label: countryOption.name,
+              value: countryOption.name,
+            }))}
             placeholder="Select country"
-            emptyMessage="No countries found"
             disabled={disabled}
             aria-invalid={!!errors?.country}
             onChange={(value) => {
@@ -101,14 +103,18 @@ function BillingLocationFields({
         </Field>
         <Field data-invalid={!!errors?.state}>
           <FieldLabel htmlFor={ids?.state ?? "state"}>State/Region</FieldLabel>
-          <LocationCombobox
+          <LocationSelect
+            key={countryCode || "state-disabled"}
             id={ids?.state ?? "state"}
             value={state}
-            options={stateOptions}
+            options={stateOptions.map((stateOption) => ({
+              key: stateOption,
+              label: stateOption,
+              value: stateOption,
+            }))}
             placeholder={
               countryCode ? "Select state/region" : "Select country first"
             }
-            emptyMessage="No states or regions found"
             disabled={disabled || !countryCode}
             aria-invalid={!!errors?.state}
             onChange={(value) => {
@@ -121,12 +127,16 @@ function BillingLocationFields({
       </div>
       <Field data-invalid={!!errors?.city}>
         <FieldLabel htmlFor={ids?.city ?? "city"}>City</FieldLabel>
-        <LocationCombobox
+        <LocationSelect
+          key={`${countryCode}-${stateCode || "city-disabled"}`}
           id={ids?.city ?? "city"}
           value={city}
-          options={cities.map((cityOption) => cityOption.name)}
+          options={cities.map((cityOption, index) => ({
+            key: `${cityOption.countryCode}-${cityOption.stateCode}-${cityOption.name}-${index}`,
+            label: cityOption.name,
+            value: cityOption.name,
+          }))}
           placeholder={stateCode ? "Select city" : "Select state/region first"}
-          emptyMessage="No cities found"
           disabled={disabled || !countryCode || !stateCode}
           aria-invalid={!!errors?.city}
           onChange={onCityChange}
@@ -137,53 +147,50 @@ function BillingLocationFields({
   )
 }
 
-type LocationComboboxProps = {
+type LocationSelectOption = {
+  key: string
+  label: string
+  value: string
+}
+
+type LocationSelectProps = {
   id: string
   value: string
-  options: string[]
+  options: LocationSelectOption[]
   placeholder: string
-  emptyMessage: string
   disabled: boolean
   "aria-invalid": boolean
   onChange: (value: string) => void
 }
 
-function LocationCombobox({
+function LocationSelect({
   id,
   value,
   options,
   placeholder,
-  emptyMessage,
   disabled,
   "aria-invalid": invalid,
   onChange,
-}: LocationComboboxProps) {
+}: LocationSelectProps) {
   return (
-    <Combobox
+    <Select
       value={value || null}
       onValueChange={(nextValue) => onChange(nextValue ?? "")}
+      disabled={disabled}
     >
-      <ComboboxInput
-        id={id}
-        className="w-full"
-        placeholder={placeholder}
-        disabled={disabled}
-        aria-invalid={invalid}
-        showClear={!!value}
-      />
-      <ComboboxContent>
-        <ComboboxEmpty>{emptyMessage}</ComboboxEmpty>
-        <ComboboxList>
-          <ComboboxGroup>
-            {options.map((option, index) => (
-              <ComboboxItem key={`${option}-${index}`} value={option}>
-                {option}
-              </ComboboxItem>
-            ))}
-          </ComboboxGroup>
-        </ComboboxList>
-      </ComboboxContent>
-    </Combobox>
+      <SelectTrigger id={id} className="w-full" aria-invalid={invalid}>
+        <SelectValue placeholder={placeholder} />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectGroup>
+          {options.map((option) => (
+            <SelectItem key={option.key} value={option.value}>
+              {option.label}
+            </SelectItem>
+          ))}
+        </SelectGroup>
+      </SelectContent>
+    </Select>
   )
 }
 

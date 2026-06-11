@@ -51,6 +51,20 @@ export interface AdminUser360Details {
     postalCode: string
     country: string
   } | null
+  billingProfile: {
+    firstName: string
+    lastName: string
+    email: string
+    phone: string
+    companyName: string | null
+    taxId: string | null
+    addressLine1: string
+    addressLine2: string | null
+    city: string
+    state: string
+    postalCode: string
+    country: string
+  } | null
   latestBillingCapturedAt: string | null
   instances: Array<{
     id: number

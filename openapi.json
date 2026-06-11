@@ -299,49 +299,6 @@
                   "email": {
                     "type": "string",
                     "format": "email"
-                  },
-                  "billingDetails": {
-                    "type": "object",
-                    "required": [
-                      "phone",
-                      "addressLine1",
-                      "city",
-                      "state",
-                      "postalCode",
-                      "country"
-                    ],
-                    "properties": {
-                      "phone": {
-                        "type": "string"
-                      },
-                      "companyName": {
-                        "type": "string",
-                        "nullable": true
-                      },
-                      "taxId": {
-                        "type": "string",
-                        "nullable": true
-                      },
-                      "addressLine1": {
-                        "type": "string"
-                      },
-                      "addressLine2": {
-                        "type": "string",
-                        "nullable": true
-                      },
-                      "city": {
-                        "type": "string"
-                      },
-                      "state": {
-                        "type": "string"
-                      },
-                      "postalCode": {
-                        "type": "string"
-                      },
-                      "country": {
-                        "type": "string"
-                      }
-                    }
                   }
                 }
               }
@@ -442,6 +399,21 @@
                           "type": "null"
                         }
                       ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
                     }
                   }
                 }
@@ -2617,6 +2589,146 @@
         "responses": {
           "200": {
             "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/admin/users/{id}/billing": {
+      "patch": {
+        "summary": "Update a user's stored billing profile",
+        "tags": [
+          "Admin"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "phone",
+                  "addressLine1",
+                  "city",
+                  "state",
+                  "postalCode",
+                  "country",
+                  "reason"
+                ],
+                "properties": {
+                  "phone": {
+                    "type": "string"
+                  },
+                  "companyName": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "taxId": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "addressLine1": {
+                    "type": "string"
+                  },
+                  "addressLine2": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "city": {
+                    "type": "string"
+                  },
+                  "state": {
+                    "type": "string"
+                  },
+                  "postalCode": {
+                    "type": "string"
+                  },
+                  "country": {
+                    "type": "string"
+                  },
+                  "reason": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "billingDetails": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "firstName": {
+                              "type": "string"
+                            },
+                            "lastName": {
+                              "type": "string"
+                            },
+                            "email": {
+                              "type": "string"
+                            },
+                            "phone": {
+                              "type": "string"
+                            },
+                            "companyName": {
+                              "type": "string",
+                              "nullable": true
+                            },
+                            "taxId": {
+                              "type": "string",
+                              "nullable": true
+                            },
+                            "addressLine1": {
+                              "type": "string"
+                            },
+                            "addressLine2": {
+                              "type": "string",
+                              "nullable": true
+                            },
+                            "city": {
+                              "type": "string"
+                            },
+                            "state": {
+                              "type": "string"
+                            },
+                            "postalCode": {
+                              "type": "string"
+                            },
+                            "country": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
           }
         }
       }

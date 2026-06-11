@@ -1,6 +1,12 @@
 import { desc, eq, sql } from "drizzle-orm"
 import { db } from "../../db.js"
-import { instances, invoices, orders, transactions, users } from "../../schema.js"
+import {
+  instances,
+  invoices,
+  orders,
+  transactions,
+  users,
+} from "../../schema.js"
 import { getLatestTimestamp } from "./shared.js"
 
 export async function listAdminUsers() {
@@ -20,6 +26,14 @@ export async function listAdminUsers() {
         role: users.role,
         createdAt: users.createdAt,
         updatedAt: users.updatedAt,
+        hasBillingProfile: sql<boolean>`(
+          nullif(trim(coalesce(${users.billingPhone}, '')), '') is not null
+          and nullif(trim(coalesce(${users.billingAddressLine1}, '')), '') is not null
+          and nullif(trim(coalesce(${users.billingCity}, '')), '') is not null
+          and nullif(trim(coalesce(${users.billingState}, '')), '') is not null
+          and nullif(trim(coalesce(${users.billingPostalCode}, '')), '') is not null
+          and nullif(trim(coalesce(${users.billingCountry}, '')), '') is not null
+        )`,
       })
       .from(users)
       .orderBy(desc(users.createdAt)),
@@ -28,7 +42,6 @@ export async function listAdminUsers() {
         userId: orders.userId,
         totalOrders: sql<number>`count(*)::int`,
         lastOrderAt: sql<string | null>`max(${orders.createdAt})::text`,
-        hasBillingProfile: sql<boolean>`coalesce(bool_or(${orders.billingDetails} is not null), false)`,
       })
       .from(orders)
       .groupBy(orders.userId),
@@ -48,7 +61,9 @@ export async function listAdminUsers() {
         userId: transactions.userId,
         totalTransactions: sql<number>`count(*)::int`,
         confirmedTransactions: sql<number>`count(*) filter (where ${transactions.status} = 'confirmed')::int`,
-        lastTransactionAt: sql<string | null>`max(${transactions.createdAt})::text`,
+        lastTransactionAt: sql<
+          string | null
+        >`max(${transactions.createdAt})::text`,
       })
       .from(transactions)
       .groupBy(transactions.userId),
@@ -92,7 +107,7 @@ export async function listAdminUsers() {
       activeInstances: instanceStats?.activeInstances ?? 0,
       totalInstances: instanceStats?.totalInstances ?? 0,
       totalSpentCents: invoiceStats?.totalSpentCents ?? 0,
-      hasBillingProfile: orderStats?.hasBillingProfile ?? false,
+      hasBillingProfile: userRow.hasBillingProfile,
       lastActivityAt: getLatestTimestamp([
         userRow.updatedAt,
         orderStats?.lastOrderAt,

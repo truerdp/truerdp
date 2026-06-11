@@ -26,6 +26,7 @@ import {
   getPreferredMethods,
 } from "./helpers"
 import { BillingInvoicesCard } from "./billing-invoices-card"
+import { BillingProfileCard } from "./billing-profile-card"
 import { BillingTransactionsCard } from "./billing-transactions-card"
 import type { UserDetailsData } from "./types"
 
@@ -76,6 +77,8 @@ export function BillingTab({
       )}
 
       <div className="grid gap-4 md:grid-cols-2">
+        <BillingProfileCard data={data} />
+
         <Card>
           <CardHeader>
             <CardTitle>Billing Identity</CardTitle>

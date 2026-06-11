@@ -17,6 +17,82 @@ import {
   getSummaryCurrency,
   getTransactionBreakdown,
 } from "./metrics.js"
+import type { OrderBillingDetails } from "../../schema.js"
+
+type StoredBillingUser = {
+  firstName: string | null
+  lastName: string | null
+  email: string
+  billingPhone: string | null
+  billingCompanyName: string | null
+  billingTaxId: string | null
+  billingAddressLine1: string | null
+  billingAddressLine2: string | null
+  billingCity: string | null
+  billingState: string | null
+  billingPostalCode: string | null
+  billingCountry: string | null
+}
+
+function requiredProfileValue(value: string | null, fallback?: string | null) {
+  const trimmed = value?.trim() ?? ""
+  if (trimmed.length > 0) {
+    return trimmed
+  }
+
+  return fallback?.trim() ?? ""
+}
+
+function optionalProfileValue(value: string | null, fallback?: string | null) {
+  const trimmed = value?.trim() ?? ""
+  if (trimmed.length > 0) {
+    return trimmed
+  }
+
+  const fallbackValue = fallback?.trim() ?? ""
+  return fallbackValue.length > 0 ? fallbackValue : null
+}
+
+function buildStoredBillingProfile(
+  user: StoredBillingUser,
+  latestBillingDetails: OrderBillingDetails | null
+) {
+  return {
+    firstName: requiredProfileValue(
+      user.firstName,
+      latestBillingDetails?.firstName
+    ),
+    lastName: requiredProfileValue(
+      user.lastName,
+      latestBillingDetails?.lastName
+    ),
+    email: requiredProfileValue(user.email, latestBillingDetails?.email),
+    phone: requiredProfileValue(user.billingPhone, latestBillingDetails?.phone),
+    companyName: optionalProfileValue(
+      user.billingCompanyName,
+      latestBillingDetails?.companyName
+    ),
+    taxId: optionalProfileValue(user.billingTaxId, latestBillingDetails?.taxId),
+    addressLine1: requiredProfileValue(
+      user.billingAddressLine1,
+      latestBillingDetails?.addressLine1
+    ),
+    addressLine2: optionalProfileValue(
+      user.billingAddressLine2,
+      latestBillingDetails?.addressLine2
+    ),
+    city: requiredProfileValue(user.billingCity, latestBillingDetails?.city),
+    state: requiredProfileValue(user.billingState, latestBillingDetails?.state),
+    postalCode: requiredProfileValue(
+      user.billingPostalCode,
+      latestBillingDetails?.postalCode
+    ),
+    country: requiredProfileValue(
+      user.billingCountry,
+      latestBillingDetails?.country
+    ),
+  }
+}
 
 export async function getAdminUser360(userId: number) {
   const [user] = await db
@@ -25,6 +101,15 @@ export async function getAdminUser360(userId: number) {
       email: users.email,
       firstName: users.firstName,
       lastName: users.lastName,
+      billingPhone: users.billingPhone,
+      billingCompanyName: users.billingCompanyName,
+      billingTaxId: users.billingTaxId,
+      billingAddressLine1: users.billingAddressLine1,
+      billingAddressLine2: users.billingAddressLine2,
+      billingCity: users.billingCity,
+      billingState: users.billingState,
+      billingPostalCode: users.billingPostalCode,
+      billingCountry: users.billingCountry,
       role: users.role,
       createdAt: users.createdAt,
       updatedAt: users.updatedAt,
@@ -116,16 +201,22 @@ export async function getAdminUser360(userId: number) {
   const today = getStartOfDay(new Date())
 
   const mappedInstances = instanceRows.map((instance) => {
-    const expiryDate = instance.expiryDate ? new Date(instance.expiryDate) : null
+    const expiryDate = instance.expiryDate
+      ? new Date(instance.expiryDate)
+      : null
     const normalizedExpiryDate =
       expiryDate && !Number.isNaN(expiryDate.getTime())
         ? getStartOfDay(expiryDate)
         : null
 
     const daysUntilExpiry =
-      normalizedExpiryDate != null ? getDaysBetween(normalizedExpiryDate, today) : null
+      normalizedExpiryDate != null
+        ? getDaysBetween(normalizedExpiryDate, today)
+        : null
     const daysSinceExpiry =
-      normalizedExpiryDate != null ? getDaysBetween(today, normalizedExpiryDate) : null
+      normalizedExpiryDate != null
+        ? getDaysBetween(today, normalizedExpiryDate)
+        : null
 
     return {
       ...instance,
@@ -159,7 +250,15 @@ export async function getAdminUser360(userId: number) {
   const currency = getSummaryCurrency(paidInvoices, invoices, transactions)
 
   return {
-    user,
+    user: {
+      id: user.id,
+      email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      role: user.role,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+    },
     summary: {
       totalOrders: orderRows.length,
       newPurchases: orderRows.filter((order) => order.kind === "new_purchase")
@@ -183,8 +282,9 @@ export async function getAdminUser360(userId: number) {
       ),
       currency,
       activeInstances: activeInstances.length,
-      expiringSoonInstances: activeInstances.filter((instance) => instance.isExpiringSoon)
-        .length,
+      expiringSoonInstances: activeInstances.filter(
+        (instance) => instance.isExpiringSoon
+      ).length,
       expiredInstances: expiredInstances.length,
       terminatedInstances: terminatedInstances.length,
       pendingInstances: pendingInstances.length,
@@ -205,6 +305,10 @@ export async function getAdminUser360(userId: number) {
         ]),
       ]),
     },
+    billingProfile: buildStoredBillingProfile(
+      user,
+      latestBillingOrder?.billingDetails ?? null
+    ),
     latestBillingDetails: latestBillingOrder?.billingDetails ?? null,
     latestBillingCapturedAt: latestBillingOrder?.createdAt ?? null,
     instances: mappedInstances,

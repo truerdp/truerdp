@@ -72,6 +72,13 @@ export async function registerUserProfileRoutes(server: FastifyInstance) {
       try {
         const body = updateProfileZod.parse(request.body ?? {})
         const userId = request.user!.userId
+
+        if (request.user!.role === "user") {
+          return reply.status(403).send({
+            error: "Profile details are locked. Contact support for changes.",
+          })
+        }
+
         const normalizedEmail = body.email.trim().toLowerCase()
 
         const [currentUser] = await db
@@ -99,20 +106,6 @@ export async function registerUserProfileRoutes(server: FastifyInstance) {
         }
 
         const nextName = `${body.firstName} ${body.lastName}`.trim()
-        const billingUpdate = body.billingDetails
-          ? {
-              billingPhone: body.billingDetails.phone,
-              billingCompanyName: body.billingDetails.companyName,
-              billingTaxId: body.billingDetails.taxId,
-              billingAddressLine1: body.billingDetails.addressLine1,
-              billingAddressLine2: body.billingDetails.addressLine2,
-              billingCity: body.billingDetails.city,
-              billingState: body.billingDetails.state,
-              billingPostalCode: body.billingDetails.postalCode,
-              billingCountry: body.billingDetails.country,
-            }
-          : {}
-
         const [updatedUser] = await db
           .update(users)
           .set({
@@ -120,7 +113,6 @@ export async function registerUserProfileRoutes(server: FastifyInstance) {
             email: normalizedEmail,
             firstName: body.firstName,
             lastName: body.lastName,
-            ...billingUpdate,
           })
           .where(eq(users.id, userId))
           .returning({

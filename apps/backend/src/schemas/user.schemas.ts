@@ -50,28 +50,6 @@ export const updateProfileBodySchema = {
     firstName: { type: "string" },
     lastName: { type: "string" },
     email: { type: "string", format: "email" },
-    billingDetails: {
-      type: "object",
-      required: [
-        "phone",
-        "addressLine1",
-        "city",
-        "state",
-        "postalCode",
-        "country",
-      ],
-      properties: {
-        phone: { type: "string" },
-        companyName: { type: "string", nullable: true },
-        taxId: { type: "string", nullable: true },
-        addressLine1: { type: "string" },
-        addressLine2: { type: "string", nullable: true },
-        city: { type: "string" },
-        state: { type: "string" },
-        postalCode: { type: "string" },
-        country: { type: "string" },
-      },
-    },
   },
 }
 
@@ -102,6 +80,7 @@ export const updateProfileSchema = {
   body: updateProfileBodySchema,
   response: {
     200: getUserProfileResponseSchema,
+    403: errorResponse,
     404: errorResponse,
     409: errorResponse,
     500: errorResponse,
