@@ -18,7 +18,7 @@ function buildRequestUrl(url: string, baseUrl: string) {
     throw new Error(
       [
         `Missing API base URL for server-side request to ${url}.`,
-        "Set INTERNAL_API_URL, API_BASE_URL, BACKEND_BASE_URL, BETTER_AUTH_URL, or NEXT_PUBLIC_API_URL.",
+        "Set NEXT_PUBLIC_API_URL, or INTERNAL_API_URL for server-only overrides.",
       ].join(" ")
     )
   }

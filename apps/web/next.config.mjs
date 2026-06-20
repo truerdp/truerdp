@@ -1,16 +1,7 @@
 import process from "node:process"
 
-function firstConfiguredUrl(...values) {
-  return values.map((value) => value?.trim()).find(Boolean)
-}
-
 const nextPublicApiUrl =
-  firstConfiguredUrl(
-    process.env.NEXT_PUBLIC_API_URL,
-    process.env.API_BASE_URL,
-    process.env.BACKEND_BASE_URL,
-    process.env.BETTER_AUTH_URL
-  ) ??
+  process.env.NEXT_PUBLIC_API_URL ??
   (process.env.NODE_ENV === "development" ? "http://localhost:3003" : undefined)
 const nextPublicTawkToPropertyId = process.env.NEXT_PUBLIC_TAWK_TO_PROPERTY_ID
 const nextPublicTawkToWidgetId = process.env.NEXT_PUBLIC_TAWK_TO_WIDGET_ID
