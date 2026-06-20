@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef } from "react"
+import { Suspense, useEffect, useRef } from "react"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 import { HugeiconsIcon } from "@hugeicons/react"
@@ -23,6 +23,14 @@ import { Button } from "@workspace/ui/components/button"
 import { Spinner } from "@workspace/ui/components/spinner"
 
 export default function CartPage() {
+  return (
+    <Suspense fallback={<CartPageFallback />}>
+      <CartPageContent />
+    </Suspense>
+  )
+}
+
+function CartPageContent() {
   const cart = useCart()
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -159,6 +167,21 @@ export default function CartPage() {
             </aside>
           </div>
         )}
+      </section>
+    </main>
+  )
+}
+
+function CartPageFallback() {
+  return (
+    <main className="min-h-[70svh] bg-[linear-gradient(180deg,oklch(0.985_0.022_205),oklch(0.975_0.02_84))] py-10 dark:bg-[linear-gradient(180deg,oklch(0.17_0.04_252),oklch(0.14_0.032_240))]">
+      <section className="mx-auto w-full max-w-6xl px-6">
+        <div className="mt-10 rounded-2xl border bg-card p-8 text-center">
+          <Spinner className="mx-auto" />
+          <p className="mt-3 text-sm text-muted-foreground">
+            Loading your cart...
+          </p>
+        </div>
       </section>
     </main>
   )
