@@ -5,6 +5,27 @@ export interface ApiRequestOptions extends Omit<RequestInit, "body"> {
 
 const METHODS_WITH_DEFAULT_JSON_BODY = new Set(["POST", "PUT", "PATCH"])
 
+function isAbsoluteUrl(url: string) {
+  return /^[a-z][a-z\d+\-.]*:\/\//i.test(url)
+}
+
+function buildRequestUrl(url: string, baseUrl: string) {
+  if (isAbsoluteUrl(url)) {
+    return url
+  }
+
+  if (!baseUrl && typeof window === "undefined") {
+    throw new Error(
+      [
+        `Missing API base URL for server-side request to ${url}.`,
+        "Set INTERNAL_API_URL, API_BASE_URL, BACKEND_BASE_URL, BETTER_AUTH_URL, or NEXT_PUBLIC_API_URL.",
+      ].join(" ")
+    )
+  }
+
+  return `${baseUrl}${url}`
+}
+
 function hasArrayBufferSupport(value: unknown) {
   return (
     typeof ArrayBuffer !== "undefined" &&
@@ -81,6 +102,7 @@ export async function fetcher<T = unknown>(
   const headers = new Headers(options?.headers)
   const baseUrl = options?.baseUrl ?? ""
   const { baseUrl: _, ...requestOptions } = options ?? {}
+  const requestUrl = buildRequestUrl(url, baseUrl)
 
   let body = requestOptions.body
 
@@ -101,7 +123,7 @@ export async function fetcher<T = unknown>(
 
   headers.set("X-Requested-With", "XMLHttpRequest")
 
-  const res = await fetch(`${baseUrl}${url}`, {
+  const res = await fetch(requestUrl, {
     ...requestOptions,
     method,
     credentials: "include",
