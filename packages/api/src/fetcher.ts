@@ -1,6 +1,10 @@
 export interface ApiRequestOptions extends Omit<RequestInit, "body"> {
   body?: unknown
   baseUrl?: string
+  next?: {
+    revalidate?: number | false
+    tags?: string[]
+  }
 }
 
 const METHODS_WITH_DEFAULT_JSON_BODY = new Set(["POST", "PUT", "PATCH"])

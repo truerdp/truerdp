@@ -1,7 +1,6 @@
 import type { Metadata } from "next"
 import Link from "next/link"
 import { Plus_Jakarta_Sans } from "next/font/google"
-import { serverApi } from "@workspace/api/server"
 import {
   Alert,
   AlertDescription,
@@ -20,13 +19,14 @@ import {
 } from "@/components/plans/plan-catalog"
 import { webPaths } from "@/lib/paths"
 import { formatAmount } from "@/lib/format"
+import { publicApi } from "@/lib/public-api"
 import { Button } from "@workspace/ui/components/button"
 const displayFont = Plus_Jakarta_Sans({
   subsets: ["latin"],
   weight: ["700", "800"],
 })
 
-export const dynamic = "force-dynamic"
+export const revalidate = 300
 
 export const metadata: Metadata = {
   title: "Plans | TrueRDP",
@@ -35,8 +35,10 @@ export const metadata: Metadata = {
 }
 async function getPlans() {
   try {
-    const plans = await serverApi<MarketingPlan[]>("/plans", {
-      cache: "no-store",
+    const plans = await publicApi<MarketingPlan[]>("/plans", {
+      next: {
+        revalidate: 300,
+      },
     })
 
     return { plans, error: null }

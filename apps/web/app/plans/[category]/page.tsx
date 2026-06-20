@@ -2,7 +2,6 @@ import type { Metadata } from "next"
 import Link from "next/link"
 import { Plus_Jakarta_Sans } from "next/font/google"
 
-import { serverApi } from "@workspace/api/server"
 import {
   Alert,
   AlertDescription,
@@ -20,13 +19,14 @@ import {
 } from "@/components/plans/plan-catalog"
 import { webPaths } from "@/lib/paths"
 import { formatAmount } from "@/lib/format"
+import { publicApi } from "@/lib/public-api"
 
 const displayFont = Plus_Jakarta_Sans({
   subsets: ["latin"],
   weight: ["700", "800"],
 })
 
-export const dynamic = "force-dynamic"
+export const revalidate = 300
 
 interface PlansCategoryPageProps {
   params: Promise<{
@@ -44,8 +44,10 @@ function formatCategoryValue(value: string) {
 
 async function getPlans() {
   try {
-    const plans = await serverApi<MarketingPlan[]>("/plans", {
-      cache: "no-store",
+    const plans = await publicApi<MarketingPlan[]>("/plans", {
+      next: {
+        revalidate: 300,
+      },
     })
 
     return { plans, error: null }

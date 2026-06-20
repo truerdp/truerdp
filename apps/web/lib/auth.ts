@@ -1,4 +1,5 @@
 import { authClient } from "@/lib/auth-client"
+import { clearAuthSessionHint } from "@/lib/auth-session-hint"
 
 export function buildLoginUrl(redirectTarget: string) {
   const loginUrl = new URL("/login", window.location.origin)
@@ -92,4 +93,6 @@ export async function logout() {
   if (error) {
     throw new Error(error.message || "Unable to logout")
   }
+
+  clearAuthSessionHint()
 }

@@ -34,6 +34,7 @@ import {
 } from "@workspace/ui/components/input-group"
 import { Spinner } from "@workspace/ui/components/spinner"
 import { resolvePostAuthRedirect } from "@/lib/auth"
+import { markAuthSessionLikelyPresent } from "@/lib/auth-session-hint"
 import { authClient } from "@/lib/auth-client"
 import { webPaths } from "@/lib/paths"
 
@@ -88,6 +89,7 @@ export function LoginForm({
       }
 
       toast.success("Logged in successfully")
+      markAuthSessionLikelyPresent()
 
       const redirectTarget = resolvePostAuthRedirect(requestedRedirect)
 

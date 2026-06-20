@@ -1,9 +1,9 @@
 import type { Metadata } from "next"
+import { Suspense } from "react"
 import { Plus_Jakarta_Sans } from "next/font/google"
 
 import { HugeiconsIcon } from "@hugeicons/react"
 import { CreditCardIcon } from "@hugeicons/core-free-icons"
-import { serverApi } from "@workspace/api/server"
 import {
   Alert,
   AlertDescription,
@@ -14,13 +14,14 @@ import { HomeAutoCheckout } from "@/components/home-checkout-actions"
 import { type Plan, HomeSections } from "@/components/landing/sections"
 import { getCmsPage } from "@/lib/cms"
 import { buildHomeContent, buildPlanInsights } from "@/lib/homepage-content"
+import { publicApi } from "@/lib/public-api"
 
 const displayFont = Plus_Jakarta_Sans({
   subsets: ["latin"],
   weight: ["700", "800"],
 })
 
-export const dynamic = "force-dynamic"
+export const revalidate = 300
 
 export async function generateMetadata(): Promise<Metadata> {
   const homepage = await getCmsPage("homepage")
@@ -35,8 +36,10 @@ export async function generateMetadata(): Promise<Metadata> {
 
 async function getPlans() {
   try {
-    const plans = await serverApi<Plan[]>("/plans", {
-      cache: "no-store",
+    const plans = await publicApi<Plan[]>("/plans", {
+      next: {
+        revalidate: 300,
+      },
     })
 
     return { plans, error: null }
@@ -62,7 +65,9 @@ export default async function Page() {
 
   return (
     <main className="relative isolate overflow-hidden bg-[linear-gradient(180deg,oklch(0.985_0.022_205)_0%,oklch(0.975_0.02_84)_46%,oklch(0.985_0.018_166)_100%)] pb-14 dark:bg-[linear-gradient(180deg,oklch(0.17_0.04_252)_0%,oklch(0.14_0.032_240)_54%,oklch(0.16_0.036_220)_100%)]">
-      <HomeAutoCheckout />
+      <Suspense fallback={null}>
+        <HomeAutoCheckout />
+      </Suspense>
 
       <div className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-180 bg-[linear-gradient(115deg,oklch(0.95_0.05_78/0.62)_0%,transparent_34%),linear-gradient(245deg,oklch(0.82_0.075_205/0.45)_0%,transparent_44%),linear-gradient(180deg,oklch(1_0_0/0.34),transparent_78%)]" />
       <div className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-180 bg-[linear-gradient(90deg,transparent_0,transparent_48%,oklch(0.56_0.1_205/0.06)_48%,oklch(0.56_0.1_205/0.06)_52%,transparent_52%,transparent_100%)]" />
