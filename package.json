@@ -5,7 +5,8 @@
   "scripts": {
     "build": "turbo build",
     "dev": "node scripts/workflow.mjs dev",
-    "dev:frontend": "turbo dev --filter=web --filter=dashboard --filter=admin --filter=cms",
+    "dev:frontend": "node scripts/workflow.mjs dev:frontend",
+    "dev:frontend:no-infisical": "node scripts/workflow.mjs dev:frontend:no-infisical",
     "dev:backend:restart": "docker compose -f docker-compose.yml up -d --build backend",
     "dev:stop": "docker compose -f docker-compose.yml down && kill-port 3000 3001 3002 3003 3004 || true",
     "infisical:render:backend": "infisical agent --config deploy/infisical/runtime/backend-agent.yaml",

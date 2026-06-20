@@ -19,6 +19,10 @@ export const authClient = createAuthClient({
           type: "string",
           required: true,
         },
+        dateOfBirth: {
+          type: "string",
+          required: true,
+        },
         role: {
           type: "string",
           required: false,

@@ -36,6 +36,19 @@ import {
 import { buildWebLoginUrl, logout } from "@/lib/auth"
 import { dashboardPaths } from "@/lib/paths"
 import { useTheme } from "@/components/theme-provider"
+import { useImpersonation } from "@/hooks/use-impersonation"
+import { clientApi } from "@workspace/api/client"
+import { queryKeys } from "@/lib/query-keys"
+
+function getAdminUserUrl(customerId: number) {
+  const adminBase =
+    process.env.NEXT_PUBLIC_ADMIN_URL ??
+    (process.env.NODE_ENV === "development"
+      ? "http://localhost:3002"
+      : "/admin")
+
+  return `${adminBase.replace(/\/$/, "")}/users/${customerId}`
+}
 
 export function NavUser({
   user,
@@ -52,8 +65,10 @@ export function NavUser({
   const router = useRouter()
   const queryClient = useQueryClient()
   const [isLoggingOut, setIsLoggingOut] = useState(false)
+  const [isExitingImpersonation, setIsExitingImpersonation] = useState(false)
   const { resolvedTheme, setTheme } = useTheme()
   const isDark = resolvedTheme === "dark"
+  const { data: impersonation } = useImpersonation()
 
   async function handleLogout() {
     try {
@@ -63,6 +78,25 @@ export function NavUser({
       window.location.replace(buildWebLoginUrl(window.location.href))
     } finally {
       setIsLoggingOut(false)
+      router.refresh()
+    }
+  }
+
+  async function handleExitImpersonation() {
+    if (!impersonation?.active) {
+      return
+    }
+
+    try {
+      setIsExitingImpersonation(true)
+      await clientApi("/impersonation/current", { method: "DELETE" })
+      await queryClient.invalidateQueries({ queryKey: queryKeys.profile() })
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.impersonation(),
+      })
+      window.location.assign(getAdminUserUrl(impersonation.customer.id))
+    } finally {
+      setIsExitingImpersonation(false)
       router.refresh()
     }
   }
@@ -154,6 +188,18 @@ export function NavUser({
                 {isDark ? "Switch to light mode" : "Switch to dark mode"}
               </DropdownMenuItem>
             </DropdownMenuGroup>
+            {impersonation?.active ? (
+              <>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={handleExitImpersonation}
+                  disabled={isExitingImpersonation}
+                >
+                  <HugeiconsIcon icon={LogoutIcon} strokeWidth={2} />
+                  Exit Impersonation
+                </DropdownMenuItem>
+              </>
+            ) : null}
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleLogout} disabled={isLoggingOut}>
               <HugeiconsIcon icon={LogoutIcon} strokeWidth={2} />

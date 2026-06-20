@@ -9,15 +9,12 @@ import {
 } from "@workspace/ui/components/card"
 import {
   ActiveInstanceLink,
-  formatDateOnly,
-  formatDateTime,
-  formatStatusLabel,
   InsightRow,
-  MetaRow,
   SectionEmpty,
   getActiveInstanceLinks,
 } from "./helpers"
 import type { Insight, UserDetailsData } from "./types"
+import { AccountMetadataCard } from "./account-metadata-card"
 
 interface UserDetailsSidebarProps {
   data: UserDetailsData
@@ -28,7 +25,6 @@ export function UserDetailsSidebar({
   data,
   insights,
 }: UserDetailsSidebarProps) {
-  const { user, summary } = data
   const activeInstances = getActiveInstanceLinks(data.instances)
 
   return (
@@ -52,30 +48,7 @@ export function UserDetailsSidebar({
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Account Metadata</CardTitle>
-          <CardDescription>
-            Core identity and timing markers for the account.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <MetaRow label="User ID" value={`#${user.id}`} />
-          <MetaRow label="Role" value={formatStatusLabel(user.role)} />
-          <MetaRow
-            label="Member since"
-            value={formatDateOnly(user.createdAt)}
-          />
-          <MetaRow
-            label="Profile updated"
-            value={formatDateTime(user.updatedAt)}
-          />
-          <MetaRow
-            label="Last activity"
-            value={formatDateTime(summary.lastActivityAt)}
-          />
-        </CardContent>
-      </Card>
+      <AccountMetadataCard data={data} />
 
       <Card>
         <CardHeader>

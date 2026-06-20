@@ -27,6 +27,7 @@ import {
   getActiveMenuPath,
   renderDesktopMenuItem,
 } from "@/components/site-header/menu-items"
+import { CartButton } from "@/components/cart/cart-button"
 import { MobileNavSheet } from "@/components/site-header/mobile-nav-sheet"
 import type { HeaderLink, MenuItem } from "@/components/site-header/types"
 import Image from "next/image"
@@ -92,6 +93,7 @@ export default function SiteHeader({
 
             <div className="flex items-center gap-2">
               <ThemeToggle />
+              <CartButton />
               {!isAuthenticated ? (
                 <>
                   <Link href={webPaths.login}>
@@ -149,6 +151,7 @@ export default function SiteHeader({
             <BrandLink brandName={brandName} />
             <div className="flex gap-3">
               <ThemeToggle />
+              <CartButton />
               <MobileNavSheet
                 brandName={brandName}
                 menu={menu}

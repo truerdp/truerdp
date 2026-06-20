@@ -15,6 +15,7 @@ import { registerAdminUsersBillingRoutes } from "./admin/users-billing.js"
 import { registerAdminInstancesQueryRoutes } from "./admin/instances-queries.js"
 import { registerAdminServersStatsRoutes } from "./admin/servers-stats.js"
 import { registerAdminWebhookEventRoutes } from "./admin/webhook-events.js"
+import { registerAdminImpersonationRoutes } from "./admin/impersonation.js"
 
 export async function adminRoutes(server: FastifyInstance) {
   await registerAdminPlansListCreateRoutes(server)
@@ -32,4 +33,5 @@ export async function adminRoutes(server: FastifyInstance) {
   await registerAdminInstancesQueryRoutes(server)
   await registerAdminServersStatsRoutes(server)
   await registerAdminWebhookEventRoutes(server)
+  await registerAdminImpersonationRoutes(server)
 }

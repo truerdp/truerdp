@@ -11,6 +11,7 @@ export const users = pgTable("users", {
   image: text("image"),
   firstName: text("first_name").notNull(),
   lastName: text("last_name").notNull(),
+  dateOfBirth: text("date_of_birth"),
   billingPhone: text("billing_phone"),
   billingCompanyName: text("billing_company_name"),
   billingTaxId: text("billing_tax_id"),

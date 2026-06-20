@@ -38,15 +38,26 @@ export function OrderPricingPanel({
 }: OrderPricingPanelProps) {
   return (
     <div className="rounded-xl border p-4">
-      <SummaryRow label="Plan" value={order.plan.name} />
-      <SummaryRow
-        label="Compute"
-        value={`${order.plan.cpu} vCPU / ${order.plan.ram} GB RAM / ${order.plan.storage} GB`}
-      />
-      <SummaryRow
-        label="Duration"
-        value={`${order.pricing.durationDays} days`}
-      />
+      <div className="space-y-3">
+        <p className="text-sm font-medium">Items</p>
+        {order.items.map((item) => (
+          <div
+            key={item.id}
+            className="rounded-lg border bg-muted/20 px-3 py-2 text-sm"
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="font-medium">{item.planName}</p>
+                <p className="text-xs text-muted-foreground">
+                  {item.durationDays} days x {item.quantity}
+                </p>
+              </div>
+              <span>{formatAmount(item.lineTotalUsdCents)}</span>
+            </div>
+          </div>
+        ))}
+      </div>
+      <Separator className="my-3" />
       <SummaryRow
         label="Subtotal"
         value={formatAmount(

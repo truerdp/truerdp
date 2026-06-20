@@ -190,6 +190,27 @@
       "when": 1781100000000,
       "tag": "0026_coupon_per_customer_usage",
       "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "7",
+      "when": 1781460000000,
+      "tag": "0027_customer_impersonation",
+      "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "7",
+      "when": 1781467200000,
+      "tag": "0028_customer_dob_support_statuses",
+      "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1781470800000,
+      "tag": "0029_cart_order_items",
+      "breakpoints": true
     }
   ]
 }

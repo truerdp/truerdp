@@ -16,6 +16,8 @@ const command = process.argv[2]
 
 const commands = {
   dev: runDev,
+  "dev:frontend": runDevFrontend,
+  "dev:frontend:no-infisical": runDevFrontendWithoutInfisical,
   "dev:no-infisical": runDevWithoutInfisical,
   "prod:backend:preflight": runProdBackendPreflight,
   "prod:backend": runProdBackend,
@@ -30,6 +32,8 @@ if (!command || !commands[command]) {
       "",
       "Commands:",
       "  dev                   Start local DB/backend Docker and frontend apps",
+      "  dev:frontend          Start frontend apps with Infisical when available",
+      "  dev:frontend:no-infisical Start frontend apps from local shell/.env only",
       "  prod:backend:preflight Check production backend deploy prerequisites",
       "  prod:backend          Render Infisical backend env and deploy backend",
       "  prod:backend:refresh  Re-render Infisical env and recreate backend",
@@ -46,7 +50,9 @@ function runDev() {
 
   if (canUseInfisical()) {
     syncLocalBackendEnvFromInfisical()
-    runDevWithoutInfisical()
+    startLocalBackend()
+    startBackendTunnel()
+    runDevFrontendWithInfisical()
     return
   }
 
@@ -68,6 +74,48 @@ function syncLocalBackendEnvFromInfisical() {
 
 function runDevWithoutInfisical() {
   ensureLocalEnv("apps/backend/.env", "apps/backend/.env.example")
+  startLocalBackend()
+  startBackendTunnel()
+  runDevFrontendWithoutInfisical()
+}
+
+function runDevFrontend() {
+  if (canUseInfisical()) {
+    runDevFrontendWithInfisical()
+    return
+  }
+
+  console.log(
+    "Infisical is not configured for this shell; using local frontend env."
+  )
+  runDevFrontendWithoutInfisical()
+}
+
+function runDevFrontendWithInfisical() {
+  run("infisical", [
+    "run",
+    "--env=dev",
+    "--path=/",
+    "--",
+    "pnpm",
+    "run",
+    "dev:frontend:no-infisical",
+  ])
+}
+
+function runDevFrontendWithoutInfisical() {
+  run("pnpm", [
+    "exec",
+    "turbo",
+    "dev",
+    "--filter=web",
+    "--filter=dashboard",
+    "--filter=admin",
+    "--filter=cms",
+  ])
+}
+
+function startLocalBackend() {
   run("docker", [
     "compose",
     "-f",
@@ -78,8 +126,6 @@ function runDevWithoutInfisical() {
     "backend",
     "db",
   ])
-  startBackendTunnel()
-  run("pnpm", ["run", "dev:frontend"])
 }
 
 function runProdBackendPreflight() {

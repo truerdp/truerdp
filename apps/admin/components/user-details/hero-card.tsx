@@ -13,6 +13,7 @@ import {
   MetricTile,
 } from "./helpers"
 import type { UserDetailsData } from "./types"
+import { ImpersonationDialog } from "./impersonation-dialog"
 
 interface UserHeroCardProps {
   data: UserDetailsData
@@ -66,12 +67,24 @@ export function UserHeroCard({
                 <Badge variant="outline">
                   Member since {formatDateOnly(user.createdAt)}
                 </Badge>
+                {user.dateOfBirth ? (
+                  <Badge variant="outline">
+                    DOB {formatDateOnly(user.dateOfBirth)}
+                  </Badge>
+                ) : null}
               </div>
 
               <p className="max-w-2xl text-sm text-muted-foreground">
                 Full-funnel view of account health, billing behavior, and
                 infrastructure history for fast operator decisions.
               </p>
+
+              {user.role === "user" ? (
+                <ImpersonationDialog
+                  userId={user.id}
+                  displayName={displayName}
+                />
+              ) : null}
             </div>
           </div>
         </div>

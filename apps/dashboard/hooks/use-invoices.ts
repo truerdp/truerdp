@@ -22,12 +22,28 @@ export interface InvoiceSummary {
   order: {
     id: number
     status: "pending_payment" | "processing" | "completed" | "cancelled"
+    billingDetails: InvoiceBillingDetails | null
   }
   plan: {
     name: string
     durationDays: number
     kind: "new_purchase" | "renewal"
   }
+}
+
+export interface InvoiceBillingDetails {
+  firstName: string
+  lastName: string
+  email: string
+  phone: string
+  companyName: string | null
+  taxId: string | null
+  addressLine1: string
+  addressLine2: string | null
+  city: string
+  state: string
+  postalCode: string
+  country: string
 }
 
 export function useInvoices() {

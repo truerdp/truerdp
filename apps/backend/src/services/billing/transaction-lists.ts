@@ -30,6 +30,7 @@ export async function listUserInvoices(userId: number) {
       order: {
         id: orders.id,
         status: orders.status,
+        billingDetails: orders.billingDetails,
         planName: orders.planName,
         durationDays: orders.durationDays,
         kind: orders.kind,
@@ -74,6 +75,7 @@ export async function listUserInvoices(userId: number) {
     order: {
       id: row.order.id,
       status: row.order.status,
+      billingDetails: row.order.billingDetails,
     },
     plan: {
       name: row.order.planName,

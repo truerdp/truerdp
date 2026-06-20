@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm"
 import { db } from "../../db.js"
-import { coupons, invoices, orders, plans } from "../../schema.js"
+import { coupons, invoices, orderItems, orders, plans } from "../../schema.js"
 import { getOrderPlanPriceUsdCents } from "./shared.js"
 
 export type BillingOrderRecord = {
@@ -15,6 +15,16 @@ export type BillingOrderRecord = {
     ram: number
     storage: number
   }
+  items?: {
+    id: number
+    planId: number
+    planPricingId: number
+    planName: string
+    planPriceUsdCents: number
+    durationDays: number
+    quantity: number
+    lineTotalUsdCents: number
+  }[]
 }
 
 export function formatBillingOrderResponse(record: BillingOrderRecord) {
@@ -40,6 +50,7 @@ export function formatBillingOrderResponse(record: BillingOrderRecord) {
       durationDays: record.order.durationDays,
       priceUsdCents: planPriceUsdCents,
     },
+    items: record.items ?? [],
     invoice: record.invoice
       ? {
           id: record.invoice.id,
@@ -56,6 +67,26 @@ export function formatBillingOrderResponse(record: BillingOrderRecord) {
         }
       : null,
   }
+}
+
+export async function getOrderItemsForOrder(orderId: number) {
+  const items = await db
+    .select({
+      id: orderItems.id,
+      planId: orderItems.planId,
+      planPricingId: orderItems.planPricingId,
+      planName: orderItems.planName,
+      planPriceUsdCents: orderItems.planPriceUsdCents,
+      durationDays: orderItems.durationDays,
+      quantity: orderItems.quantity,
+    })
+    .from(orderItems)
+    .where(eq(orderItems.orderId, orderId))
+
+  return items.map((item) => ({
+    ...item,
+    lineTotalUsdCents: item.planPriceUsdCents * item.quantity,
+  }))
 }
 
 export async function getOrderInvoice(orderId: number) {
@@ -119,5 +150,14 @@ export async function getBillingOrderById(orderId: number) {
     .where(eq(orders.id, orderId))
     .limit(1)
 
-  return orderResult[0] ?? null
+  const record = orderResult[0]
+
+  if (!record) {
+    return null
+  }
+
+  return {
+    ...record,
+    items: await getOrderItemsForOrder(orderId),
+  }
 }

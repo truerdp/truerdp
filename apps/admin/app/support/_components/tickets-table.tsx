@@ -10,7 +10,12 @@ import {
   TableRow,
 } from "@workspace/ui/components/table"
 import { adminPaths } from "@/lib/paths"
-import { formatTicketDate, type TicketSummary } from "@/app/support/models"
+import {
+  formatTicketDate,
+  formatTicketStatus,
+  getTicketStatusVariant,
+  type TicketSummary,
+} from "@/app/support/models"
 
 type TicketsTableProps = {
   isLoading: boolean
@@ -54,10 +59,8 @@ export function TicketsTable({ isLoading, tickets }: TicketsTableProps) {
                   </div>
                 </TableCell>
                 <TableCell>
-                  <Badge
-                    variant={ticket.status === "open" ? "default" : "outline"}
-                  >
-                    {ticket.status}
+                  <Badge variant={getTicketStatusVariant(ticket.status)}>
+                    {formatTicketStatus(ticket.status)}
                   </Badge>
                 </TableCell>
                 <TableCell className="whitespace-nowrap">

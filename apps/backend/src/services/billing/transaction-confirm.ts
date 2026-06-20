@@ -42,10 +42,15 @@ export async function confirmPendingTransaction(
         source: input?.source ?? "system",
         kind: confirmation.kind,
         instanceId: confirmation.instance?.id ?? null,
+        instanceIds:
+          confirmation.instances?.map((instance) => instance.id) ?? [],
       },
     })
   } catch (auditError) {
-    console.error("Failed to write transaction confirmation audit log", auditError)
+    console.error(
+      "Failed to write transaction confirmation audit log",
+      auditError
+    )
   }
 
   return confirmation

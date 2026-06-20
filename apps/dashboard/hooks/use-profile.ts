@@ -24,6 +24,7 @@ export interface Profile {
   email: string
   firstName: string | null
   lastName: string | null
+  dateOfBirth: string | null
   role: "user" | "admin" | "support" | "superadmin" | "manager" | string
   billingDetails: BillingDetails | null
 }

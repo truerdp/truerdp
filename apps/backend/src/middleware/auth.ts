@@ -6,10 +6,17 @@ import { db } from "../db.js"
 import { parseAuthUser } from "../types/auth.js"
 import { users } from "../schema.js"
 import { eq } from "drizzle-orm"
+import {
+  getActiveImpersonationByToken,
+  IMPERSONATION_COOKIE_NAME,
+  type ActiveImpersonationContext,
+} from "../services/impersonation.js"
 
 declare module "fastify" {
   interface FastifyRequest {
     user?: import("../types/auth.js").AuthUser
+    realUser?: import("../types/auth.js").AuthUser
+    impersonation?: ActiveImpersonationContext
   }
 }
 
@@ -66,7 +73,41 @@ export async function verifyAuth(request: FastifyRequest, reply: FastifyReply) {
       return reply.status(401).send({ error: "Invalid session payload" })
     }
 
+    request.realUser = parsedUser.data
     request.user = parsedUser.data
+
+    const impersonationToken = request.cookies?.[IMPERSONATION_COOKIE_NAME]
+
+    if (!impersonationToken) {
+      return
+    }
+
+    const impersonation =
+      await getActiveImpersonationByToken(impersonationToken)
+
+    if (!impersonation) {
+      reply.clearCookie(IMPERSONATION_COOKIE_NAME, { path: "/" })
+      return
+    }
+
+    if (impersonation.admin.id !== parsedUser.data.userId) {
+      return reply.status(403).send({ error: "Forbidden impersonation" })
+    }
+
+    const impersonatedUser = parseAuthUser({
+      userId: impersonation.target.id,
+      role: impersonation.target.role,
+      email: impersonation.target.email,
+      actingUserId: impersonation.admin.id,
+      impersonationSessionId: impersonation.sessionId,
+    })
+
+    if (!impersonatedUser.success) {
+      return reply.status(401).send({ error: "Invalid impersonation context" })
+    }
+
+    request.impersonation = impersonation
+    request.user = impersonatedUser.data
   } catch {
     return reply.status(401).send({ error: "Invalid token" })
   }

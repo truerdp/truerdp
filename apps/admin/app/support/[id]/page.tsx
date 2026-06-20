@@ -12,13 +12,18 @@ import { Textarea } from "@workspace/ui/components/textarea"
 import { cn } from "@workspace/ui/lib/utils"
 import { adminPaths } from "@/lib/paths"
 import { queryKeys } from "@/lib/query-keys"
+import {
+  formatTicketStatus,
+  getTicketStatusVariant,
+  type TicketStatus,
+} from "@/app/support/models"
 
 type TicketDetail = {
   ticket: {
     id: number
     userId: number
     subject: string
-    status: "open" | "closed"
+    status: TicketStatus
     createdAt: string
     updatedAt: string
   }
@@ -113,10 +118,8 @@ export default function AdminSupportTicketPage() {
             <h1 className="text-2xl font-bold tracking-tight">
               Ticket #{data.ticket.id}
             </h1>
-            <Badge
-              variant={data.ticket.status === "open" ? "default" : "outline"}
-            >
-              {data.ticket.status}
+            <Badge variant={getTicketStatusVariant(data.ticket.status)}>
+              {formatTicketStatus(data.ticket.status)}
             </Badge>
           </div>
           <p className="mt-1 text-sm text-muted-foreground">
@@ -127,11 +130,11 @@ export default function AdminSupportTicketPage() {
           variant="outline"
           onClick={() =>
             statusMutation.mutate(
-              data.ticket.status === "open" ? "close" : "reopen"
+              data.ticket.status === "closed" ? "reopen" : "close"
             )
           }
         >
-          {data.ticket.status === "open" ? "Close ticket" : "Reopen ticket"}
+          {data.ticket.status === "closed" ? "Reopen ticket" : "Close ticket"}
         </Button>
       </div>
 

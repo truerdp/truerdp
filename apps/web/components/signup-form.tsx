@@ -7,6 +7,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import z from "zod"
 import { toast } from "sonner"
 import { Button } from "@workspace/ui/components/button"
+import { DatePicker } from "@workspace/ui/components/base/date-picker"
 import { BillingLocationFields } from "@workspace/ui/components/billing-location-fields"
 import {
   Card,
@@ -40,6 +41,19 @@ const signupSchema = z
       .trim()
       .min(1, "Email is required")
       .email("Enter a valid email address"),
+    dateOfBirth: z
+      .string()
+      .trim()
+      .min(1, "Date of birth is required")
+      .regex(/^\d{4}-\d{2}-\d{2}$/, "Enter a valid date of birth")
+      .refine((value) => {
+        const parsed = new Date(`${value}T00:00:00.000Z`)
+        return (
+          !Number.isNaN(parsed.getTime()) &&
+          parsed.toISOString().slice(0, 10) === value &&
+          parsed < new Date()
+        )
+      }, "Enter a valid date of birth"),
     password: z.string().min(6, "Password must be at least 6 characters"),
     confirmPassword: z.string().min(1, "Please confirm your password"),
     phone: requiredText("Phone"),
@@ -80,6 +94,7 @@ export function SignupForm({ ...props }: React.ComponentProps<typeof Card>) {
       firstName: "",
       lastName: "",
       email: "",
+      dateOfBirth: "",
       password: "",
       confirmPassword: "",
       phone: "",
@@ -117,6 +132,7 @@ export function SignupForm({ ...props }: React.ComponentProps<typeof Card>) {
         password,
         firstName,
         lastName,
+        dateOfBirth: values.dateOfBirth,
         billingPhone: values.phone.trim(),
         billingCompanyName: optional(values.companyName),
         billingTaxId: optional(values.taxId),
@@ -201,6 +217,25 @@ export function SignupForm({ ...props }: React.ComponentProps<typeof Card>) {
                 We&apos;ll use this to contact you. We will not share your email
                 with anyone else.
               </FieldDescription>
+            </Field>
+            <Field data-invalid={!!errors.dateOfBirth}>
+              <FieldLabel htmlFor="date-of-birth">Date of birth</FieldLabel>
+              <Controller
+                name="dateOfBirth"
+                control={control}
+                render={({ field }) => (
+                  <DatePicker
+                    id="date-of-birth"
+                    value={field.value}
+                    disabled={isSubmitting}
+                    aria-invalid={!!errors.dateOfBirth}
+                    onChange={field.onChange}
+                  />
+                )}
+              />
+              {errors.dateOfBirth ? (
+                <FieldError>{errors.dateOfBirth.message}</FieldError>
+              ) : null}
             </Field>
             <Field data-invalid={!!errors.password}>
               <FieldLabel htmlFor="password">Password</FieldLabel>

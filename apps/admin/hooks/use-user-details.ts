@@ -10,6 +10,7 @@ export interface AdminUser360Details {
     email: string
     firstName: string
     lastName: string
+    dateOfBirth: string | null
     role: "user" | "operator" | "admin"
     createdAt: string
     updatedAt: string
@@ -136,6 +137,20 @@ export interface AdminUser360Details {
     order: {
       id: number
       status: "pending_payment" | "processing" | "completed" | "cancelled"
+      billingDetails: {
+        firstName: string
+        lastName: string
+        email: string
+        phone: string
+        companyName: string | null
+        taxId: string | null
+        addressLine1: string
+        addressLine2: string | null
+        city: string
+        state: string
+        postalCode: string
+        country: string
+      } | null
     }
     plan: {
       name: string

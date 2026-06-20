@@ -17,9 +17,10 @@ import {
   formatAmount,
   formatDateTime,
   formatMethod,
+  getBillingAddress,
+  getBillingName,
   getInvoiceStatusBadgeVariant,
   getTransactionStatusBadgeVariant,
-  getUserDisplayName,
 } from "@/components/invoices-page-parts"
 
 type AdminInvoicesTableProps = {
@@ -46,7 +47,8 @@ export function AdminInvoicesTable({
           <TableHeader>
             <TableRow>
               <TableHead>Invoice</TableHead>
-              <TableHead>User</TableHead>
+              <TableHead>Customer</TableHead>
+              {/* <TableHead>Billing Address</TableHead> */}
               <TableHead>Plan</TableHead>
               <TableHead>Amount</TableHead>
               <TableHead>Invoice Status</TableHead>
@@ -72,10 +74,13 @@ export function AdminInvoicesTable({
                 <TableCell>
                   <AdminUserLink
                     userId={invoice.user.id}
-                    primary={getUserDisplayName(invoice.user)}
+                    primary={getBillingName(invoice)}
                     secondary={invoice.user.email}
                   />
                 </TableCell>
+                {/* <TableCell className="min-w-64 max-w-80 text-sm text-muted-foreground">
+                  {getBillingAddress(invoice)}
+                </TableCell> */}
                 <TableCell>
                   <div className="flex flex-col gap-0.5">
                     <span className="text-sm font-medium">

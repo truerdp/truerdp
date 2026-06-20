@@ -1,4 +1,8 @@
 import { supportedPaymentMethodSchema } from "../services/billing.js"
+import {
+  billingFieldProperties,
+  billingFieldsRequired,
+} from "./common.schemas.js"
 
 export const errorResponse = {
   type: "object",
@@ -193,8 +197,18 @@ export const invoiceOrderSchema = {
   properties: {
     id: { type: "integer" },
     status: { type: "string" },
+    billingDetails: {
+      anyOf: [
+        {
+          type: "object",
+          properties: billingFieldProperties,
+          required: billingFieldsRequired,
+        },
+        { type: "null" },
+      ],
+    },
   },
-  required: ["id", "status"],
+  required: ["id", "status", "billingDetails"],
 }
 
 export const invoicePlanSchema = {

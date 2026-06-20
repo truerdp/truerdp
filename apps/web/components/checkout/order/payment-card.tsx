@@ -60,8 +60,9 @@ export function CheckoutPaymentCard({
       </CardHeader>
       <CardContent className="flex flex-col gap-6">
         <div className="flex flex-wrap items-center gap-2">
-          <Badge variant="secondary">{order.plan.name}</Badge>
-          <Badge variant="outline">{order.pricing.durationDays} days</Badge>
+          <Badge variant="secondary">
+            {order.items.length} line{order.items.length === 1 ? "" : "s"}
+          </Badge>
           <Badge variant="outline">Order #{order.orderId}</Badge>
         </div>
 
@@ -103,11 +104,13 @@ export function CheckoutPaymentCard({
         ) : null}
 
         <div className="rounded-xl border p-4">
-          <SummaryRow label="Plan" value={order.plan.name} />
-          <SummaryRow
-            label="Compute"
-            value={`${order.plan.cpu} vCPU / ${order.plan.ram} GB RAM / ${order.plan.storage} GB`}
-          />
+          {order.items.map((item) => (
+            <SummaryRow
+              key={item.id}
+              label={`${item.planName} x ${item.quantity}`}
+              value={formatAmount(item.lineTotalUsdCents)}
+            />
+          ))}
           <SummaryRow
             label="Subtotal"
             value={formatAmount(

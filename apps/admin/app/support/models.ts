@@ -2,7 +2,7 @@ export type TicketSummary = {
   id: number
   userId: number
   subject: string
-  status: "open" | "closed"
+  status: TicketStatus
   createdAt: string
   updatedAt: string
   lastMessageAt: string | null
@@ -11,6 +11,26 @@ export type TicketSummary = {
     lastName: string
     email: string
   }
+}
+
+export type TicketStatus = "open" | "answered" | "customer_replied" | "closed"
+
+export function formatTicketStatus(status: TicketStatus) {
+  if (status === "customer_replied") {
+    return "Customer replied"
+  }
+
+  return status.charAt(0).toUpperCase() + status.slice(1)
+}
+
+export function getTicketStatusVariant(
+  status: TicketStatus
+): "default" | "secondary" | "outline" {
+  if (status === "customer_replied") {
+    return "secondary"
+  }
+
+  return status === "open" || status === "answered" ? "default" : "outline"
 }
 
 export function formatTicketDate(value: string | null) {

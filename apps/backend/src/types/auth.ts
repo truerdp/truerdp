@@ -6,6 +6,8 @@ const authUserSchema = z.object({
   userId: z.number().int().positive(),
   role: z.enum(roleEnum.enumValues),
   email: z.string().email(),
+  actingUserId: z.number().int().positive().optional(),
+  impersonationSessionId: z.number().int().positive().optional(),
 })
 
 export type AuthUser = z.infer<typeof authUserSchema>

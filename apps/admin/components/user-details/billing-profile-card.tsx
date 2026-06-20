@@ -30,12 +30,13 @@ type BillingProfile = NonNullable<AdminUser360Details["billingProfile"]>
 
 type BillingProfileForm = Omit<
   BillingProfile,
-  "firstName" | "lastName" | "email"
+  "firstName" | "lastName"
 > & {
   reason: string
 }
 
 const emptyBillingProfileForm: BillingProfileForm = {
+  email: "",
   phone: "",
   companyName: "",
   taxId: "",
@@ -62,6 +63,10 @@ export function BillingProfileCard({ data }: BillingProfileCardProps) {
     const latestBillingDetails = data.latestBillingDetails
 
     setForm({
+      email: prefillValue(
+        billingProfile?.email,
+        latestBillingDetails?.email ?? data.user.email
+      ),
       phone: prefillValue(billingProfile?.phone, latestBillingDetails?.phone),
       companyName: prefillValue(
         billingProfile?.companyName,
@@ -88,13 +93,14 @@ export function BillingProfileCard({ data }: BillingProfileCardProps) {
       ),
       reason: "",
     })
-  }, [data.billingProfile, data.latestBillingDetails])
+  }, [data.billingProfile, data.latestBillingDetails, data.user.email])
 
   const updateBillingProfile = useMutation({
     mutationFn: () =>
       clientApi(`/admin/users/${data.user.id}/billing`, {
         method: "PATCH",
         body: {
+          email: form.email.trim().toLowerCase(),
           phone: form.phone.trim(),
           companyName: normalizeOptional(form.companyName),
           taxId: normalizeOptional(form.taxId),
@@ -137,6 +143,7 @@ export function BillingProfileCard({ data }: BillingProfileCardProps) {
     setError(null)
 
     if (
+      !form.email.trim() ||
       !form.phone.trim() ||
       !form.addressLine1.trim() ||
       !form.city.trim() ||
@@ -144,7 +151,12 @@ export function BillingProfileCard({ data }: BillingProfileCardProps) {
       !form.postalCode.trim() ||
       !form.country.trim()
     ) {
-      setError("Complete the required billing address fields.")
+      setError("Complete the required billing contact and address fields.")
+      return
+    }
+
+    if (!form.email.includes("@")) {
+      setError("Enter a valid customer email.")
       return
     }
 
@@ -178,8 +190,16 @@ export function BillingProfileCard({ data }: BillingProfileCardProps) {
                 />
               </Field>
               <Field>
-                <FieldLabel>Email</FieldLabel>
-                <Input value={data.user.email} disabled />
+                <FieldLabel htmlFor="admin-billing-email">Email</FieldLabel>
+                <Input
+                  id="admin-billing-email"
+                  type="email"
+                  value={form.email}
+                  disabled={isSaving}
+                  onChange={(event) =>
+                    updateField("email", event.target.value)
+                  }
+                />
               </Field>
             </div>
             <Field>

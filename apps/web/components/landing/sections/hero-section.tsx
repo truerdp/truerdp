@@ -34,7 +34,7 @@ export function HeroSection({
 }: HeroSectionProps) {
   return (
     <section className="mx-auto grid w-full max-w-6xl gap-8 px-6 pt-10 md:pt-14 lg:grid-cols-[1.08fr_0.92fr] lg:items-center">
-      <Reveal className="flex flex-col gap-6">
+      <div className="flex flex-col gap-6">
         <Badge
           variant="secondary"
           className="w-fit gap-2 rounded-full border border-[oklch(0.78_0.08_205)] bg-[oklch(0.97_0.035_205)] px-4 py-1.5 text-[oklch(0.31_0.09_212)] shadow-sm dark:border-white/10 dark:bg-white/8 dark:text-white/80"
@@ -42,15 +42,11 @@ export function HeroSection({
           <HugeiconsIcon icon={ServerStack01Icon} size={14} strokeWidth={2} />
           {hero.badge}
         </Badge>
-        <TextAnimate
-          as="h1"
-          animation="blurInUp"
-          by="word"
-          once
+        <h1
           className={`${displayClassName} max-w-3xl text-4xl leading-[1.04] tracking-tight text-[oklch(0.2_0.045_265)] md:text-5xl lg:text-6xl dark:text-white`}
         >
           {hero.headline}
-        </TextAnimate>
+        </h1>
         <p className="max-w-2xl text-base leading-7 text-[oklch(0.35_0.04_250)] md:text-lg dark:text-white/76">
           {hero.description}
         </p>
@@ -121,8 +117,8 @@ export function HeroSection({
             </p>
           </div>
         </div>
-      </Reveal>
-      <Reveal delayMs={150} className="relative hidden lg:block">
+      </div>
+      <div className="relative hidden lg:block">
         <article className="relative min-h-[520px] overflow-hidden rounded-3xl border border-white/70 bg-[linear-gradient(145deg,oklch(0.23_0.06_252),oklch(0.18_0.04_245)_55%,oklch(0.22_0.065_198))] p-5 text-white shadow-2xl shadow-[oklch(0.45_0.1_220)]/20 md:p-6">
           <div className="absolute inset-x-0 top-0 h-1 bg-[linear-gradient(90deg,oklch(0.75_0.13_205),oklch(0.72_0.13_166),oklch(0.78_0.13_78))]" />
           <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(115deg,rgb(255_255_255/0.1),transparent_34%,rgb(255_255_255/0.08)_72%,transparent)]" />
@@ -209,7 +205,7 @@ export function HeroSection({
             </div>
           </div>
         </article>
-      </Reveal>
+      </div>
     </section>
   )
 }

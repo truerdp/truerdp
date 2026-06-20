@@ -37,6 +37,7 @@ const optionalBillingFieldSchema = z
   })
 
 export const adminBillingDetailsUpdateSchema = z.object({
+  email: z.email().trim().toLowerCase(),
   phone: z.string().trim().min(1),
   companyName: optionalBillingFieldSchema,
   taxId: optionalBillingFieldSchema,
@@ -46,6 +47,24 @@ export const adminBillingDetailsUpdateSchema = z.object({
   state: z.string().trim().min(1),
   postalCode: z.string().trim().min(1),
   country: z.string().trim().min(1),
+  reason: z.string().trim().min(3).max(500),
+})
+
+export const adminUserProfileUpdateSchema = z.object({
+  role: z.enum(["user", "operator", "admin"]),
+  dateOfBirth: z
+    .string()
+    .trim()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "Enter a valid date of birth")
+    .refine((value) => {
+      const parsed = new Date(`${value}T00:00:00.000Z`)
+      return (
+        !Number.isNaN(parsed.getTime()) &&
+        parsed.toISOString().slice(0, 10) === value &&
+        parsed < new Date()
+      )
+    }, "Enter a valid date of birth")
+    .nullable(),
   reason: z.string().trim().min(3).max(500),
 })
 

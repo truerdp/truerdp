@@ -6,6 +6,7 @@ import type { ReactNode } from "react"
 
 import { AppSidebar } from "@/components/app-sidebar"
 import { AuthGuard } from "@/components/auth-guard"
+import { ImpersonationBanner } from "@/components/impersonation-banner"
 import { dashboardPaths } from "@/lib/paths"
 import {
   Breadcrumb,
@@ -95,6 +96,7 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
       <SidebarProvider>
         <AppSidebar />
         <SidebarInset>
+          <ImpersonationBanner />
           <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
             <SidebarTrigger className="-ml-1" />
             <Separator

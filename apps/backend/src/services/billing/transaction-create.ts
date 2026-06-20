@@ -1,7 +1,6 @@
 import { eq } from "drizzle-orm"
 import { db } from "../../db.js"
 import { invoices, transactions } from "../../schema.js"
-import { calculatePrice } from "../pricing.js"
 import { getCouponById, getBillingOrderById } from "./order-query.js"
 import { getPlanPricingById } from "./pricing.js"
 import {
@@ -55,6 +54,7 @@ export async function createBillingTransaction(input: {
   const pricingSelection = await getPlanPricingById(
     orderResult.order.planPricingId
   )
+  const purchasedItems = orderResult.items ?? []
 
   if (!pricingSelection || !pricingSelection.isActive) {
     throw new BillingError(400, "Order pricing is no longer active")
@@ -64,12 +64,25 @@ export async function createBillingTransaction(input: {
     throw new BillingError(400, "Selected plan is inactive")
   }
 
-  const orderPlanPriceUsdCents = getOrderPlanPriceUsdCents(orderResult.order)
+  for (const item of purchasedItems) {
+    const itemPricing = await getPlanPricingById(item.planPricingId)
 
+    if (!itemPricing || !itemPricing.isActive || !itemPricing.plan.isActive) {
+      throw new BillingError(
+        400,
+        `${item.planName} is no longer available for checkout`
+      )
+    }
+  }
+
+  if (purchasedItems.length === 0) {
+    throw new BillingError(400, "Order has no billable items")
+  }
+
+  const orderPlanPriceUsdCents = getOrderPlanPriceUsdCents(orderResult.order)
   if (!Number.isFinite(orderPlanPriceUsdCents)) {
     throw new BillingError(500, "Order is missing a valid plan price snapshot")
   }
-  const orderPlanPriceUsdCentsValue = Number(orderPlanPriceUsdCents)
 
   const now = new Date()
 
@@ -103,12 +116,14 @@ export async function createBillingTransaction(input: {
     now,
   })
 
-  const totalAmount =
-    reusableInvoice?.totalAmount ??
-    (await calculatePrice(input.userId, orderResult.order.planPricingId))
+  const orderSubtotal = purchasedItems.reduce(
+    (total, item) => total + item.planPriceUsdCents * item.quantity,
+    0
+  )
+
+  const totalAmount = reusableInvoice?.totalAmount ?? orderSubtotal
   const discount =
-    reusableInvoice?.discount ??
-    Math.max(0, orderPlanPriceUsdCentsValue - totalAmount)
+    reusableInvoice?.discount ?? Math.max(0, orderSubtotal - totalAmount)
 
   const created = await db.transaction(async (tx) => {
     let invoice = reusableInvoice
@@ -120,7 +135,7 @@ export async function createBillingTransaction(input: {
         .values({
           orderId: orderResult.order.id,
           invoiceNumber: createInvoiceNumber(),
-          subtotal: orderPlanPriceUsdCentsValue,
+          subtotal: orderSubtotal,
           discount,
           totalAmount,
           status: "unpaid",
@@ -183,6 +198,10 @@ export async function createBillingTransaction(input: {
     gatewayRedirectUrl = await runDodoHostedCheckout({
       transactionId: created.transaction.id,
       planPricingId: orderResult.order.planPricingId,
+      productCart: purchasedItems.map((item) => ({
+        planPricingId: item.planPricingId,
+        quantity: item.quantity,
+      })),
       orderId: orderResult.order.id,
       invoiceId: created.invoice.id,
       amountMinor: created.invoice.totalAmount,

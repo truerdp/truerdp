@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm"
 import { db } from "../../db.js"
-import { instances, invoices, orders, users } from "../../schema.js"
+import { instances, invoices, orderItems, orders, users } from "../../schema.js"
 import { calculatePrice } from "../pricing.js"
 import { sendInvoiceCreatedNotification } from "./notifications.js"
 import { formatBillingOrderResponse } from "./order-query.js"
@@ -15,21 +15,7 @@ import {
 } from "./shared.js"
 import { buildUserBillingDetails } from "./user-billing.js"
 
-export async function createBillingOrder(input: {
-  userId: number
-  planPricingId: number
-  instanceId?: number
-}) {
-  const pricingSelection = await getPlanPricingById(input.planPricingId)
-
-  if (!pricingSelection || !pricingSelection.isActive) {
-    throw new BillingError(400, "Invalid planPricingId")
-  }
-
-  if (!pricingSelection.plan.isActive) {
-    throw new BillingError(400, "Selected plan is inactive")
-  }
-
+async function getBillingUser(userId: number) {
   const [billingUser] = await db
     .select({
       firstName: users.firstName,
@@ -46,13 +32,69 @@ export async function createBillingOrder(input: {
       billingCountry: users.billingCountry,
     })
     .from(users)
-    .where(eq(users.id, input.userId))
+    .where(eq(users.id, userId))
     .limit(1)
 
   if (!billingUser) {
     throw new BillingError(404, "User not found")
   }
 
+  return billingUser
+}
+
+async function assertRenewalEligible(input: {
+  userId: number
+  instanceId: number
+  planId: number
+}) {
+  const instanceResult = await db
+    .select()
+    .from(instances)
+    .where(eq(instances.id, input.instanceId))
+    .limit(1)
+
+  const instance = instanceResult[0]
+
+  if (!instance) {
+    throw new BillingError(404, "Instance not found")
+  }
+
+  if (instance.userId !== input.userId) {
+    throw new BillingError(403, "Forbidden")
+  }
+
+  if (instance.planId !== input.planId) {
+    throw new BillingError(400, "Renewal must use the instance plan")
+  }
+
+  const isExpired =
+    instance.expiryDate != null && instance.expiryDate < new Date()
+
+  if (instance.status === "suspended") {
+    throw new BillingError(400, "Suspended instances cannot be renewed")
+  }
+
+  if (!["active", "expired"].includes(instance.status) && !isExpired) {
+    throw new BillingError(400, "Instance is not eligible for renewal")
+  }
+}
+
+export async function createBillingOrder(input: {
+  userId: number
+  planPricingId: number
+  instanceId?: number
+}) {
+  const pricingSelection = await getPlanPricingById(input.planPricingId)
+
+  if (!pricingSelection || !pricingSelection.isActive) {
+    throw new BillingError(400, "Invalid planPricingId")
+  }
+
+  if (!pricingSelection.plan.isActive) {
+    throw new BillingError(400, "Selected plan is inactive")
+  }
+
+  const billingUser = await getBillingUser(input.userId)
   const billingDetails = buildUserBillingDetails(billingUser)
 
   if (!billingDetails) {
@@ -65,36 +107,11 @@ export async function createBillingOrder(input: {
   const orderKind = input.instanceId ? "renewal" : "new_purchase"
 
   if (input.instanceId != null) {
-    const instanceResult = await db
-      .select()
-      .from(instances)
-      .where(eq(instances.id, input.instanceId))
-      .limit(1)
-
-    const instance = instanceResult[0]
-
-    if (!instance) {
-      throw new BillingError(404, "Instance not found")
-    }
-
-    if (instance.userId !== input.userId) {
-      throw new BillingError(403, "Forbidden")
-    }
-
-    if (instance.planId !== pricingSelection.planId) {
-      throw new BillingError(400, "Renewal must use the instance plan")
-    }
-
-    const isExpired =
-      instance.expiryDate != null && instance.expiryDate < new Date()
-
-    if (instance.status === "suspended") {
-      throw new BillingError(400, "Suspended instances cannot be renewed")
-    }
-
-    if (!["active", "expired"].includes(instance.status) && !isExpired) {
-      throw new BillingError(400, "Instance is not eligible for renewal")
-    }
+    await assertRenewalEligible({
+      userId: input.userId,
+      instanceId: input.instanceId,
+      planId: pricingSelection.planId,
+    })
   }
 
   const planPriceUsdCents =
@@ -137,6 +154,16 @@ export async function createBillingOrder(input: {
     }
     const orderPlanPriceUsdCentsValue = Number(orderPlanPriceUsdCents)
 
+    await tx.insert(orderItems).values({
+      orderId: order.id,
+      planId: pricingSelection.plan.id,
+      planPricingId: pricingSelection.id,
+      planName: pricingSelection.plan.name,
+      planPriceUsdCents: orderPlanPriceUsdCentsValue,
+      durationDays: pricingSelection.durationDays,
+      quantity: 1,
+    })
+
     const insertedInvoices = await tx
       .insert(invoices)
       .values({
@@ -159,6 +186,18 @@ export async function createBillingOrder(input: {
 
   return formatBillingOrderResponse({
     order: created.order,
+    items: [
+      {
+        id: created.order.id,
+        planId: pricingSelection.plan.id,
+        planPricingId: pricingSelection.id,
+        planName: pricingSelection.plan.name,
+        planPriceUsdCents: planPriceUsdCentsValue,
+        durationDays: pricingSelection.durationDays,
+        quantity: 1,
+        lineTotalUsdCents: planPriceUsdCentsValue,
+      },
+    ],
     plan: {
       id: pricingSelection.plan.id,
       name: pricingSelection.plan.name,

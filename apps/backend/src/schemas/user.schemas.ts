@@ -21,6 +21,7 @@ export const userProfileProperties = {
   email: { type: "string" },
   firstName: { type: "string" },
   lastName: { type: "string" },
+  dateOfBirth: { type: ["string", "null"] },
   role: { type: "string" },
   createdAt: { type: "string", format: "date-time" },
   billingDetails: {

@@ -1,6 +1,7 @@
 "use client"
 
 import { BillingLocationFields } from "@workspace/ui/components/billing-location-fields"
+import { DatePicker } from "@workspace/ui/components/base/date-picker"
 import {
   Card,
   CardContent,
@@ -53,6 +54,15 @@ export function AccountForm({ profile }: AccountFormProps) {
               Account identity is locked. Contact support if it needs an admin
               update.
             </FieldDescription>
+          </Field>
+          <Field>
+            <FieldLabel htmlFor="date-of-birth">Date of birth</FieldLabel>
+            <DatePicker
+              id="date-of-birth"
+              value={profile.dateOfBirth ?? ""}
+              disabled
+              onChange={() => {}}
+            />
           </Field>
 
           <div className="space-y-4 border-t pt-4">

@@ -110,6 +110,11 @@ export const auth = betterAuth({
         input: true,
         required: true,
       },
+      dateOfBirth: {
+        type: "string",
+        input: true,
+        required: true,
+      },
       billingPhone: {
         type: "string",
         input: true,

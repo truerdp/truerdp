@@ -38,6 +38,16 @@ export interface BillingOrder {
     durationDays: number
     priceUsdCents: number
   }
+  items: {
+    id: number
+    planId: number
+    planPricingId: number
+    planName: string
+    planPriceUsdCents: number
+    durationDays: number
+    quantity: number
+    lineTotalUsdCents: number
+  }[]
   invoice: {
     id: number
     invoiceNumber: string
@@ -62,10 +72,11 @@ export function isBillingOrder(value: unknown): value is BillingOrder {
 
   return Boolean(
     typeof order.orderId === "number" &&
-      order.plan &&
-      typeof order.plan.name === "string" &&
-      order.pricing &&
-      typeof order.pricing.durationDays === "number"
+    order.plan &&
+    typeof order.plan.name === "string" &&
+    order.pricing &&
+    typeof order.pricing.durationDays === "number" &&
+    Array.isArray(order.items)
   )
 }
 

@@ -9,4 +9,5 @@ export const queryKeys = {
     ["support", "tickets", String(id)] as const,
   instanceTransactions: (id: string | number) =>
     ["instance", String(id), "transactions"] as const,
+  impersonation: () => ["impersonation"] as const,
 }

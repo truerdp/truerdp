@@ -63,7 +63,12 @@ export const purchaseKindEnum = pgEnum("purchase_kind", [
   "renewal",
 ])
 
-export const ticketStatusEnum = pgEnum("ticket_status", ["open", "closed"])
+export const ticketStatusEnum = pgEnum("ticket_status", [
+  "open",
+  "answered",
+  "customer_replied",
+  "closed",
+])
 export const senderTypeEnum = pgEnum("sender_type", ["user", "admin"])
 export const instanceStatusActionEnum = pgEnum("instance_status_action", [
   "provision",

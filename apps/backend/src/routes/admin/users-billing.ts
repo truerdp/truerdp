@@ -18,7 +18,15 @@ import {
 } from "../../services/admin-audit.js"
 import { getErrorMessage } from "../../utils/error.js"
 import { buildUserBillingDetails } from "../../services/billing/user-billing.js"
-import { adminBillingDetailsUpdateSchema, adminQuerySchemas } from "./shared.js"
+import {
+  adminBillingDetailsUpdateSchema,
+  adminQuerySchemas,
+  adminUserProfileUpdateSchema,
+} from "./shared.js"
+import {
+  customerPermissions,
+  userHasPermission,
+} from "../../services/permissions.js"
 
 const {
   adminListPaginationQuerySchema,
@@ -54,6 +62,10 @@ export async function registerAdminUsersBillingRoutes(server: FastifyInstance) {
       try {
         const userId = Number((request.params as Record<string, unknown>).id)
 
+        if (!userHasPermission(request.user, customerPermissions.viewAs)) {
+          return reply.status(403).send({ error: "Forbidden" })
+        }
+
         if (!requireAdmin(request.user, reply)) {
           return
         }
@@ -79,6 +91,140 @@ export async function registerAdminUsersBillingRoutes(server: FastifyInstance) {
   )
 
   server.patch(
+    "/admin/users/:id/profile",
+    {
+      preHandler: verifyAuth,
+      schema: {
+        tags: ["Admin"],
+        summary: "Update a user's admin-managed profile fields",
+        params: {
+          type: "object",
+          required: ["id"],
+          properties: {
+            id: { type: "integer" },
+          },
+        },
+        body: {
+          type: "object",
+          required: ["role", "dateOfBirth", "reason"],
+          properties: {
+            role: {
+              type: "string",
+              enum: ["user", "operator", "admin"],
+            },
+            dateOfBirth: {
+              type: ["string", "null"],
+              pattern: "^\\d{4}-\\d{2}-\\d{2}$",
+            },
+            reason: { type: "string" },
+          },
+        },
+        response: {
+          200: {
+            type: "object",
+            properties: {
+              message: { type: "string" },
+              user: {
+                type: "object",
+                properties: {
+                  id: { type: "integer" },
+                  role: { type: "string" },
+                  dateOfBirth: { type: ["string", "null"] },
+                  updatedAt: { type: "string", format: "date-time" },
+                },
+                required: ["id", "role", "dateOfBirth", "updatedAt"],
+              },
+            },
+            required: ["message", "user"],
+          },
+        },
+      },
+    },
+    async (request: GenericRouteRequest, reply) => {
+      try {
+        const userId = Number((request.params as Record<string, unknown>).id)
+
+        if (!requireAdmin(request.user, reply)) {
+          return
+        }
+
+        if (Number.isNaN(userId)) {
+          return reply.status(400).send({ error: "Invalid user id" })
+        }
+
+        const body = adminUserProfileUpdateSchema.parse(request.body ?? {})
+        const [currentUser] = await db
+          .select({
+            id: users.id,
+            role: users.role,
+            dateOfBirth: users.dateOfBirth,
+          })
+          .from(users)
+          .where(eq(users.id, userId))
+          .limit(1)
+
+        if (!currentUser) {
+          return reply.status(404).send({ error: "User not found" })
+        }
+
+        if (
+          currentUser.id === request.user!.userId &&
+          body.role !== currentUser.role
+        ) {
+          return reply.status(400).send({
+            error: "Admins cannot change their own role",
+          })
+        }
+
+        const beforeState = {
+          role: currentUser.role,
+          dateOfBirth: currentUser.dateOfBirth,
+        }
+        const [updatedUser] = await db
+          .update(users)
+          .set({
+            role: body.role,
+            dateOfBirth: body.dateOfBirth,
+          })
+          .where(eq(users.id, userId))
+          .returning({
+            id: users.id,
+            role: users.role,
+            dateOfBirth: users.dateOfBirth,
+            updatedAt: users.updatedAt,
+          })
+
+        if (!updatedUser) {
+          return reply.status(404).send({ error: "User not found" })
+        }
+
+        await createAdminAuditLog({
+          adminUserId: request.user!.userId,
+          action: "user.profile.update",
+          entityType: "user",
+          entityId: userId,
+          reason: body.reason,
+          beforeState,
+          afterState: {
+            role: updatedUser.role,
+            dateOfBirth: updatedUser.dateOfBirth,
+          },
+        })
+
+        return {
+          message: "User profile updated",
+          user: updatedUser,
+        }
+      } catch (err: unknown) {
+        server.log.error(err)
+        return reply.status(400).send({
+          error: getErrorMessage(err),
+        })
+      }
+    }
+  )
+
+  server.patch(
     "/admin/users/:id/billing",
     {
       preHandler: verifyAuth,
@@ -95,6 +241,7 @@ export async function registerAdminUsersBillingRoutes(server: FastifyInstance) {
         body: {
           type: "object",
           required: [
+            "email",
             "phone",
             "addressLine1",
             "city",
@@ -104,6 +251,7 @@ export async function registerAdminUsersBillingRoutes(server: FastifyInstance) {
             "reason",
           ],
           properties: {
+            email: { type: "string", format: "email" },
             phone: { type: "string" },
             companyName: { type: "string", nullable: true },
             taxId: { type: "string", nullable: true },
@@ -161,6 +309,7 @@ export async function registerAdminUsersBillingRoutes(server: FastifyInstance) {
         }
 
         const body = adminBillingDetailsUpdateSchema.parse(request.body ?? {})
+        const normalizedEmail = body.email
         const [currentUser] = await db
           .select()
           .from(users)
@@ -171,10 +320,25 @@ export async function registerAdminUsersBillingRoutes(server: FastifyInstance) {
           return reply.status(404).send({ error: "User not found" })
         }
 
+        if (normalizedEmail !== currentUser.email.trim().toLowerCase()) {
+          const [existingUser] = await db
+            .select({ id: users.id })
+            .from(users)
+            .where(eq(users.email, normalizedEmail))
+            .limit(1)
+
+          if (existingUser && existingUser.id !== userId) {
+            return reply.status(409).send({
+              error: "Email already in use",
+            })
+          }
+        }
+
         const beforeState = buildUserBillingDetails(currentUser)
         const [updatedUser] = await db
           .update(users)
           .set({
+            email: normalizedEmail,
             billingPhone: body.phone,
             billingCompanyName: body.companyName,
             billingTaxId: body.taxId,

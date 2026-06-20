@@ -3,6 +3,8 @@ import Link from "next/link"
 import { dashboardPaths } from "@/lib/paths"
 import {
   formatTicketDate,
+  formatTicketStatus,
+  getTicketStatusVariant,
   type TicketSummary,
 } from "@/components/support-page/types"
 import { Badge } from "@workspace/ui/components/badge"
@@ -54,10 +56,8 @@ export function TicketsTable({
                   {ticket.subject}
                 </TableCell>
                 <TableCell>
-                  <Badge
-                    variant={ticket.status === "open" ? "default" : "outline"}
-                  >
-                    {ticket.status}
+                  <Badge variant={getTicketStatusVariant(ticket.status)}>
+                    {formatTicketStatus(ticket.status)}
                   </Badge>
                 </TableCell>
                 <TableCell className="whitespace-nowrap">

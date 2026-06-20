@@ -1,6 +1,13 @@
 import { eq } from "drizzle-orm"
 import { db } from "../../db.js"
-import { couponUsages, instances, invoices, orders, transactions } from "../../schema.js"
+import {
+  couponUsages,
+  instances,
+  invoices,
+  orderItems,
+  orders,
+  transactions,
+} from "../../schema.js"
 import { BillingError } from "./shared.js"
 
 export async function confirmPendingTransactionCore(transactionId: number) {
@@ -52,6 +59,7 @@ export async function confirmPendingTransactionCore(transactionId: number) {
 
     const now = new Date()
     let instance = null
+    let createdInstances: (typeof instances.$inferSelect)[] = []
     let orderStatus: "processing" | "completed" = "processing"
 
     if (current.order.kind === "renewal") {
@@ -89,7 +97,9 @@ export async function confirmPendingTransactionCore(transactionId: number) {
           : now
 
       const newExpiryDate = new Date(baseDate)
-      newExpiryDate.setDate(newExpiryDate.getDate() + current.order.durationDays)
+      newExpiryDate.setDate(
+        newExpiryDate.getDate() + current.order.durationDays
+      )
 
       const updatedInstance = await tx
         .update(instances)
@@ -103,17 +113,33 @@ export async function confirmPendingTransactionCore(transactionId: number) {
       instance = updatedInstance[0] ?? null
       orderStatus = "completed"
     } else {
-      const createdInstance = await tx
-        .insert(instances)
-        .values({
+      const itemRows = await tx
+        .select({
+          planId: orderItems.planId,
+          quantity: orderItems.quantity,
+        })
+        .from(orderItems)
+        .where(eq(orderItems.orderId, current.order.id))
+
+      if (itemRows.length === 0) {
+        throw new BillingError(400, "Order has no provisionable items")
+      }
+
+      const instanceInputs = itemRows.flatMap((item) =>
+        Array.from({ length: item.quantity }, () => ({
           userId: current.transaction.userId,
           originOrderId: current.order.id,
-          planId: current.order.planId,
-          status: "provisioning",
-        })
+          planId: item.planId,
+          status: "provisioning" as const,
+        }))
+      )
+
+      createdInstances = await tx
+        .insert(instances)
+        .values(instanceInputs)
         .returning()
 
-      instance = createdInstance[0] ?? null
+      instance = createdInstances[0] ?? null
     }
 
     await tx
@@ -157,6 +183,12 @@ export async function confirmPendingTransactionCore(transactionId: number) {
           ? "Renewal successful. Instance extended."
           : "Payment confirmed. Instance is ready for provisioning.",
       instance,
+      instances:
+        createdInstances.length > 0
+          ? createdInstances
+          : instance
+            ? [instance]
+            : [],
       order: {
         id: current.order.id,
         status: orderStatus,

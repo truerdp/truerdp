@@ -50,6 +50,30 @@ export const orderPricingSchema = {
   required: ["id", "durationDays", "priceUsdCents"],
 }
 
+export const orderItemSchema = {
+  type: "object",
+  properties: {
+    id: { type: "integer" },
+    planId: { type: "integer" },
+    planPricingId: { type: "integer" },
+    planName: { type: "string" },
+    planPriceUsdCents: { type: "integer" },
+    durationDays: { type: "integer" },
+    quantity: { type: "integer" },
+    lineTotalUsdCents: { type: "integer" },
+  },
+  required: [
+    "id",
+    "planId",
+    "planPricingId",
+    "planName",
+    "planPriceUsdCents",
+    "durationDays",
+    "quantity",
+    "lineTotalUsdCents",
+  ],
+}
+
 export const orderInvoiceSchema = {
   type: "object",
   properties: {
@@ -100,6 +124,10 @@ export const billingOrderResponseSchema = {
     },
     plan: orderPlanSchema,
     pricing: orderPricingSchema,
+    items: {
+      type: "array",
+      items: orderItemSchema,
+    },
     invoice: {
       anyOf: [orderInvoiceSchema, { type: "null" }],
     },
@@ -114,6 +142,7 @@ export const billingOrderResponseSchema = {
     "billingDetails",
     "plan",
     "pricing",
+    "items",
     "invoice",
   ],
 }

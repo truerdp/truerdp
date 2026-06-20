@@ -12,6 +12,7 @@ type BillingDetails = OrderBillingDetails | null
 export async function runDodoHostedCheckout(input: {
   transactionId: number
   planPricingId: number
+  productCart?: { planPricingId: number; quantity: number }[]
   orderId: number
   invoiceId: number
   amountMinor: number
@@ -36,6 +37,7 @@ export async function runDodoHostedCheckout(input: {
   try {
     const session = await createCheckoutSessionForTransaction({
       planPricingId: input.planPricingId,
+      productCart: input.productCart,
       amountMinor: input.amountMinor,
       currency: input.currency,
       orderId: input.orderId,

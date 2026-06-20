@@ -61,14 +61,14 @@ export default function CheckoutReviewPage() {
   return (
     <main className="mx-auto w-full max-w-3xl px-6 py-12">
       <div className="mb-4">
-        <Link href={webPaths.home}>
+        <Link href={webPaths.cart}>
           <Button variant="ghost" size="sm">
             <HugeiconsIcon
               icon={ArrowLeft02Icon}
               strokeWidth={2}
               data-icon="inline-start"
             />
-            Change plan
+            Back to cart
           </Button>
         </Link>
       </div>
@@ -94,8 +94,9 @@ export default function CheckoutReviewPage() {
           </CardHeader>
           <CardContent className="flex flex-col gap-6">
             <div className="flex flex-wrap items-center gap-2">
-              <Badge variant="secondary">{order.plan.name}</Badge>
-              <Badge variant="outline">{order.pricing.durationDays} days</Badge>
+              <Badge variant="secondary">
+                {order.items.length} line{order.items.length === 1 ? "" : "s"}
+              </Badge>
               <Badge variant="outline">Order #{order.orderId}</Badge>
             </div>
 

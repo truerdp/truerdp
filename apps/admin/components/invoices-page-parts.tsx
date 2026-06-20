@@ -115,13 +115,44 @@ export function getUserDisplayName(user: {
   return user.email
 }
 
+export function getBillingName(invoice: AdminInvoiceSummary) {
+  const billing = invoice.order.billingDetails
+
+  if (!billing) {
+    return getUserDisplayName(invoice.user)
+  }
+
+  const name = `${billing.firstName} ${billing.lastName}`.trim()
+  return name || billing.email
+}
+
+export function getBillingAddress(invoice: AdminInvoiceSummary) {
+  const billing = invoice.order.billingDetails
+
+  if (!billing) {
+    return "-"
+  }
+
+  return [
+    billing.addressLine1,
+    billing.addressLine2,
+    billing.city,
+    billing.state,
+    billing.postalCode,
+    billing.country,
+  ]
+    .filter(Boolean)
+    .join(", ")
+}
+
 export function InvoicesSkeleton() {
   return (
     <Table>
       <TableHeader>
         <TableRow>
           <TableHead>Invoice</TableHead>
-          <TableHead>User</TableHead>
+          <TableHead>Customer</TableHead>
+          <TableHead>Billing Address</TableHead>
           <TableHead>Plan</TableHead>
           <TableHead>Amount</TableHead>
           <TableHead>Invoice Status</TableHead>
@@ -139,6 +170,9 @@ export function InvoicesSkeleton() {
             </TableCell>
             <TableCell>
               <Skeleton className="h-4 w-12" />
+            </TableCell>
+            <TableCell>
+              <Skeleton className="h-4 w-40" />
             </TableCell>
             <TableCell>
               <Skeleton className="h-4 w-40" />

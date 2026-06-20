@@ -61,20 +61,25 @@ Never skip local code inspection and jump directly to generic framework memory.
 ## Runtime/Dev Commands (intentional flow control)
 
 - Use `pnpm` 10.29.3 (root `packageManager`) and Node `>=20`.
-- `pnpm run dev:docker` starts DB+backend in Docker and frontends locally.
+- `pnpm dev` starts DB+backend in Docker and frontends locally.
   - Do not run `pnpm dev` at the same time (backend would be double-started).
-- `pnpm run dev:frontend` starts only web/dashboard/admin.
+- `pnpm run dev:frontend` starts only web/dashboard/admin/cms and wraps Turbo
+  with `infisical run` when local Infisical auth is available.
+- `pnpm run dev:frontend:no-infisical` starts only frontends from local
+  shell/Next `.env` values.
 - `pnpm run dev:backend:restart` refreshes only Docker backend.
 - `pnpm run dev:stop` aggressively clears Docker + ports `3000-3003`.
 
 ## Frontend API Base URL Resolution
 
-- `NEXT_PUBLIC_API_URL` is injected from app `next.config.mjs` files, reading root `.env` when missing from `process.env`.
+- `NEXT_PUBLIC_API_URL` is injected from app `next.config.mjs` files, reading
+  Infisical-provided `process.env` first and then local Next env/fallbacks.
   - `apps/web/next.config.mjs`
   - `apps/dashboard/next.config.mjs`
   - `apps/admin/next.config.mjs`
 - Dev fallback defaults to `http://localhost:3003`.
-- `turbo.json` exposes `NEXT_PUBLIC_API_URL` via `globalEnv`; after `.env` changes, restart dev servers.
+- `turbo.json` exposes `NEXT_PUBLIC_API_URL` via `globalEnv`; after Infisical
+  or `.env` changes, restart dev servers.
 
 ## API Client Usage (do not bypass wrappers)
 

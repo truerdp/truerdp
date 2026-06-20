@@ -197,13 +197,6 @@ export function registerUserSupportRoutes(server: FastifyInstance) {
         }
 
         await db.transaction(async (tx) => {
-          if (ticket.status === "closed") {
-            await tx
-              .update(tickets)
-              .set({ status: "open" })
-              .where(eq(tickets.id, ticket.id))
-          }
-
           await tx.insert(messages).values({
             ticketId: ticket.id,
             senderType: "user",
@@ -213,7 +206,7 @@ export function registerUserSupportRoutes(server: FastifyInstance) {
 
           await tx
             .update(tickets)
-            .set({ updatedAt: new Date() })
+            .set({ status: "customer_replied", updatedAt: new Date() })
             .where(eq(tickets.id, ticket.id))
         })
 

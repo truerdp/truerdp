@@ -25,8 +25,9 @@ pnpm run prod:backend:refresh
 - `pnpm dev` starts local Postgres/backend in Docker and all frontend apps
   locally (`web`, `dashboard`, `admin`, and `cms`). It also starts an ngrok
   tunnel for the backend on port `3003` when ngrok is installed. If Infisical
-  is configured in the shell, it injects secrets first; otherwise it uses local
-  `.env` files and creates `apps/backend/.env` from the example when missing.
+  is configured in the shell, it syncs backend secrets and injects frontend
+  secrets from Infisical; otherwise it uses local `.env` files and creates
+  `apps/backend/.env` from the example when missing.
 - `pnpm run prod:backend` renders backend production secrets from Infisical and
   starts/rebuilds the production backend container.
 - `pnpm run prod:backend:refresh` re-renders backend production secrets and
@@ -125,7 +126,11 @@ node -v
 pnpm -v
 ```
 
-3. Create backend env file:
+3. Configure local environment values:
+
+If Infisical is configured for this checkout, `pnpm dev` syncs the backend env
+and injects frontend env automatically. For an offline fallback, create the
+backend `.env` file from the example:
 
 ```bash
 cp apps/backend/.env.example apps/backend/.env
@@ -151,9 +156,12 @@ After rebooting your machine, start everything with:
 pnpm dev
 ```
 
-That command uses Infisical when available and falls back to local `.env` files
-when it is not. It also starts `ngrok http 3003` automatically when ngrok is
-available. To skip the tunnel for one run:
+That command uses Infisical when available. It renders `apps/backend/.env` for
+Docker and starts the frontend apps through `infisical run`, so the Next.js apps
+receive frontend variables from Infisical without app-level `.env` files. When
+Infisical is not available, it falls back to local `.env` files. It also starts
+`ngrok http 3003` automatically when ngrok is available. To skip the tunnel for
+one run:
 
 ```bash
 TRUERDP_SKIP_TUNNEL=true pnpm dev
@@ -169,8 +177,11 @@ Equivalent expanded fallback form:
 
 ```bash
 docker compose -f docker-compose.yml up -d --force-recreate backend db
-pnpm run dev:frontend
+pnpm run dev:frontend:no-infisical
 ```
+
+Use `pnpm run dev:frontend` when you want only the frontend apps; it also wraps
+Turbo with Infisical when local auth is available.
 
 Avoid running raw `turbo dev` with
 `docker compose -f docker-compose.yml up -d backend` unless you intentionally

@@ -20,6 +20,7 @@ function buildReturnUrl(input: { orderId: number; transactionId: number }) {
 
 export async function createCheckoutSessionForTransaction(input: {
   planPricingId: number
+  productCart?: { planPricingId: number; quantity: number }[]
   amountMinor: number
   currency: string
   orderId: number
@@ -37,7 +38,16 @@ export async function createCheckoutSessionForTransaction(input: {
   }
 }) {
   const client = getDodoClient()
-  const productId = await resolveDodoProductIdForPlanPricing(input.planPricingId)
+  const productCartInput =
+    input.productCart && input.productCart.length > 0
+      ? input.productCart
+      : [{ planPricingId: input.planPricingId, quantity: 1 }]
+  const productCart = await Promise.all(
+    productCartInput.map(async (item) => ({
+      product_id: await resolveDodoProductIdForPlanPricing(item.planPricingId),
+      quantity: item.quantity,
+    }))
+  )
 
   const returnUrl = buildReturnUrl({
     orderId: input.orderId,
@@ -52,7 +62,7 @@ export async function createCheckoutSessionForTransaction(input: {
   }
 
   const payload: CheckoutSessionCreatePayload = {
-    product_cart: [{ product_id: productId, quantity: 1 }],
+    product_cart: productCart,
     return_url: returnUrl,
     billing_currency: getDefaultCurrency(),
     metadata,
@@ -116,4 +126,3 @@ export async function createCheckoutSessionForTransaction(input: {
     environment: getEnvironment(),
   }
 }
-

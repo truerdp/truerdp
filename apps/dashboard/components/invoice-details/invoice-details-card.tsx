@@ -39,6 +39,36 @@ function LabelRow({ label, value }: { label: string; value: string }) {
   )
 }
 
+function formatBillingName(
+  billingDetails: InvoiceSummary["order"]["billingDetails"]
+) {
+  if (!billingDetails) {
+    return "-"
+  }
+
+  const name = `${billingDetails.firstName} ${billingDetails.lastName}`.trim()
+  return name || billingDetails.email
+}
+
+function formatBillingAddress(
+  billingDetails: InvoiceSummary["order"]["billingDetails"]
+) {
+  if (!billingDetails) {
+    return "-"
+  }
+
+  return [
+    billingDetails.addressLine1,
+    billingDetails.addressLine2,
+    billingDetails.city,
+    billingDetails.state,
+    billingDetails.postalCode,
+    billingDetails.country,
+  ]
+    .filter(Boolean)
+    .join(", ")
+}
+
 export function InvoiceDetailsCard({ invoice }: InvoiceDetailsCardProps) {
   const payable = isInvoicePayable(invoice)
   const urgency = getInvoiceUrgency(invoice)
@@ -71,6 +101,14 @@ export function InvoiceDetailsCard({ invoice }: InvoiceDetailsCardProps) {
           ) : null}
         </div>
         <Separator />
+        <LabelRow
+          label="Customer"
+          value={formatBillingName(invoice.order.billingDetails)}
+        />
+        <LabelRow
+          label="Billing address"
+          value={formatBillingAddress(invoice.order.billingDetails)}
+        />
         <LabelRow label="Plan" value={invoice.plan.name} />
         <LabelRow
           label="Type"

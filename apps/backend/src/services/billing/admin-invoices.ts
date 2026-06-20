@@ -119,6 +119,7 @@ export async function listAdminInvoices(params: AdminInvoiceListParams) {
         id: orders.id,
         userId: orders.userId,
         status: orders.status,
+        billingDetails: orders.billingDetails,
         planName: orders.planName,
         durationDays: orders.durationDays,
         kind: orders.kind,
@@ -166,6 +167,7 @@ export async function listAdminInvoices(params: AdminInvoiceListParams) {
         id: row.order.id,
         userId: row.order.userId,
         status: row.order.status,
+        billingDetails: row.order.billingDetails,
       },
       user: {
         id: row.user.id,

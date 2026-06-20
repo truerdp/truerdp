@@ -90,7 +90,24 @@ export function ComparisonSection({
                           ) : null}
                         </p>
                       </div>
-                      <PlanCheckoutButton planPricingId={option.id} />
+                      <PlanCheckoutButton
+                        planPricingId={option.id}
+                        cartItem={{
+                          planPricingId: option.id,
+                          planId: plan.id,
+                          planName: plan.name,
+                          planType: plan.planType,
+                          planLocation: plan.planLocation,
+                          cpu: plan.cpu,
+                          ram: plan.ram,
+                          storage: plan.storage,
+                          durationDays: option.durationDays,
+                          priceUsdCents: getEffectivePriceUsdCents(option),
+                          originalPriceUsdCents: option.priceUsdCents,
+                        }}
+                      >
+                        Add
+                      </PlanCheckoutButton>
                     </div>
                   ))}
                 </div>

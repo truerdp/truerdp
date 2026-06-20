@@ -3,6 +3,13 @@ import z from "zod"
 import { db } from "../../db.js"
 import { messages, tickets, users } from "../../schema.js"
 
+const ticketStatusValues = [
+  "open",
+  "answered",
+  "customer_replied",
+  "closed",
+] as const
+
 export const createTicketSchema = z.object({
   subject: z.string().trim().min(3).max(160),
   message: z.string().trim().min(1).max(5000),
@@ -38,7 +45,7 @@ export const supportTicketResponseSchema = {
     id: { type: "integer" },
     userId: { type: "integer" },
     subject: { type: "string" },
-    status: { type: "string" },
+    status: { type: "string", enum: ticketStatusValues },
     createdAt: { type: "string", format: "date-time" },
     updatedAt: { type: "string", format: "date-time" },
   },

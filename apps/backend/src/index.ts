@@ -13,9 +13,12 @@ import { instanceRoutes } from "./routes/instance.js"
 import { planRoutes } from "./routes/plan.js"
 import { webhookRoutes } from "./routes/webhook.js"
 import { orderRoutes } from "./routes/order.js"
+import { cartRoutes } from "./routes/cart.js"
 import { supportRoutes } from "./routes/support.js"
+import { impersonationRoutes } from "./routes/impersonation.js"
 import fastifyRawBody from "fastify-raw-body"
 import { startExpiryReminderScheduler } from "./services/billing/reminder-scheduler.js"
+import { createAdminAuditLog } from "./services/admin-audit.js"
 
 const server = Fastify({
   logger: true,
@@ -140,12 +143,43 @@ server.addHook("onRequest", async (request, reply) => {
   }
 })
 
+server.addHook("onResponse", async (request, reply) => {
+  if (!request.impersonation) {
+    return
+  }
+
+  if (!mutatingMethods.has(request.method.toUpperCase())) {
+    return
+  }
+
+  if (reply.statusCode >= 400) {
+    return
+  }
+
+  await createAdminAuditLog({
+    adminUserId: request.impersonation.admin.id,
+    action: "customer.impersonation.action",
+    entityType: "user",
+    entityId: request.impersonation.target.id,
+    reason: request.impersonation.reason,
+    metadata: {
+      impersonationSessionId: request.impersonation.sessionId,
+      mode: request.impersonation.mode,
+      method: request.method,
+      url: request.url,
+      statusCode: reply.statusCode,
+    },
+  })
+})
+
 server.register(userRoutes)
 server.register(betterAuthRoutes)
 server.register(planRoutes)
+server.register(cartRoutes)
 server.register(orderRoutes)
 server.register(transactionRoutes)
 server.register(adminRoutes)
+server.register(impersonationRoutes)
 server.register(instanceRoutes)
 server.register(supportRoutes)
 server.register(webhookRoutes)
@@ -191,4 +225,3 @@ const start = async () => {
 }
 
 start()
-
