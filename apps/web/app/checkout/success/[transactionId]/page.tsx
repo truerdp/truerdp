@@ -1,6 +1,7 @@
 "use client"
 
 import { Suspense } from "react"
+import { useParams } from "next/navigation"
 
 import { useCheckoutSuccess } from "@/hooks/use-checkout-success"
 import { Confetti } from "@/components/magicui/confetti"
@@ -12,9 +13,13 @@ import {
 } from "@/components/checkout/success/states"
 import { CheckoutSuccessSummaryCard } from "@/components/checkout/success/summary-card"
 
-function CheckoutSuccessPageContent() {
+function CheckoutSuccessTransactionPageContent() {
+  const params = useParams<{ transactionId: string }>()
+  const transactionId = Number(params.transactionId ?? "")
+  const hasValidTransactionId =
+    Number.isInteger(transactionId) && transactionId > 0
   const { error, hasMounted, hasTransactionId, isLoading, transaction } =
-    useCheckoutSuccess()
+    useCheckoutSuccess(hasValidTransactionId ? transactionId : null)
 
   if (!hasTransactionId) {
     return <MissingTransactionReference />
@@ -52,10 +57,10 @@ function CheckoutSuccessPageContent() {
   )
 }
 
-export default function CheckoutSuccessPage() {
+export default function CheckoutSuccessTransactionPage() {
   return (
     <Suspense fallback={<CheckoutSuccessLoading />}>
-      <CheckoutSuccessPageContent />
+      <CheckoutSuccessTransactionPageContent />
     </Suspense>
   )
 }

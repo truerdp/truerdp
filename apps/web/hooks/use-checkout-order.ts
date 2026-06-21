@@ -103,9 +103,7 @@ export function useCheckoutOrder(orderId: number, hasValidOrderId: boolean) {
           ? "Continuing with your existing unpaid invoice"
           : "Transaction created"
       )
-      router.push(
-        `${webPaths.checkoutSuccess}?orderId=${order.orderId}&transactionId=${transaction.id}`
-      )
+      router.push(webPaths.checkoutSuccessTransaction(transaction.id))
     } catch (submitError) {
       const message =
         submitError instanceof Error

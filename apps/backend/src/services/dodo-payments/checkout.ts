@@ -10,12 +10,9 @@ import {
 import { ensureDodoDiscount } from "./discounts.js"
 import { resolveDodoProductIdForPlanPricing } from "./products.js"
 
-function buildReturnUrl(input: { orderId: number; transactionId: number }) {
+function buildReturnUrl(input: { transactionId: number }) {
   const base = process.env.WEB_BASE_URL?.trim() || "http://localhost:3000"
-  const u = new URL("/checkout/success", base)
-  u.searchParams.set("orderId", String(input.orderId))
-  u.searchParams.set("transactionId", String(input.transactionId))
-  return u.toString()
+  return new URL(`/checkout/success/${input.transactionId}`, base).toString()
 }
 
 export async function createCheckoutSessionForTransaction(input: {
@@ -50,7 +47,6 @@ export async function createCheckoutSessionForTransaction(input: {
   )
 
   const returnUrl = buildReturnUrl({
-    orderId: input.orderId,
     transactionId: input.transactionId,
   })
 

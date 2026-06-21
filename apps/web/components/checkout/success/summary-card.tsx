@@ -23,31 +23,25 @@ import { Separator } from "@workspace/ui/components/separator"
 
 type CheckoutSuccessSummaryCardProps = {
   transaction: Transaction
-  hasOrderId: boolean
-  orderId: number
-  isProviderFailureReturn: boolean
 }
 
 export function CheckoutSuccessSummaryCard({
   transaction,
-  hasOrderId,
-  orderId,
-  isProviderFailureReturn,
 }: CheckoutSuccessSummaryCardProps) {
   const dashboardUrl =
     process.env.NEXT_PUBLIC_DASHBOARD_URL ?? "http://localhost:3001"
 
-  const isFailed = transaction.status === "failed" || isProviderFailureReturn
+  const isFailed = transaction.status === "failed"
   const title = isFailed
     ? "Payment failed"
     : transaction.status === "confirmed"
       ? "Payment confirmed"
       : "Transaction created successfully"
   const description = isFailed
-    ? "The hosted checkout reported a failed payment. You can start a new order when ready."
+    ? "The payment could not be confirmed. You can start a new order when ready."
     : transaction.status === "confirmed"
       ? "Your payment has been confirmed and your order is moving ahead."
-      : "Your order is now pending admin confirmation and manual provisioning."
+      : "We are waiting for payment confirmation from the checkout provider."
   const titleIcon = isFailed ? CreditCardIcon : CheckmarkCircle02Icon
 
   return (
@@ -63,9 +57,7 @@ export function CheckoutSuccessSummaryCard({
         <CardContent className="flex flex-col gap-5">
           <div className="flex flex-wrap items-center gap-2">
             <Badge variant="secondary">Transaction #{transaction.id}</Badge>
-            {hasOrderId ? (
-              <Badge variant="outline">Order #{orderId}</Badge>
-            ) : null}
+            <Badge variant="outline">Order #{transaction.order.id}</Badge>
             <Badge
               variant={isFailed ? "destructive" : "outline"}
               className="capitalize"

@@ -1,17 +1,17 @@
 {
   "$schema": "https://ui.shadcn.com/schema.json",
-  "style": "base-luma",
+  "style": "base-maia",
   "rsc": true,
   "tsx": true,
   "tailwind": {
     "config": "",
     "css": "../../packages/ui/src/styles/globals.css",
-    "baseColor": "neutral",
+    "baseColor": "mist",
     "cssVariables": true
   },
   "iconLibrary": "hugeicons",
   "rtl": false,
-  "menuColor": "inverted",
+  "menuColor": "default",
   "menuAccent": "bold",
   "aliases": {
     "components": "@/components",

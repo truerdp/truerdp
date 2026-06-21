@@ -181,6 +181,18 @@ export const listTransactionsSchema = {
   },
 }
 
+export const getTransactionCheckoutStatusSchema = {
+  tags: ["Transactions"],
+  summary: "Get checkout return status from database",
+  security: [{ bearerAuth: [] }],
+  params: transactionIdParamSchema,
+  response: {
+    200: transactionSummarySchema,
+    404: errorResponse,
+    500: errorResponse,
+  },
+}
+
 export const invoiceTransactionSchema = {
   type: "object",
   properties: {
@@ -270,32 +282,6 @@ export const syncCoinGateSchema = {
     400: errorResponse,
     403: errorResponse,
     404: errorResponse,
-  },
-}
-
-export const hostedReturnSchema = {
-  tags: ["Transactions"],
-  summary: "Handle hosted checkout return",
-  security: [{ bearerAuth: [] }],
-  params: transactionIdParamSchema,
-  body: {
-    type: "object",
-    required: ["status"],
-    properties: {
-      status: { type: "string" },
-      paymentId: { type: "string" },
-    },
-  },
-  response: {
-    200: {
-      type: "object",
-      properties: {
-        message: { type: "string" },
-        transactionId: { type: "integer" },
-        status: { type: "string" },
-      },
-    },
-    400: errorResponse,
   },
 }
 

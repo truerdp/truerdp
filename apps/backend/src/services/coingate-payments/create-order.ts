@@ -11,14 +11,11 @@ import {
   toAmountMajor,
 } from "./shared.js"
 
-function buildCoinGateSuccessUrl(input: {
-  orderId: number
-  transactionId: number
-}) {
-  const base = new URL("/checkout/success", getWebBaseUrl())
-  base.searchParams.set("orderId", String(input.orderId))
-  base.searchParams.set("transactionId", String(input.transactionId))
-  return base.toString()
+function buildCoinGateSuccessUrl(input: { transactionId: number }) {
+  return new URL(
+    `/checkout/success/${input.transactionId}`,
+    getWebBaseUrl()
+  ).toString()
 }
 
 function buildCoinGateCancelUrl(orderId: number) {
@@ -83,7 +80,6 @@ export async function createCoinGateOrderForTransaction(input: {
     callback_url: buildCoinGateCallbackUrl(),
     cancel_url: buildCoinGateCancelUrl(input.orderId),
     success_url: buildCoinGateSuccessUrl({
-      orderId: input.orderId,
       transactionId: input.transactionId,
     }),
     token: callbackToken,

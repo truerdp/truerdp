@@ -14,6 +14,20 @@ export async function listUserTransactions(userId: number) {
   return mapTransactionSummaries(rows)
 }
 
+export async function getUserTransactionById(
+  userId: number,
+  transactionId: number
+) {
+  const rows = await buildTransactionSummaryQuery()
+    .where(
+      and(eq(transactions.userId, userId), eq(transactions.id, transactionId))
+    )
+    .limit(1)
+  const [transaction] = await mapTransactionSummaries(rows)
+
+  return transaction ?? null
+}
+
 export async function listUserInvoices(userId: number) {
   const rows = await db
     .select({
@@ -85,10 +99,16 @@ export async function listUserInvoices(userId: number) {
   }))
 }
 
-export async function listInstanceTransactions(userId: number, instanceId: number) {
+export async function listInstanceTransactions(
+  userId: number,
+  instanceId: number
+) {
   const rows = await buildTransactionSummaryQuery()
     .where(
-      and(eq(transactions.userId, userId), eq(transactions.instanceId, instanceId))
+      and(
+        eq(transactions.userId, userId),
+        eq(transactions.instanceId, instanceId)
+      )
     )
     .orderBy(desc(transactions.createdAt))
 

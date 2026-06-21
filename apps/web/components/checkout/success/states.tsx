@@ -63,3 +63,22 @@ export function TransactionNotFound() {
     </main>
   )
 }
+
+export function CheckoutStatusUnavailable({ message }: { message?: string }) {
+  return (
+    <main className="mx-auto w-full max-w-3xl px-6 py-12">
+      <Empty className="border">
+        <EmptyHeader>
+          <EmptyTitle>Unable to load checkout status</EmptyTitle>
+          <EmptyDescription>
+            {message ??
+              "Refresh the page in a moment, or sign in again if your session expired."}
+          </EmptyDescription>
+        </EmptyHeader>
+        <Link href={webPaths.login}>
+          <Button>Sign in</Button>
+        </Link>
+      </Empty>
+    </main>
+  )
+}

@@ -22,6 +22,7 @@ export { createBillingOrder } from "./billing/order-create.js"
 export { createBillingTransaction } from "./billing/transaction-create.js"
 export {
   listUserTransactions,
+  getUserTransactionById,
   listUserInvoices,
   listInstanceTransactions,
   listPendingTransactions,

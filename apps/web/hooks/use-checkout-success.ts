@@ -1,37 +1,61 @@
 "use client"
 
-import { useEffect, useMemo, useRef } from "react"
-import { useSearchParams } from "next/navigation"
+import { useEffect, useRef } from "react"
+import { usePathname, useRouter, useSearchParams } from "next/navigation"
+import { useQuery } from "@tanstack/react-query"
 import { clientApi } from "@workspace/api/client"
 
-import { useTransactions } from "@/hooks/use-transactions"
+import { webPaths } from "@/lib/paths"
+import type { Transaction } from "@/hooks/use-transactions"
 
-export function useCheckoutSuccess() {
+function parseTransactionId(value: string | null | undefined) {
+  const transactionId = Number(value ?? "")
+
+  return Number.isInteger(transactionId) && transactionId > 0
+    ? transactionId
+    : null
+}
+
+export function useCheckoutSuccess(transactionIdFromPath?: number | null) {
+  const router = useRouter()
+  const pathname = usePathname()
   const searchParams = useSearchParams()
   const hasMounted = typeof window !== "undefined"
-  const orderId = Number(searchParams.get("orderId") ?? "")
-  const hasOrderId = Number.isInteger(orderId) && orderId > 0
-  const transactionId = Number(searchParams.get("transactionId") ?? "")
-  const hasTransactionId = Number.isInteger(transactionId) && transactionId > 0
-  const providerStatus = (searchParams.get("status") ?? "").toLowerCase()
-  const providerPaymentId = searchParams.get("payment_id")
-  const isProviderFailureReturn = [
-    "failed",
-    "failure",
-    "cancelled",
-    "canceled",
-  ].includes(providerStatus)
+  const transactionId =
+    transactionIdFromPath ??
+    parseTransactionId(searchParams.get("transactionId"))
+  const hasTransactionId = transactionId != null
 
-  const { data, isLoading, refetch } = useTransactions()
+  const {
+    data: transaction = null,
+    error,
+    isLoading,
+    refetch,
+  } = useQuery<Transaction | null>({
+    queryKey: ["checkout-transaction", transactionId],
+    queryFn: () => {
+      if (!transactionId) {
+        return null
+      }
+
+      return fetchCheckoutTransaction(transactionId)
+    },
+    enabled: hasTransactionId,
+    retry: false,
+  })
   const hasSyncedCoinGateRef = useRef(false)
-  const hasSyncedHostedReturnRef = useRef(false)
 
-  const transaction = useMemo(() => {
-    if (!data || !hasTransactionId) {
-      return null
+  useEffect(() => {
+    if (!hasMounted || !transactionId) {
+      return
     }
-    return data.find((item) => item.id === transactionId) ?? null
-  }, [data, hasTransactionId, transactionId])
+
+    const cleanPath = webPaths.checkoutSuccessTransaction(transactionId)
+
+    if (pathname !== cleanPath || window.location.search) {
+      router.replace(cleanPath, { scroll: false })
+    }
+  }, [hasMounted, pathname, router, transactionId])
 
   useEffect(() => {
     if (
@@ -56,46 +80,28 @@ export function useCheckoutSuccess() {
       })
   }, [refetch, transaction])
 
-  useEffect(() => {
-    if (
-      !transaction ||
-      !isProviderFailureReturn ||
-      hasSyncedHostedReturnRef.current ||
-      transaction.status !== "pending"
-    ) {
-      return
-    }
-
-    hasSyncedHostedReturnRef.current = true
-
-    void clientApi(`/transactions/${transaction.id}/hosted-return`, {
-      method: "POST",
-      body: {
-        status: providerStatus,
-        paymentId: providerPaymentId,
-      },
-    })
-      .catch(() => {
-        // Keep page readable; refetch below shows authoritative state.
-      })
-      .finally(() => {
-        void refetch()
-      })
-  }, [
-    isProviderFailureReturn,
-    providerPaymentId,
-    providerStatus,
-    refetch,
-    transaction,
-  ])
-
   return {
+    error,
     hasMounted,
-    orderId,
-    hasOrderId,
     transaction,
     hasTransactionId,
     isLoading,
-    isProviderFailureReturn,
+  }
+}
+
+async function fetchCheckoutTransaction(transactionId: number) {
+  try {
+    return await clientApi<Transaction>(
+      `/transactions/${transactionId}/checkout-status`
+    )
+  } catch (error) {
+    const transactions = await clientApi<Transaction[]>("/transactions")
+    const transaction = transactions.find((item) => item.id === transactionId)
+
+    if (transaction) {
+      return transaction
+    }
+
+    throw error
   }
 }

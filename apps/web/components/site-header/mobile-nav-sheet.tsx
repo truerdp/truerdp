@@ -2,7 +2,6 @@ import Link from "next/link"
 import { HugeiconsIcon } from "@hugeicons/react"
 import {
   DashboardSquare01Icon,
-  Home03Icon,
   LoginSquare02Icon,
   Logout01Icon,
   Menu01Icon,
@@ -27,6 +26,8 @@ import {
   renderMobileMenuItem,
 } from "./menu-items"
 import type { MenuItem } from "./types"
+import ThemeToggle from "../theme-toggle"
+import { SiteLogo } from "@workspace/ui/components/site-logo"
 
 const mobileFeaturedLinks: MenuItem[] = [
   {
@@ -81,15 +82,7 @@ export function MobileNavSheet({
               className="inline-flex items-center gap-2 text-sm font-semibold"
               onClick={() => setMobileMenuOpen(false)}
             >
-              <span className="inline-flex size-9 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,oklch(0.78_0.16_76),oklch(0.7_0.14_190))] text-[oklch(0.18_0.045_250)] shadow-sm">
-                <HugeiconsIcon icon={Home03Icon} size={18} strokeWidth={2} />
-              </span>
-              <span className="flex flex-col leading-tight">
-                <span>{brandName}</span>
-                <span className="text-xs font-normal text-muted-foreground">
-                  Fast setup. Clean provisioning.
-                </span>
-              </span>
+              <SiteLogo brandName={brandName} height={50} width={50} />
             </Link>
           </SheetHeader>
 
@@ -192,6 +185,7 @@ export function MobileNavSheet({
                   </Button>
                 </div>
               )}
+              <ThemeToggle />
             </section>
           </div>
         </div>

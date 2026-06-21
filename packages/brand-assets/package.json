@@ -3,7 +3,13 @@
   "version": "0.0.1",
   "private": true,
   "exports": {
-    "./logo.svg": "./assets/logo.svg",
-    "./logo-full.svg": "./assets/logo-full.svg"
+    "./logo.svg": {
+      "types": "./assets/logo.svg.d.ts",
+      "default": "./assets/logo.svg"
+    },
+    "./logo-full.svg": {
+      "types": "./assets/logo-full.svg.d.ts",
+      "default": "./assets/logo-full.svg"
+    }
   }
 }

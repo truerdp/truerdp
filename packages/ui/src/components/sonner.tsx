@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useTheme } from "next-themes"
 import { Toaster as Sonner, type ToasterProps } from "sonner"
 import { HugeiconsIcon } from "@hugeicons/react"
 import {
@@ -11,50 +11,12 @@ import {
   Loading03Icon,
 } from "@hugeicons/core-free-icons"
 
-function getToasterTheme(): ToasterProps["theme"] {
-  if (typeof window === "undefined") {
-    return "system"
-  }
-
-  const root = document.documentElement
-
-  if (root.classList.contains("dark")) {
-    return "dark"
-  }
-
-  if (root.classList.contains("light")) {
-    return "light"
-  }
-
-  return window.matchMedia("(prefers-color-scheme: dark)").matches
-    ? "dark"
-    : "light"
-}
-
 const Toaster = ({ ...props }: ToasterProps) => {
-  const [theme, setTheme] = useState<ToasterProps["theme"]>(() =>
-    getToasterTheme()
-  )
-
-  useEffect(() => {
-    const root = document.documentElement
-    const observer = new MutationObserver(() => {
-      setTheme(getToasterTheme())
-    })
-
-    observer.observe(root, {
-      attributes: true,
-      attributeFilter: ["class"],
-    })
-
-    return () => {
-      observer.disconnect()
-    }
-  }, [])
+  const { theme = "system" } = useTheme()
 
   return (
     <Sonner
-      theme={theme}
+      theme={theme as ToasterProps["theme"]}
       className="toaster group"
       icons={{
         success: (

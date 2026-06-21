@@ -1,16 +1,16 @@
 import { cn } from "@workspace/ui/lib/utils"
-import { Loading03Icon } from "@hugeicons/core-free-icons"
 import { HugeiconsIcon } from "@hugeicons/react"
+import { Loading03Icon } from "@hugeicons/core-free-icons"
 
-type SpinnerProps = Omit<React.ComponentProps<"svg">, "strokeWidth"> & {
-  strokeWidth?: number
-}
-
-function Spinner({ className, strokeWidth = 2, ...props }: SpinnerProps) {
+function Spinner({
+  className,
+  ...props
+}: Omit<React.ComponentProps<typeof HugeiconsIcon>, "icon">) {
   return (
     <HugeiconsIcon
       icon={Loading03Icon}
-      strokeWidth={strokeWidth}
+      strokeWidth={2}
+      data-slot="spinner"
       role="status"
       aria-label="Loading"
       className={cn("size-4 animate-spin", className)}

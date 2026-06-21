@@ -16,6 +16,8 @@ export const webPaths = {
     `/checkout/${orderId}/review` as Route,
   checkoutOrder: (orderId: number) => `/checkout/${orderId}` as Route,
   checkoutSuccess: "/checkout/success" as Route,
+  checkoutSuccessTransaction: (transactionId: number) =>
+    `/checkout/success/${transactionId}` as Route,
   faq: "/faq" as Route,
   terms: "/terms" as Route,
   privacy: "/privacy" as Route,

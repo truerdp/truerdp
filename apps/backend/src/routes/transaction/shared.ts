@@ -10,12 +10,10 @@ export const transactionParamsSchema = z.object({
   transactionId: z.coerce.number().int().positive(),
 })
 
-export const hostedReturnSchema = z.object({
-  status: z.string().trim().toLowerCase(),
-  paymentId: z.string().trim().min(1).max(255).optional().nullable(),
-})
-
-export function readStringMetadata(metadata: unknown, key: string): string | null {
+export function readStringMetadata(
+  metadata: unknown,
+  key: string
+): string | null {
   if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) {
     return null
   }
@@ -32,4 +30,3 @@ export function readStringMetadata(metadata: unknown, key: string): string | nul
 
   return null
 }
-

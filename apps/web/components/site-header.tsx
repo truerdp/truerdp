@@ -6,7 +6,7 @@ import { useState } from "react"
 import { useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
 import { HugeiconsIcon } from "@hugeicons/react"
-import logoSvg from "@workspace/brand-assets/logo.svg"
+import { SiteLogo } from "@workspace/ui/components/site-logo"
 import {
   DashboardSquare01Icon,
   LoginSquare02Icon,
@@ -30,7 +30,6 @@ import {
 import { CartButton } from "@/components/cart/cart-button"
 import { MobileNavSheet } from "@/components/site-header/mobile-nav-sheet"
 import type { HeaderLink, MenuItem } from "@/components/site-header/types"
-import Image from "next/image"
 
 export default function SiteHeader({
   brandName = "TrueRDP",
@@ -150,7 +149,6 @@ export default function SiteHeader({
           <div className="flex items-center justify-between lg:hidden">
             <BrandLink brandName={brandName} />
             <div className="flex gap-3">
-              <ThemeToggle />
               <CartButton />
               <MobileNavSheet
                 brandName={brandName}
@@ -170,35 +168,13 @@ export default function SiteHeader({
   )
 }
 
-function SiteLogo({ brandName }: { brandName: string }) {
-  return (
-    <div className="inline-flex items-center gap-2">
-      <Image
-        loading="eager"
-        src={logoSvg}
-        alt={brandName}
-        width={80}
-        height={80}
-        className="dark:grayscale dark:invert"
-      />
-      <span
-        aria-label="TrueRDP"
-        className="font-brand text-3xl text-blue-900 dark:text-white"
-      >
-        <span className="text-black dark:text-white">True</span>
-        <span className="dark:text-white">RDP</span>
-      </span>
-    </div>
-  )
-}
-
-function BrandLink({ brandName }: { brandName: string }) {
+export function BrandLink({ brandName }: { brandName: string }) {
   return (
     <Link
       href={webPaths.home}
       className="text-sm font-semibold text-[oklch(0.24_0.08_260)] dark:text-white"
     >
-      <SiteLogo brandName={brandName} />
+      <SiteLogo height={80} width={80} brandName={brandName} />
     </Link>
   )
 }
