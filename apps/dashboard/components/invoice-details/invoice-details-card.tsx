@@ -6,6 +6,7 @@ import { buildWebCheckoutReviewUrl } from "@/lib/auth"
 import { formatAmount } from "@/lib/format"
 import { Badge } from "@workspace/ui/components/badge"
 import { Button } from "@workspace/ui/components/button"
+import { SiteLogo } from "@workspace/ui/components/site-logo"
 import {
   Card,
   CardContent,
@@ -69,6 +70,57 @@ function formatBillingAddress(
     .join(", ")
 }
 
+function ScreenInvoiceHeader({ invoiceNumber }: { invoiceNumber: string }) {
+  return (
+    <div className="space-y-1.5 print:hidden">
+      <CardTitle className="inline-flex items-center gap-2">
+        <HugeiconsIcon icon={Invoice03Icon} strokeWidth={2} />
+        Invoice {invoiceNumber}
+      </CardTitle>
+      <CardDescription>
+        Review status, amount, and payment routing for this invoice.
+      </CardDescription>
+    </div>
+  )
+}
+
+function PrintInvoiceHeader({
+  invoiceNumber,
+  status,
+}: {
+  invoiceNumber: string
+  status: InvoiceSummary["status"]
+}) {
+  return (
+    <div className="hidden w-full items-start justify-between border-b pb-6 print:flex">
+      <div className="space-y-2">
+        <SiteLogo height={40} width={60} />
+        <div className="mt-2 space-y-0.5 text-[11px] leading-relaxed text-muted-foreground">
+          <p className="font-semibold text-foreground">TrueRDP</p>
+          <p>Web: https://truerdp.com</p>
+          <p>Email: support@truerdp.com</p>
+        </div>
+      </div>
+      <div className="space-y-1 text-right">
+        <h1 className="text-xl font-bold tracking-wider text-foreground uppercase">
+          Invoice
+        </h1>
+        <p className="font-mono text-xs text-muted-foreground">
+          {invoiceNumber}
+        </p>
+        <div className="mt-2">
+          <Badge
+            variant={getInvoiceStatusVariant(status)}
+            className="px-2 py-0.5 text-[10px] font-semibold uppercase"
+          >
+            {status}
+          </Badge>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export function InvoiceDetailsCard({ invoice }: InvoiceDetailsCardProps) {
   const payable = isInvoicePayable(invoice)
   const urgency = getInvoiceUrgency(invoice)
@@ -76,13 +128,11 @@ export function InvoiceDetailsCard({ invoice }: InvoiceDetailsCardProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="inline-flex items-center gap-2">
-          <HugeiconsIcon icon={Invoice03Icon} strokeWidth={2} />
-          Invoice {invoice.invoiceNumber}
-        </CardTitle>
-        <CardDescription>
-          Review status, amount, and payment routing for this invoice.
-        </CardDescription>
+        <ScreenInvoiceHeader invoiceNumber={invoice.invoiceNumber} />
+        <PrintInvoiceHeader
+          invoiceNumber={invoice.invoiceNumber}
+          status={invoice.status}
+        />
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="flex flex-wrap items-center gap-2">

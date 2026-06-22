@@ -68,7 +68,8 @@
 }
 
 @media print {
-  :root, .dark {
+  :root,
+  .dark {
     --background: #ffffff !important;
     --foreground: #0f172a !important;
     --card: #ffffff !important;
@@ -81,9 +82,5 @@
   body {
     background-color: #ffffff !important;
     color: #0f172a !important;
-  }
-
-  .print\:hidden {
-    display: none !important;
   }
 }

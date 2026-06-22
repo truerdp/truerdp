@@ -4,7 +4,7 @@ import Link from "next/link"
 import { useMemo } from "react"
 import { useParams } from "next/navigation"
 import { HugeiconsIcon } from "@hugeicons/react"
-import { ArrowLeft02Icon, Download01Icon } from "@hugeicons/core-free-icons"
+import { ArrowLeft02Icon, PrinterIcon } from "@hugeicons/core-free-icons"
 
 import { useInvoices } from "@/hooks/use-invoices"
 import { dashboardPaths } from "@/lib/paths"
@@ -63,11 +63,11 @@ export default function InvoiceDetailsPage() {
         </Link>
         <Button variant="outline" size="sm" onClick={() => window.print()}>
           <HugeiconsIcon
-            icon={Download01Icon}
+            icon={PrinterIcon}
             strokeWidth={2}
             data-icon="inline-start"
           />
-          Download PDF
+          Print Invoice
         </Button>
       </div>
       <InvoiceDetailsCard invoice={invoice} />
