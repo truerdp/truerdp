@@ -106,7 +106,7 @@ export function ComparisonSection({
                           originalPriceUsdCents: option.priceUsdCents,
                         }}
                       >
-                        Add
+                        Add to Cart
                       </PlanCheckoutButton>
                     </div>
                   ))}

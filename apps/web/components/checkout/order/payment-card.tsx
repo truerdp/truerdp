@@ -25,6 +25,7 @@ import {
   ToggleGroup,
   ToggleGroupItem,
 } from "@workspace/ui/components/toggle-group"
+import Image from "next/image"
 
 interface PaymentCardProps {
   order: BillingOrder
@@ -150,6 +151,7 @@ export function CheckoutPaymentCard({
                 setMethod(selected)
               }
             }}
+            className="max-md:flex-col max-md:items-start"
           >
             <ToggleGroupItem value="dodo_checkout">
               Dodo Checkout (Recommended)
@@ -157,8 +159,8 @@ export function CheckoutPaymentCard({
             <ToggleGroupItem value="coingate_checkout">
               CoinGate (Crypto)
             </ToggleGroupItem>
-            <ToggleGroupItem value="upi">UPI</ToggleGroupItem>
             <ToggleGroupItem value="usdt_trc20">USDT TRC20</ToggleGroupItem>
+            <ToggleGroupItem value="upi">UPI</ToggleGroupItem>
           </ToggleGroup>
         </div>
 
@@ -180,15 +182,37 @@ export function CheckoutPaymentCard({
               cryptocurrencies. Confirmation syncs automatically.
             </AlertDescription>
           </Alert>
-        ) : (
-          <Alert>
-            <HugeiconsIcon icon={DollarCircleIcon} strokeWidth={2} />
-            <AlertTitle>Manual confirmation flow</AlertTitle>
-            <AlertDescription>
-              Creates a pending transaction for admin review.
-            </AlertDescription>
-          </Alert>
-        )}
+        ) : method === "usdt_trc20" ? (
+          <div className="flex items-center gap-4 rounded-md border p-3 max-md:flex-col">
+            <Image
+              src="/payment/usdt-qr.png"
+              alt="USDT Payment"
+              className="rounded-md border border-muted-foreground/10 shadow-sm max-md:h-[150px] max-md:w-[150px]"
+              width={200}
+              height={200}
+            />
+            <div className="flex flex-col gap-2">
+              <p className="text-sm">
+                Send USDT on TRC20 network to the address below with the exact
+                amount. Admin will review and confirm the transaction within 24
+                hours.
+              </p>
+              <div className="rounded-md bg-muted p-2 font-mono text-sm">
+                TUE67fuWyc4XLMeDFpywCgZuoNcdmSAfE2
+              </div>
+            </div>
+          </div>
+        ) : method === "upi" ? (
+          <>
+            <Alert>
+              <HugeiconsIcon icon={DollarCircleIcon} strokeWidth={2} />
+              <AlertTitle>Manual confirmation flow</AlertTitle>
+              <AlertDescription>
+                Creates a pending transaction for admin review.
+              </AlertDescription>
+            </Alert>
+          </>
+        ) : null}
       </CardContent>
       <CardFooter>
         <Button

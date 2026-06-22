@@ -17,6 +17,8 @@ import {
   getTicketStatusVariant,
   type TicketStatus,
 } from "@/app/support/models"
+import { HugeiconsIcon } from "@hugeicons/react"
+import { ChevronLeft } from "@hugeicons/core-free-icons"
 
 type TicketDetail = {
   ticket: {
@@ -110,8 +112,9 @@ export default function AdminSupportTicketPage() {
         <div className="min-w-0">
           <Link
             href={adminPaths.support}
-            className="text-sm text-muted-foreground hover:text-foreground"
+            className="flex items-center gap-2 text-sm text-muted-foreground"
           >
+            <HugeiconsIcon icon={ChevronLeft} size={24} color="currentColor" />
             Back to tickets
           </Link>
           <div className="mt-2 flex flex-wrap items-center gap-2">
@@ -123,7 +126,14 @@ export default function AdminSupportTicketPage() {
             </Badge>
           </div>
           <p className="mt-1 text-sm text-muted-foreground">
-            {data.ticket.subject} • User #{data.ticket.userId}
+            <b>Subject:</b> {data.ticket.subject}
+          </p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            <Link href={adminPaths.userDetails(data.ticket.userId)}>
+              {data?.messages[0]?.sender?.email ||
+                `User #${data.ticket.userId}`}
+            </Link>{" "}
+            • Created at {formatDate(data.ticket.createdAt)}
           </p>
         </div>
         <Button

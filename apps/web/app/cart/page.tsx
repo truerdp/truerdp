@@ -106,7 +106,7 @@ function CartPageContent() {
             </p>
           </div>
           <Link href={webPaths.plans}>
-            <Button variant="outline">Browse plans</Button>
+            <Button variant="outline">Browse all plans</Button>
           </Link>
         </div>
 

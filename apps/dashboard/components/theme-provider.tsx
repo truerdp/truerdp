@@ -196,13 +196,15 @@ function isTypingTarget(target: EventTarget | null) {
 function ThemeHotkey() {
   const { resolvedTheme, setTheme } = useTheme()
 
+  // use alt+shift+d to toggle dark mode
   React.useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
       if (event.defaultPrevented || event.repeat) {
         return
       }
 
-      if (event.metaKey || event.ctrlKey || event.altKey) {
+      // ignore Meta/Ctrl combinations
+      if (event.metaKey || event.ctrlKey) {
         return
       }
 
@@ -213,6 +215,11 @@ function ThemeHotkey() {
       }
 
       if (isTypingTarget(event.target)) {
+        return
+      }
+
+      // require Alt+Shift+D
+      if (!(event.altKey && event.shiftKey)) {
         return
       }
 

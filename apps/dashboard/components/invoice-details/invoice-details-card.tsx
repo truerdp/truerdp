@@ -74,7 +74,7 @@ export function InvoiceDetailsCard({ invoice }: InvoiceDetailsCardProps) {
   const urgency = getInvoiceUrgency(invoice)
 
   return (
-    <Card className="max-w-3xl">
+    <Card>
       <CardHeader>
         <CardTitle className="inline-flex items-center gap-2">
           <HugeiconsIcon icon={Invoice03Icon} strokeWidth={2} />
@@ -145,7 +145,7 @@ export function InvoiceDetailsCard({ invoice }: InvoiceDetailsCardProps) {
           <span className="text-sm">{formatDateTime(invoice.paidAt)}</span>
         </div>
       </CardContent>
-      <CardFooter>
+      <CardFooter className="print:hidden">
         {payable ? (
           <Button
             onClick={() =>

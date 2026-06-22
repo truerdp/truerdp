@@ -13,15 +13,24 @@ import {
 import { Field, FieldLabel } from "@workspace/ui/components/field"
 import { Input } from "@workspace/ui/components/input"
 import { Textarea } from "@workspace/ui/components/textarea"
+import {
+  Combobox,
+  ComboboxContent,
+  ComboboxEmpty,
+  ComboboxInput,
+  ComboboxItem,
+  ComboboxList,
+} from "@workspace/ui/components/combobox"
 
 type CreateTicketDialogProps = {
   open: boolean
-  userId: string
+  userEmail: string
+  userOptions: string[]
   subject: string
   message: string
   isPending: boolean
   onOpenChange: (open: boolean) => void
-  onUserIdChange: (value: string) => void
+  onUserEmailChange: (value: string) => void
   onSubjectChange: (value: string) => void
   onMessageChange: (value: string) => void
   onCreate: () => void
@@ -29,12 +38,13 @@ type CreateTicketDialogProps = {
 
 export function CreateTicketDialog({
   open,
-  userId,
+  userEmail,
+  userOptions,
   subject,
   message,
   isPending,
   onOpenChange,
-  onUserIdChange,
+  onUserEmailChange,
   onSubjectChange,
   onMessageChange,
   onCreate,
@@ -58,14 +68,31 @@ export function CreateTicketDialog({
         </DialogHeader>
         <div className="grid gap-3">
           <Field>
-            <FieldLabel>User ID</FieldLabel>
-            <Input
-              type="number"
-              min={1}
-              value={userId}
-              onChange={(event) => onUserIdChange(event.target.value)}
-              placeholder="Customer user id"
-            />
+            <FieldLabel>User email</FieldLabel>
+            <Combobox
+              items={userOptions}
+              value={userEmail || null}
+              onValueChange={(value) => onUserEmailChange(value ?? "")}
+              disabled={userOptions.length === 0}
+            >
+              <ComboboxInput
+                placeholder="Search user email"
+                className="w-full"
+                showTrigger={false}
+                showClear
+                disabled={userOptions.length === 0}
+              />
+              <ComboboxContent>
+                <ComboboxList>
+                  {(option) => (
+                    <ComboboxItem key={option} value={option}>
+                      {option}
+                    </ComboboxItem>
+                  )}
+                </ComboboxList>
+                <ComboboxEmpty>No users found</ComboboxEmpty>
+              </ComboboxContent>
+            </Combobox>
           </Field>
           <Field>
             <FieldLabel>Subject</FieldLabel>
@@ -97,7 +124,7 @@ export function CreateTicketDialog({
             onClick={onCreate}
             disabled={
               isPending ||
-              Number(userId) <= 0 ||
+              userEmail.trim().length === 0 ||
               subject.trim().length < 3 ||
               message.trim().length === 0
             }

@@ -92,7 +92,7 @@ export default function SiteHeader({
 
             <div className="flex items-center gap-2">
               <ThemeToggle />
-              <CartButton />
+
               {!isAuthenticated ? (
                 <>
                   <Link href={webPaths.login}>
@@ -118,6 +118,7 @@ export default function SiteHeader({
                 </>
               ) : (
                 <>
+                  <CartButton />
                   <a href={dashboardUrl} target="_blank" rel="noreferrer">
                     <Button size="sm" variant="outline">
                       <HugeiconsIcon
@@ -174,7 +175,7 @@ export function BrandLink({ brandName }: { brandName: string }) {
       href={webPaths.home}
       className="text-sm font-semibold text-[oklch(0.24_0.08_260)] dark:text-white"
     >
-      <SiteLogo height={80} width={80} brandName={brandName} />
+      <SiteLogo height={54} width={80} brandName={brandName} />
     </Link>
   )
 }

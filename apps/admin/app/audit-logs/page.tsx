@@ -139,10 +139,10 @@ export default function AdminAuditLogsPage() {
                   <TableCell className="max-w-72 text-xs">
                     {item.reason}
                   </TableCell>
-                  <TableCell className="max-w-72 font-mono text-[11px]">
+                  <TableCell className="max-w-100 font-mono text-[11px] wrap-break-word whitespace-normal">
                     {toPrettyJson(item.beforeState)}
                   </TableCell>
-                  <TableCell className="max-w-72 font-mono text-[11px]">
+                  <TableCell className="max-w-100 font-mono text-[11px] wrap-break-word whitespace-normal">
                     {toPrettyJson(item.afterState)}
                   </TableCell>
                 </TableRow>

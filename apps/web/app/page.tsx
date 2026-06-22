@@ -69,8 +69,8 @@ export default async function Page() {
         <HomeAutoCheckout />
       </Suspense>
 
-      <div className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-180 bg-[linear-gradient(115deg,oklch(0.95_0.05_78/0.62)_0%,transparent_34%),linear-gradient(245deg,oklch(0.82_0.075_205/0.45)_0%,transparent_44%),linear-gradient(180deg,oklch(1_0_0/0.34),transparent_78%)]" />
-      <div className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-180 bg-[linear-gradient(90deg,transparent_0,transparent_48%,oklch(0.56_0.1_205/0.06)_48%,oklch(0.56_0.1_205/0.06)_52%,transparent_52%,transparent_100%)]" />
+      <div className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-180 not-dark:bg-[linear-gradient(115deg,oklch(0.95_0.05_78/0.62)_0%,transparent_34%),linear-gradient(245deg,oklch(0.82_0.075_205/0.45)_0%,transparent_44%),linear-gradient(180deg,oklch(1_0_0/0.34),transparent_78%)]" />
+      {/* <div className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-180 bg-[linear-gradient(90deg,transparent_0,transparent_48%,oklch(0.56_0.1_205/0.06)_48%,oklch(0.56_0.1_205/0.06)_52%,transparent_52%,transparent_100%)]" /> */}
 
       {error ? (
         <section className="mx-auto mt-8 w-full max-w-6xl px-6">

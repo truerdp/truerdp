@@ -62,7 +62,7 @@ export function CheckoutSuccessSummaryCard({
               variant={isFailed ? "destructive" : "outline"}
               className="capitalize"
             >
-              {transaction.status}
+              Transaction is {transaction.status}
             </Badge>
           </div>
 

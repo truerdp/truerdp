@@ -53,10 +53,12 @@ export function TicketsTable({ isLoading, tickets }: TicketsTableProps) {
                   {ticket.subject}
                 </TableCell>
                 <TableCell className="min-w-52">
-                  <div>{ticket.user.email}</div>
-                  <div className="text-xs text-muted-foreground">
-                    User #{ticket.userId}
-                  </div>
+                  <Link href={adminPaths.userDetails(ticket.userId)}>
+                    <div>{ticket.user.email}</div>
+                    <div className="text-xs text-muted-foreground">
+                      User #{ticket.userId}
+                    </div>
+                  </Link>
                 </TableCell>
                 <TableCell>
                   <Badge variant={getTicketStatusVariant(ticket.status)}>
@@ -71,7 +73,7 @@ export function TicketsTable({ isLoading, tickets }: TicketsTableProps) {
                     href={adminPaths.supportTicket(ticket.id)}
                     className={buttonVariants({
                       size: "sm",
-                      variant: "outline",
+                      variant: "default",
                     })}
                   >
                     View

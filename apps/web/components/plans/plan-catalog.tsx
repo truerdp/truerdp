@@ -210,7 +210,7 @@ export function PlanGrid({ plans }: { plans: MarketingPlan[] }) {
                           originalPriceUsdCents: option.priceUsdCents,
                         }}
                       >
-                        Add
+                        Add to Cart
                       </PlanCheckoutButton>
                     </div>
                   ))}
