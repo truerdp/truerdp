@@ -24,7 +24,7 @@ interface CreateTransactionResponse {
 
 export function useCheckoutOrder(orderId: number, hasValidOrderId: boolean) {
   const router = useRouter()
-  const [method, setMethod] = useState<PaymentMethod>("dodo_checkout")
+  const [method, setMethod] = useState<PaymentMethod>("usdt_trc20")
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const {

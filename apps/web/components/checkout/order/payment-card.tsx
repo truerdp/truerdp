@@ -153,14 +153,16 @@ export function CheckoutPaymentCard({
             }}
             className="max-md:flex-col max-md:items-start"
           >
+            <ToggleGroupItem value="usdt_trc20">
+              USDT TRC20 (Recommended)
+            </ToggleGroupItem>
             <ToggleGroupItem value="dodo_checkout">
-              Dodo Checkout (Recommended)
+              Credit/Debit Card (Dodo Checkout)
             </ToggleGroupItem>
             <ToggleGroupItem value="coingate_checkout">
               CoinGate (Crypto)
             </ToggleGroupItem>
-            <ToggleGroupItem value="usdt_trc20">USDT TRC20</ToggleGroupItem>
-            <ToggleGroupItem value="upi">UPI</ToggleGroupItem>
+            {/* <ToggleGroupItem value="upi">UPI</ToggleGroupItem> */}
           </ToggleGroup>
         </div>
 
@@ -197,7 +199,7 @@ export function CheckoutPaymentCard({
                 amount. Admin will review and confirm the transaction within 24
                 hours.
               </p>
-              <div className="rounded-md bg-muted p-2 font-mono text-sm">
+              <div className="rounded-md bg-muted p-2 font-mono text-sm break-all">
                 TUE67fuWyc4XLMeDFpywCgZuoNcdmSAfE2
               </div>
             </div>
