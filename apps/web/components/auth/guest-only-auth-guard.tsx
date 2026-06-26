@@ -4,7 +4,7 @@ import { useEffect } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 
 import { useProfile } from "@/hooks/use-profile"
-import { resolvePostAuthRedirect } from "@/lib/auth"
+import { canProfileUseRedirect, resolvePostAuthRedirect } from "@/lib/auth"
 
 export function GuestOnlyAuthGuard({
   children,
@@ -16,11 +16,16 @@ export function GuestOnlyAuthGuard({
   const router = useRouter()
   const searchParams = useSearchParams()
   const profileQuery = useProfile()
-  const redirectTarget = resolvePostAuthRedirect(searchParams.get("redirect"))
+  const requestedRedirect = searchParams.get("redirect")
+  const redirectTarget = resolvePostAuthRedirect(requestedRedirect)
   const isAuthenticated = !profileQuery.isError && Boolean(profileQuery.data)
+  const canUseRedirect = canProfileUseRedirect({
+    redirectTarget: requestedRedirect,
+    role: profileQuery.data?.role,
+  })
 
   useEffect(() => {
-    if (!isAuthenticated) {
+    if (!isAuthenticated || !canUseRedirect) {
       return
     }
 
@@ -30,9 +35,9 @@ export function GuestOnlyAuthGuard({
     }
 
     window.location.replace(redirectTarget)
-  }, [isAuthenticated, redirectTarget, router])
+  }, [canUseRedirect, isAuthenticated, redirectTarget, router])
 
-  if (profileQuery.isLoading || isAuthenticated) {
+  if (profileQuery.isLoading || (isAuthenticated && canUseRedirect)) {
     return fallback
   }
 

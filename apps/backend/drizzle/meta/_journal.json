@@ -218,6 +218,13 @@
       "when": 1782484800000,
       "tag": "0030_add_paypal_checkout_payment_method",
       "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1782488400000,
+      "tag": "0031_ensure_paypal_checkout_payment_method",
+      "breakpoints": true
     }
   ]
 }

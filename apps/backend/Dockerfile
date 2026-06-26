@@ -4,6 +4,7 @@ WORKDIR /app
 
 # Enable pnpm
 RUN corepack enable
+RUN corepack prepare pnpm@10.29.3 --activate
 
 # Copy entire monorepo (needed for pnpm workspace)
 COPY . .

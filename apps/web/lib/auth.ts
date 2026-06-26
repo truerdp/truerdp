@@ -87,6 +87,49 @@ export function resolvePostAuthRedirect(redirectTarget: string | null) {
   }
 }
 
+export function isAdminRedirectTarget(redirectTarget: string | null) {
+  if (!redirectTarget || typeof window === "undefined") {
+    return false
+  }
+
+  try {
+    const candidate = redirectTarget.startsWith("/")
+      ? new URL(redirectTarget, window.location.origin)
+      : new URL(redirectTarget)
+    const adminOrigin = parseOrigin(process.env.NEXT_PUBLIC_ADMIN_URL)
+
+    if (adminOrigin && candidate.origin === adminOrigin) {
+      return true
+    }
+
+    if (process.env.NODE_ENV !== "production") {
+      const isLocalAdmin =
+        (candidate.hostname === "localhost" ||
+          candidate.hostname === "127.0.0.1") &&
+        candidate.port === "3002"
+
+      if (isLocalAdmin) {
+        return true
+      }
+    }
+
+    return false
+  } catch {
+    return false
+  }
+}
+
+export function canProfileUseRedirect(input: {
+  redirectTarget: string | null
+  role?: string | null
+}) {
+  if (!isAdminRedirectTarget(input.redirectTarget)) {
+    return true
+  }
+
+  return String(input.role ?? "").toLowerCase() === "admin"
+}
+
 export async function logout() {
   const { error } = await authClient.signOut()
 
