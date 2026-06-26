@@ -112,7 +112,7 @@ export function InvoiceFlowAlert({
   return (
     <Alert>
       <HugeiconsIcon icon={Invoice03Icon} strokeWidth={2} />
-      <AlertTitle>Invoice-first flow</AlertTitle>
+      {/* <AlertTitle>Invoice-first flow</AlertTitle> */}
       <AlertDescription>
         Your invoice has already been created and is currently unpaid. Continue
         when you are ready to pay.

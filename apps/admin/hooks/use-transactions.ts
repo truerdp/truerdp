@@ -14,7 +14,12 @@ export interface AdminTransaction {
     email: string
   }
   amount: number
-  method: "dodo_checkout" | "coingate_checkout" | "upi" | "usdt_trc20"
+  method:
+    | "dodo_checkout"
+    | "coingate_checkout"
+    | "paypal_checkout"
+    | "upi"
+    | "usdt_trc20"
   status: "pending" | "confirmed" | "failed"
   createdAt: string
   reference: string

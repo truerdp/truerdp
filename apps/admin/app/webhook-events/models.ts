@@ -1,6 +1,6 @@
 export type WebhookEventStatus = "received" | "processed" | "ignored" | "failed"
 
-export type WebhookEventProvider = "dodo" | "coingate" | "mock"
+export type WebhookEventProvider = "dodo" | "coingate" | "paypal" | "mock"
 
 export type WebhookEventItem = {
   id: number

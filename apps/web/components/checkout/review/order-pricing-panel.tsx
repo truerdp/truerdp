@@ -36,6 +36,8 @@ export function OrderPricingPanel({
   onApplyCoupon,
   onRemoveCoupon,
 }: OrderPricingPanelProps) {
+  const hasAppliedCoupon = order.invoice?.couponId != null
+
   return (
     <div className="rounded-xl border p-4">
       <div className="space-y-3">
@@ -95,7 +97,7 @@ export function OrderPricingPanel({
           >
             Apply
           </Button>
-          {order.invoice?.couponId ? (
+          {hasAppliedCoupon ? (
             <Button
               variant="ghost"
               onClick={onRemoveCoupon}
@@ -113,10 +115,12 @@ export function OrderPricingPanel({
       </div>
 
       <Separator className="my-3" />
-      <SummaryRow
-        label="Discount"
-        value={`-${formatAmount(order.invoice?.discount ?? 0)}`}
-      />
+      {order?.invoice?.discount && order.invoice?.discount > 0 ? (
+        <SummaryRow
+          label="Discount"
+          value={`-${formatAmount(order.invoice?.discount ?? 0)}`}
+        />
+      ) : null}
       <div className="flex items-center justify-between text-sm">
         <span className="text-muted-foreground">Total</span>
         <span className="text-lg font-semibold">

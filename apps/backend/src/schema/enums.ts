@@ -49,6 +49,7 @@ export const paymentMethodEnum = pgEnum("payment_method", [
   "usdt_trc20",
   "dodo_checkout",
   "coingate_checkout",
+  "paypal_checkout",
 ])
 
 export const couponTypeEnum = pgEnum("coupon_type", ["percent", "flat"])

@@ -64,6 +64,8 @@ export function formatMethod(
       return "Dodo Checkout"
     case "coingate_checkout":
       return "CoinGate"
+    case "paypal_checkout":
+      return "PayPal"
     default:
       return String(method).toUpperCase()
   }

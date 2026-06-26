@@ -16,5 +16,13 @@ export const adminPaths = {
   transactions: "/transactions" as Route,
   expiredInstances: "/instances/expired" as Route,
   userDetails: (userId: number) => `/users/${userId}` as Route,
+  userDetailsSupportAction: (
+    userId: number,
+    ticketId: number,
+    action: "profile" | "billing"
+  ) =>
+    `/users/${userId}?ticket=${ticketId}${
+      action === "billing" ? "&tab=billing#billing-profile" : "#account-metadata"
+    }` as Route,
   account: "/account" as Route,
 } as const

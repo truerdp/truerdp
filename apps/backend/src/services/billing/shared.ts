@@ -9,6 +9,7 @@ export const supportedPaymentMethodSchema = z.enum([
   "usdt_trc20",
   "dodo_checkout",
   "coingate_checkout",
+  "paypal_checkout",
 ])
 
 export type SupportedPaymentMethod = z.infer<typeof supportedPaymentMethodSchema>

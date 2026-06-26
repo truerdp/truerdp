@@ -1,7 +1,8 @@
 "use client"
 
-import { FormEvent, useEffect, useState } from "react"
+import { FormEvent, useState } from "react"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { parseAsString, useQueryState } from "nuqs"
 import { toast } from "sonner"
 
 import { clientApi } from "@workspace/api/client"
@@ -46,22 +47,30 @@ type AccountMetadataForm = {
 }
 
 export function AccountMetadataCard({ data }: AccountMetadataCardProps) {
-  const queryClient = useQueryClient()
-  const [form, setForm] = useState<AccountMetadataForm>({
-    role: data.user.role,
-    dateOfBirth: data.user.dateOfBirth ?? "",
-    reason: "",
-  })
-  const [error, setError] = useState<string | null>(null)
+  const [ticketId] = useQueryState("ticket", parseAsString)
+  const ticketReference = getTicketReference(ticketId)
+  const formKey = getAccountMetadataFormKey(data, ticketReference)
 
-  useEffect(() => {
-    setForm({
-      role: data.user.role,
-      dateOfBirth: data.user.dateOfBirth ?? "",
-      reason: "",
-    })
-    setError(null)
-  }, [data.user.dateOfBirth, data.user.role])
+  return (
+    <AccountMetadataCardContent
+      key={formKey}
+      data={data}
+      ticketReference={ticketReference}
+    />
+  )
+}
+
+function AccountMetadataCardContent({
+  data,
+  ticketReference,
+}: AccountMetadataCardProps & {
+  ticketReference: string
+}) {
+  const queryClient = useQueryClient()
+  const [form, setForm] = useState<AccountMetadataForm>(() =>
+    getInitialAccountMetadataForm(data, ticketReference)
+  )
+  const [error, setError] = useState<string | null>(null)
 
   const updateProfile = useMutation({
     mutationFn: () =>
@@ -106,7 +115,7 @@ export function AccountMetadataCard({ data }: AccountMetadataCardProps) {
   const isSaving = updateProfile.isPending
 
   return (
-    <Card>
+    <Card id="account-metadata">
       <CardHeader>
         <CardTitle>Account Metadata</CardTitle>
         <CardDescription>
@@ -191,4 +200,32 @@ export function AccountMetadataCard({ data }: AccountMetadataCardProps) {
       </CardContent>
     </Card>
   )
+}
+
+function getTicketReference(ticketId: string | null) {
+  return ticketId && /^\d+$/.test(ticketId) ? `Support ticket #${ticketId}` : ""
+}
+
+function getInitialAccountMetadataForm(
+  data: UserDetailsData,
+  ticketReference: string
+): AccountMetadataForm {
+  return {
+    role: data.user.role,
+    dateOfBirth: data.user.dateOfBirth ?? "",
+    reason: ticketReference,
+  }
+}
+
+function getAccountMetadataFormKey(
+  data: UserDetailsData,
+  ticketReference: string
+) {
+  return [
+    data.user.id,
+    data.user.role,
+    data.user.dateOfBirth ?? "",
+    data.user.updatedAt,
+    ticketReference,
+  ].join(":")
 }

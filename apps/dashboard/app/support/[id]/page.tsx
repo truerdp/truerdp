@@ -8,7 +8,10 @@ import { toast } from "sonner"
 import { clientApi } from "@workspace/api/client"
 import { Badge } from "@workspace/ui/components/badge"
 import { Button } from "@workspace/ui/components/button"
-import { Textarea } from "@workspace/ui/components/textarea"
+import {
+  RichTextContent,
+  RichTextEditor,
+} from "@workspace/ui/components/rich-text-editor"
 import { cn } from "@workspace/ui/lib/utils"
 import { queryKeys } from "@/lib/query-keys"
 import { dashboardPaths } from "@/lib/paths"
@@ -155,9 +158,7 @@ export default function SupportTicketPage() {
                     {isMine ? "You" : "Support"} •{" "}
                     {formatDate(message.createdAt)}
                   </div>
-                  <p className="leading-6 whitespace-pre-wrap">
-                    {message.message}
-                  </p>
+                  <RichTextContent value={message.message} />
                 </div>
               </div>
             )
@@ -166,11 +167,11 @@ export default function SupportTicketPage() {
       </div>
 
       <div className="rounded-lg border bg-background p-3">
-        <Textarea
+        <RichTextEditor
           value={reply}
-          onChange={(event) => setReply(event.target.value)}
+          onChange={setReply}
           placeholder="Write a reply..."
-          className="min-h-28"
+          editorClassName="min-h-32"
         />
         <div className="mt-3 flex justify-end">
           <Button

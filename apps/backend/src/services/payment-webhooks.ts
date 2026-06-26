@@ -24,7 +24,7 @@ export type PaymentWebhookEventListParams = {
   page: number
   pageSize: number
   status?: "received" | "processed" | "ignored" | "failed"
-  provider?: "dodo" | "coingate" | "mock"
+  provider?: "dodo" | "coingate" | "paypal" | "mock"
 }
 
 export async function listPaymentWebhookEvents(

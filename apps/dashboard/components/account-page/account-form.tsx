@@ -23,16 +23,22 @@ type AccountFormProps = {
   profile: Profile
 }
 
+type SupportPrefill = {
+  subject: string
+  message: string
+}
+
 export function AccountForm({ profile }: AccountFormProps) {
   const billing = profile.billingDetails
+  const supportPrefill = buildLockedProfileSupportPrefill(profile)
 
   return (
     <Card>
       <CardHeader>
         <CardTitle>Profile details</CardTitle>
         <CardDescription>
-          Keep your account identity current for billing, support, and dashboard
-          access.
+          <SupportPrefillButton prefill={supportPrefill} /> if you need an admin
+          to update locked profile or billing details.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -136,4 +142,51 @@ export function AccountForm({ profile }: AccountFormProps) {
       </CardContent>
     </Card>
   )
+}
+
+function SupportPrefillButton({ prefill }: { prefill: SupportPrefill }) {
+  return (
+    <form action="/support/prefill" method="post" className="inline">
+      <input type="hidden" name="subject" value={prefill.subject} />
+      <input type="hidden" name="message" value={prefill.message} />
+      <button
+        type="submit"
+        className="cursor-pointer bg-transparent p-0 text-left text-primary underline-offset-4 hover:underline"
+      >
+        Open a prefilled support ticket
+      </button>
+    </form>
+  )
+}
+
+function buildLockedProfileSupportPrefill(profile: Profile) {
+  const billing = profile.billingDetails
+  return {
+    subject: "Locked profile or billing change request",
+    message: [
+      "I need help updating locked account information.",
+      "",
+      `Customer ID: ${profile.id}`,
+      `Account email: ${profile.email}`,
+      `Name on profile: ${
+        [profile.firstName, profile.lastName].filter(Boolean).join(" ") || "-"
+      }`,
+      `Date of birth on profile: ${profile.dateOfBirth || "-"}`,
+      "",
+      "Current billing profile:",
+      `Billing email: ${billing?.email || "-"}`,
+      `Phone: ${billing?.phone || "-"}`,
+      `Company: ${billing?.companyName || "-"}`,
+      `GST/VAT ID: ${billing?.taxId || "-"}`,
+      `Address line 1: ${billing?.addressLine1 || "-"}`,
+      `Address line 2: ${billing?.addressLine2 || "-"}`,
+      `City: ${billing?.city || "-"}`,
+      `State/Region: ${billing?.state || "-"}`,
+      `Postal code: ${billing?.postalCode || "-"}`,
+      `Country: ${billing?.country || "-"}`,
+      "",
+      "Requested change:",
+      "",
+    ].join("\n"),
+  }
 }

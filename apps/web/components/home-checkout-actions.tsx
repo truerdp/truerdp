@@ -38,7 +38,6 @@ function useCartStarter() {
       try {
         await cart.addItem(item ?? { planPricingId })
         toast.success(`${item?.planName ?? "Plan"} added to cart`)
-        router.push(webPaths.cart)
         return true
       } catch (error) {
         const message =
@@ -94,7 +93,6 @@ export function PlanCheckoutButton({
     try {
       await cart.addItem(cartItem)
       toast.success(`${cartItem.planName ?? "Plan"} added to cart`)
-      router.push(webPaths.cart)
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "Unable to add item to cart"

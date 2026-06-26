@@ -11,6 +11,7 @@ import {
 import {
   runCoinGateHostedCheckout,
   runDodoHostedCheckout,
+  runPayPalHostedCheckout,
 } from "./transaction-checkout.js"
 import {
   extractGatewayRedirectUrlFromMetadata,
@@ -178,7 +179,9 @@ export async function createBillingTransaction(input: {
   }
   let gatewayRedirectUrl: string | null = null
   const requiresHostedCheckout =
-    input.method === "dodo_checkout" || input.method === "coingate_checkout"
+    input.method === "dodo_checkout" ||
+    input.method === "coingate_checkout" ||
+    input.method === "paypal_checkout"
   let transactionReference = created.transaction.reference
   if (requiresHostedCheckout && !transactionReference) {
     transactionReference = createTransactionReference()
@@ -225,6 +228,20 @@ export async function createBillingTransaction(input: {
       durationDays: created.order.durationDays,
       billing: orderResult.order.billingDetails,
       ipAddress: input.ipAddress,
+    })
+  }
+
+  if (input.method === "paypal_checkout") {
+    const txnRef = transactionReference ?? createTransactionReference()
+    gatewayRedirectUrl = await runPayPalHostedCheckout({
+      transactionId: created.transaction.id,
+      orderId: orderResult.order.id,
+      invoiceNumber: created.invoice.invoiceNumber,
+      amountMinor: created.invoice.totalAmount,
+      currency: created.invoice.currency,
+      reference: txnRef,
+      planName: created.order.planName,
+      durationDays: created.order.durationDays,
     })
   }
   const response = formatBillingTransactionResponse({

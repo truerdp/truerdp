@@ -5,6 +5,7 @@ import { ReactQueryDevtools } from "@tanstack/react-query-devtools"
 import { useState } from "react"
 
 import { CartProvider } from "@/components/cart/cart-provider"
+import { CartSheet } from "@/components/cart/cart-sheet"
 
 export function AppProviders({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(
@@ -21,7 +22,10 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <CartProvider>{children}</CartProvider>
+      <CartProvider>
+        {children}
+        <CartSheet />
+      </CartProvider>
       <ReactQueryDevtools initialIsOpen={false} />
     </QueryClientProvider>
   )

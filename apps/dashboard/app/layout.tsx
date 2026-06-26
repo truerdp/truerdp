@@ -1,5 +1,6 @@
 import { Geist, Geist_Mono, Audiowide } from "next/font/google"
 import type { Metadata } from "next"
+import "quill/dist/quill.snow.css"
 
 import "@workspace/ui/globals.css"
 import "./globals.css"

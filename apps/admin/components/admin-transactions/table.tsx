@@ -99,7 +99,8 @@ export function AdminTransactionsTable({
               <TableCell>
                 {transaction.status === "pending" &&
                   transaction.method !== "dodo_checkout" &&
-                  transaction.method !== "coingate_checkout" && (
+                  transaction.method !== "coingate_checkout" &&
+                  transaction.method !== "paypal_checkout" && (
                     <div className="flex items-center gap-2">
                       <Button
                         size="sm"
@@ -129,7 +130,8 @@ export function AdminTransactionsTable({
                   )}
                 {transaction.status === "pending" &&
                   (transaction.method === "dodo_checkout" ||
-                    transaction.method === "coingate_checkout") && (
+                    transaction.method === "coingate_checkout" ||
+                    transaction.method === "paypal_checkout") && (
                     <div className="flex items-center gap-2">
                       <Badge variant="outline" className="uppercase">
                         Auto via webhook

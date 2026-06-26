@@ -14,6 +14,7 @@ import { webPaths } from "@/lib/paths"
 export type PaymentMethod =
   | "dodo_checkout"
   | "coingate_checkout"
+  | "paypal_checkout"
   | "upi"
   | "usdt_trc20"
 
@@ -29,8 +30,8 @@ export function useCheckoutOrder(orderId: number, hasValidOrderId: boolean) {
 
   const {
     data: order,
-    isLoading,
-    error,
+    isLoading: isOrderLoading,
+    error: orderError,
   } = useOrder(hasValidOrderId ? orderId : null)
   const {
     data: profile,
@@ -39,19 +40,26 @@ export function useCheckoutOrder(orderId: number, hasValidOrderId: boolean) {
   } = useProfile()
   const { data: transactions } = useTransactions()
 
+  const isAuthenticated = !isProfileLoading && Boolean(profile)
+  const error = isAuthenticated ? orderError : null
+  const isLoading = isOrderLoading || isProfileLoading
+
   const hasBillingDetails = order
     ? Boolean((order as unknown as { billingDetails?: unknown }).billingDetails)
     : false
 
   useEffect(() => {
-    if (!hasValidOrderId || isProfileLoading || !isProfileError) {
+    if (!hasValidOrderId || isProfileLoading) {
       return
     }
-    const redirectPath = webPaths.checkoutOrder(orderId)
-    router.push(
-      `${webPaths.login}?redirect=${encodeURIComponent(redirectPath)}`
-    )
-  }, [hasValidOrderId, isProfileError, isProfileLoading, orderId, router])
+
+    if (isProfileError || !profile) {
+      const redirectPath = webPaths.checkoutOrder(orderId)
+      router.push(
+        `${webPaths.login}?redirect=${encodeURIComponent(redirectPath)}`
+      )
+    }
+  }, [hasValidOrderId, isProfileError, isProfileLoading, profile, orderId, router])
 
   const existingPendingTransaction = useMemo(() => {
     return findExistingPendingTransaction(

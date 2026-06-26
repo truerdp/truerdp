@@ -95,7 +95,7 @@ export default function CheckoutReviewPage() {
           <CardContent className="flex flex-col gap-6">
             <div className="flex flex-wrap items-center gap-2">
               <Badge variant="secondary">
-                {order.items.length} line{order.items.length === 1 ? "" : "s"}
+                {order.items.length} item{order.items.length > 1 && "s"}
               </Badge>
               <Badge variant="outline">Order #{order.orderId}</Badge>
             </div>
@@ -118,6 +118,7 @@ export default function CheckoutReviewPage() {
             <BillingDetailsPanel
               details={order.billingDetails}
               isComplete={hasSavedBillingDetails}
+              orderId={order.orderId}
             />
 
             <OrderPricingPanel

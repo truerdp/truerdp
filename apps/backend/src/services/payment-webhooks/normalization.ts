@@ -3,8 +3,14 @@ import {
   normalizeGenericWebhook,
   type NormalizedPaymentEvent,
 } from "./normalization-generic.js"
+import { normalizePayPalWebhookPayload } from "../paypal-payments.js"
 
-export const webhookProviderSchema = z.enum(["dodo", "coingate", "mock"])
+export const webhookProviderSchema = z.enum([
+  "dodo",
+  "coingate",
+  "paypal",
+  "mock",
+])
 
 const mockWebhookSchema = z.object({
   eventId: z.string().trim().min(1),
@@ -46,6 +52,10 @@ export function normalizeWebhookPayload(
   }
 
   const payloadObj = rawPayload as Record<string, unknown>
+
+  if (provider === "paypal") {
+    return normalizePayPalWebhookPayload(payloadObj)
+  }
 
   return normalizeGenericWebhook(provider, payloadObj)
 }

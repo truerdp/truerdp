@@ -65,8 +65,6 @@ const navMain = [
   },
 ]
 
-const fallbackAvatar = "/avatars/shadcn.jpg"
-
 const data = {
   teams: [team],
   navMain,
@@ -83,7 +81,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const user = {
     name: profileName,
     email: profile?.email ?? "",
-    avatar: fallbackAvatar,
+    avatar: "",
   }
 
   const { state } = useSidebar()

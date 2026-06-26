@@ -1,3 +1,7 @@
+"use client"
+
+import { useSearchParams } from "next/navigation"
+
 import { Tabs, TabsList, TabsTrigger } from "@workspace/ui/components/tabs"
 import { BillingTab } from "./billing-tab"
 import { InfrastructureTab } from "./infrastructure-tab"
@@ -10,8 +14,15 @@ interface UserDetailsTabsProps {
 }
 
 export function UserDetailsTabs({ data, successRate }: UserDetailsTabsProps) {
+  const searchParams = useSearchParams()
+  const requestedTab = searchParams.get("tab")
+  const defaultTab =
+    requestedTab === "billing" || requestedTab === "infrastructure"
+      ? requestedTab
+      : "overview"
+
   return (
-    <Tabs defaultValue="overview">
+    <Tabs defaultValue={defaultTab}>
       <TabsList
         variant="line"
         className="w-full justify-start overflow-x-auto pb-1"

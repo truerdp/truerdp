@@ -145,6 +145,7 @@ export function CheckoutPaymentCard({
               if (
                 selected === "dodo_checkout" ||
                 selected === "coingate_checkout" ||
+                selected === "paypal_checkout" ||
                 selected === "upi" ||
                 selected === "usdt_trc20"
               ) {
@@ -162,6 +163,7 @@ export function CheckoutPaymentCard({
             <ToggleGroupItem value="coingate_checkout">
               CoinGate (Crypto)
             </ToggleGroupItem>
+            <ToggleGroupItem value="paypal_checkout">PayPal</ToggleGroupItem>
             {/* <ToggleGroupItem value="upi">UPI</ToggleGroupItem> */}
           </ToggleGroup>
         </div>
@@ -182,6 +184,15 @@ export function CheckoutPaymentCard({
             <AlertDescription>
               You will be redirected to CoinGate to pay with supported
               cryptocurrencies. Confirmation syncs automatically.
+            </AlertDescription>
+          </Alert>
+        ) : method === "paypal_checkout" ? (
+          <Alert>
+            <HugeiconsIcon icon={DollarCircleIcon} strokeWidth={2} />
+            <AlertTitle>PayPal hosted checkout</AlertTitle>
+            <AlertDescription>
+              You will be redirected to PayPal to approve the payment. TrueRDP
+              captures it securely after approval.
             </AlertDescription>
           </Alert>
         ) : method === "usdt_trc20" ? (

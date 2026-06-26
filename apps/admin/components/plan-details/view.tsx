@@ -47,21 +47,21 @@ export function PlanDetailsView({ plan }: PlanDetailsViewProps) {
           <div>
             <h2 className="mb-3 text-sm font-semibold">Resources</h2>
             <div className="grid grid-cols-3 gap-4">
-              <div className="rounded-lg bg-muted/50 p-3">
+              <div className="rounded-lg bg-muted/70 p-3">
                 <div className="text-sm text-muted-foreground">CPU</div>
                 <div className="text-2xl font-bold">{plan.cpu}</div>
                 <div className="text-xs text-muted-foreground">
                   {plan.cpuName} • {plan.cpuThreads} threads
                 </div>
               </div>
-              <div className="rounded-lg bg-muted/50 p-3">
+              <div className="rounded-lg bg-muted/70 p-3">
                 <div className="text-sm text-muted-foreground">RAM</div>
                 <div className="text-2xl font-bold">{plan.ram}</div>
                 <div className="text-xs text-muted-foreground">
                   GB • {plan.ramType}
                 </div>
               </div>
-              <div className="rounded-lg bg-muted/50 p-3">
+              <div className="rounded-lg bg-muted/70 p-3">
                 <div className="text-sm text-muted-foreground">Storage</div>
                 <div className="text-2xl font-bold">{plan.storage}</div>
                 <div className="text-xs text-muted-foreground">
@@ -74,27 +74,27 @@ export function PlanDetailsView({ plan }: PlanDetailsViewProps) {
           <div>
             <h2 className="mb-3 text-sm font-semibold">Catalog Metadata</h2>
             <div className="grid grid-cols-1 gap-3 text-sm md:grid-cols-2">
-              <div className="rounded-lg bg-muted/30 p-3">
+              <div className="rounded-lg bg-muted/70 p-3">
                 <span className="text-muted-foreground">Plan Type:</span>{" "}
                 {plan.planType}
               </div>
-              <div className="rounded-lg bg-muted/30 p-3">
+              <div className="rounded-lg bg-muted/70 p-3">
                 <span className="text-muted-foreground">Location:</span>{" "}
                 {plan.planLocation}
               </div>
-              <div className="rounded-lg bg-muted/30 p-3">
+              <div className="rounded-lg bg-muted/70 p-3">
                 <span className="text-muted-foreground">OS:</span> {plan.os}{" "}
                 {plan.osVersion}
               </div>
-              <div className="rounded-lg bg-muted/30 p-3">
+              <div className="rounded-lg bg-muted/70 p-3">
                 <span className="text-muted-foreground">Bandwidth:</span>{" "}
                 {plan.bandwidth}
               </div>
-              <div className="rounded-lg bg-muted/30 p-3">
+              <div className="rounded-lg bg-muted/70 p-3">
                 <span className="text-muted-foreground">Port Speed:</span>{" "}
                 {plan.portSpeed}
               </div>
-              <div className="rounded-lg bg-muted/30 p-3">
+              <div className="rounded-lg bg-muted/70 p-3">
                 <span className="text-muted-foreground">Setup Fees:</span>{" "}
                 {formatUsd(plan.setupFees)}
               </div>
@@ -107,7 +107,7 @@ export function PlanDetailsView({ plan }: PlanDetailsViewProps) {
               {plan.pricingOptions.map((pricing) => (
                 <div
                   key={pricing.id}
-                  className="flex items-center justify-between rounded-lg border bg-muted/30 p-3"
+                  className="flex items-center justify-between rounded-lg border bg-muted/70 p-3"
                 >
                   <div>
                     <div className="font-medium">

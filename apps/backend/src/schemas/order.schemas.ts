@@ -168,8 +168,13 @@ export const updateBillingResponseSchema = {
 export const couponBodySchema = {
   type: "object",
   properties: {
-    code: { type: "string" },
+    code: {
+      type: ["string", "null"],
+      minLength: 1,
+      description: "Coupon code to apply. Send null to remove the coupon.",
+    },
   },
+  additionalProperties: false,
 }
 
 export const couponResponseSchema = {

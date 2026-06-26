@@ -113,6 +113,7 @@ export default function WebhookEventsPage() {
             <SelectItem value="all">All providers</SelectItem>
             <SelectItem value="dodo">Dodo</SelectItem>
             <SelectItem value="coingate">CoinGate</SelectItem>
+            <SelectItem value="paypal">PayPal</SelectItem>
             <SelectItem value="mock">Mock</SelectItem>
           </SelectContent>
         </Select>
@@ -181,7 +182,6 @@ export default function WebhookEventsPage() {
                   <TableCell>
                     <Button
                       size="sm"
-                      variant="outline"
                       disabled={reprocessMutation.isPending}
                       onClick={() => reprocessMutation.mutate(item.id)}
                     >

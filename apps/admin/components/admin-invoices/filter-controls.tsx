@@ -34,6 +34,7 @@ export type MethodFilter =
   | "usdt_trc20"
   | "dodo_checkout"
   | "coingate_checkout"
+  | "paypal_checkout"
 
 type InvoiceFilterControlsProps = {
   searchValue: string
@@ -152,6 +153,7 @@ export function InvoiceFilterControls({
                     <SelectItem value="upi">UPI</SelectItem>
                     <SelectItem value="dodo_checkout">Dodo Checkout</SelectItem>
                     <SelectItem value="coingate_checkout">CoinGate</SelectItem>
+                    <SelectItem value="paypal_checkout">PayPal</SelectItem>
                     <SelectItem value="usdt_trc20">USDT (TRC20)</SelectItem>
                   </SelectContent>
                 </Select>

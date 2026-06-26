@@ -7,7 +7,12 @@ import { queryKeys } from "@/lib/query-keys"
 export interface Transaction {
   id: number
   amount: number
-  method: "upi" | "usdt_trc20" | "dodo_checkout" | "coingate_checkout"
+  method:
+    | "upi"
+    | "usdt_trc20"
+    | "dodo_checkout"
+    | "coingate_checkout"
+    | "paypal_checkout"
   status: "pending" | "confirmed" | "failed"
   createdAt: string
   confirmedAt: string | null

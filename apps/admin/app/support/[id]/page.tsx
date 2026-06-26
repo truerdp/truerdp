@@ -8,7 +8,10 @@ import { toast } from "sonner"
 import { clientApi } from "@workspace/api/client"
 import { Badge } from "@workspace/ui/components/badge"
 import { Button } from "@workspace/ui/components/button"
-import { Textarea } from "@workspace/ui/components/textarea"
+import {
+  RichTextContent,
+  RichTextEditor,
+} from "@workspace/ui/components/rich-text-editor"
 import { cn } from "@workspace/ui/lib/utils"
 import { adminPaths } from "@/lib/paths"
 import { queryKeys } from "@/lib/query-keys"
@@ -136,16 +139,36 @@ export default function AdminSupportTicketPage() {
             • Created at {formatDate(data.ticket.createdAt)}
           </p>
         </div>
-        <Button
-          variant="outline"
-          onClick={() =>
-            statusMutation.mutate(
-              data.ticket.status === "closed" ? "reopen" : "close"
-            )
-          }
-        >
-          {data.ticket.status === "closed" ? "Reopen ticket" : "Close ticket"}
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Link
+            href={adminPaths.userDetailsSupportAction(
+              data.ticket.userId,
+              data.ticket.id,
+              "profile"
+            )}
+          >
+            <Button variant="outline">Update profile</Button>
+          </Link>
+          <Link
+            href={adminPaths.userDetailsSupportAction(
+              data.ticket.userId,
+              data.ticket.id,
+              "billing"
+            )}
+          >
+            <Button variant="outline">Update billing</Button>
+          </Link>
+          <Button
+            variant="outline"
+            onClick={() =>
+              statusMutation.mutate(
+                data.ticket.status === "closed" ? "reopen" : "close"
+              )
+            }
+          >
+            {data.ticket.status === "closed" ? "Reopen ticket" : "Close ticket"}
+          </Button>
+        </div>
       </div>
 
       <div className="flex-1 rounded-lg border bg-muted/20 p-3 sm:p-5">
@@ -178,9 +201,7 @@ export default function AdminSupportTicketPage() {
                     {isAdmin ? "Admin" : senderName || "Customer"} •{" "}
                     {formatDate(message.createdAt)}
                   </div>
-                  <p className="leading-6 whitespace-pre-wrap">
-                    {message.message}
-                  </p>
+                  <RichTextContent value={message.message} />
                 </div>
               </div>
             )
@@ -189,11 +210,11 @@ export default function AdminSupportTicketPage() {
       </div>
 
       <div className="rounded-lg border bg-background p-3">
-        <Textarea
+        <RichTextEditor
           value={reply}
-          onChange={(event) => setReply(event.target.value)}
+          onChange={setReply}
           placeholder="Reply to customer..."
-          className="min-h-28"
+          editorClassName="min-h-32"
         />
         <div className="mt-3 flex justify-end">
           <Button

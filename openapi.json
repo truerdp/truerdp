@@ -1369,9 +1369,15 @@
                 "type": "object",
                 "properties": {
                   "code": {
-                    "type": "string"
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "minLength": 1,
+                    "description": "Coupon code to apply. Send null to remove the coupon."
                   }
-                }
+                },
+                "additionalProperties": false
               }
             }
           }
@@ -1713,7 +1719,8 @@
                       "upi",
                       "usdt_trc20",
                       "dodo_checkout",
-                      "coingate_checkout"
+                      "coingate_checkout",
+                      "paypal_checkout"
                     ]
                   }
                 }
@@ -2532,6 +2539,25 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "/transactions/{transactionId}/paypal-return": {
+      "get": {
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "transactionId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
           }
         }
       }

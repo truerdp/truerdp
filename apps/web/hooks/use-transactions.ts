@@ -6,7 +6,12 @@ import { clientApi } from "@workspace/api/client"
 export interface Transaction {
   id: number
   amount: number
-  method: "dodo_checkout" | "coingate_checkout" | "upi" | "usdt_trc20"
+  method:
+    | "dodo_checkout"
+    | "coingate_checkout"
+    | "paypal_checkout"
+    | "upi"
+    | "usdt_trc20"
   status: "pending" | "confirmed" | "failed"
   createdAt: string
   confirmedAt: string | null

@@ -1,6 +1,6 @@
 "use client"
 
-import { createContext, useCallback, useContext, useMemo } from "react"
+import { createContext, useCallback, useContext, useMemo, useState } from "react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { clientApi } from "@workspace/api/client"
 
@@ -55,6 +55,8 @@ interface CartContextValue extends CartResponse {
   clearCart: () => Promise<CartResponse>
   checkoutCart: () => Promise<{ orderId: number }>
   refetchCart: () => void
+  isSheetOpen: boolean
+  setSheetOpen: (open: boolean) => void
 }
 
 const emptyCart: CartResponse = {
@@ -69,6 +71,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const queryClient = useQueryClient()
   const profileQuery = useProfile()
   const isAuthenticated = !profileQuery.isError && Boolean(profileQuery.data)
+  const [isSheetOpen, setSheetOpen] = useState(false)
 
   const cartQuery = useQuery<CartResponse>({
     queryKey: ["cart"],
@@ -148,6 +151,9 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       addItem: async (item) => {
         const nextCart = await addMutation.mutateAsync(item)
         await refreshCart(nextCart)
+        if (typeof window !== "undefined" && window.location.pathname !== "/cart") {
+          setSheetOpen(true)
+        }
         return nextCart
       },
       removeItem: async (cartItemId) => {
@@ -176,12 +182,15 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       refetchCart: () => {
         void cartQuery.refetch()
       },
+      isSheetOpen,
+      setSheetOpen,
     }
   }, [
     addMutation,
     cartQuery,
     checkoutMutation,
     clearMutation,
+    isSheetOpen,
     profileQuery.isLoading,
     refreshCart,
     removeMutation,

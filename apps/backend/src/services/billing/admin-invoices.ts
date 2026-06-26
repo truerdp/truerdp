@@ -8,7 +8,13 @@ export type AdminInvoiceListParams = {
   search?: string
   invoiceStatus?: "unpaid" | "paid" | "expired"
   transactionStatus?: "none" | "pending" | "confirmed" | "failed"
-  method?: "none" | "upi" | "usdt_trc20" | "dodo_checkout" | "coingate_checkout"
+  method?:
+    | "none"
+    | "upi"
+    | "usdt_trc20"
+    | "dodo_checkout"
+    | "coingate_checkout"
+    | "paypal_checkout"
 }
 
 export async function listAdminInvoices(params: AdminInvoiceListParams) {
@@ -37,7 +43,12 @@ export async function listAdminInvoices(params: AdminInvoiceListParams) {
   )`
 
   const latestTransactionMethodSql = sql<
-    "upi" | "usdt_trc20" | "dodo_checkout" | "coingate_checkout" | null
+    | "upi"
+    | "usdt_trc20"
+    | "dodo_checkout"
+    | "coingate_checkout"
+    | "paypal_checkout"
+    | null
   >`(
     select ${transactions.method}
     from ${transactions}

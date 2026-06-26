@@ -216,7 +216,14 @@ const adminInvoiceListQuerySchema = z.object({
     .enum(["none", "pending", "confirmed", "failed"])
     .optional(),
   method: z
-    .enum(["none", "upi", "usdt_trc20", "dodo_checkout", "coingate_checkout"])
+    .enum([
+      "none",
+      "upi",
+      "usdt_trc20",
+      "dodo_checkout",
+      "coingate_checkout",
+      "paypal_checkout",
+    ])
     .optional(),
 })
 
@@ -224,7 +231,7 @@ const adminWebhookEventListQuerySchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
   pageSize: z.coerce.number().int().min(1).max(100).default(20),
   status: z.enum(["received", "processed", "ignored", "failed"]).optional(),
-  provider: z.enum(["dodo", "coingate", "mock"]).optional(),
+  provider: z.enum(["dodo", "coingate", "paypal", "mock"]).optional(),
 })
 
 export const adminQuerySchemas = {

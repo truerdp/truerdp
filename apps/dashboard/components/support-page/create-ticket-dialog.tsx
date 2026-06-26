@@ -1,10 +1,12 @@
 import { useState } from "react"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { Add01Icon } from "@hugeicons/core-free-icons"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { clientApi } from "@workspace/api/client"
 
+import { dashboardPaths } from "@/lib/paths"
 import { queryKeys } from "@/lib/query-keys"
 import type { TicketSummary } from "@/components/support-page/types"
 import { Button } from "@workspace/ui/components/button"
@@ -21,11 +23,26 @@ import { Field, FieldLabel } from "@workspace/ui/components/field"
 import { Input } from "@workspace/ui/components/input"
 import { Textarea } from "@workspace/ui/components/textarea"
 
-export function CreateTicketDialog() {
+type CreateTicketDialogProps = {
+  initialSubject?: string
+  initialMessage?: string
+  autoOpen?: boolean
+  redirectOnCreate?: boolean
+}
+
+export function CreateTicketDialog({
+  initialSubject = "",
+  initialMessage = "",
+  autoOpen = false,
+  redirectOnCreate = false,
+}: CreateTicketDialogProps) {
+  const router = useRouter()
   const queryClient = useQueryClient()
-  const [createOpen, setCreateOpen] = useState(false)
-  const [subject, setSubject] = useState("")
-  const [message, setMessage] = useState("")
+  const hasInitialValues =
+    initialSubject.trim().length > 0 || initialMessage.trim().length > 0
+  const [createOpen, setCreateOpen] = useState(autoOpen && hasInitialValues)
+  const [subject, setSubject] = useState(initialSubject)
+  const [message, setMessage] = useState(initialMessage)
 
   const createTicket = useMutation({
     mutationFn: () =>
@@ -33,7 +50,7 @@ export function CreateTicketDialog() {
         method: "POST",
         body: { subject, message },
       }),
-    onSuccess: async () => {
+    onSuccess: async (data) => {
       setSubject("")
       setMessage("")
       setCreateOpen(false)
@@ -41,6 +58,10 @@ export function CreateTicketDialog() {
         queryKey: queryKeys.supportTickets(),
       })
       toast.success("Ticket created")
+
+      if (redirectOnCreate) {
+        router.push(dashboardPaths.supportTicket(data.ticket.id))
+      }
     },
     onError: (error: Error) => {
       toast.error(error.message || "Unable to create ticket")

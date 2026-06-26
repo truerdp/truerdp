@@ -3,11 +3,15 @@ import z from "zod"
 import { ingestPaymentWebhook } from "../services/payment-webhooks.js"
 import { verifyAndUnwrapDodoWebhook } from "../services/dodo-payments.js"
 import { verifyAndNormalizeCoinGateWebhook } from "../services/coingate-payments.js"
+import {
+  preparePayPalWebhookForIngest,
+  verifyAndUnwrapPayPalWebhook,
+} from "../services/paypal-payments.js"
 import { getErrorMessage } from "../utils/error.js"
 import type { GenericRouteRequest, RouteReply } from "../types/requests.js"
 
 const webhookParamsSchema = z.object({
-  provider: z.enum(["dodo", "coingate", "mock"]),
+  provider: z.enum(["dodo", "coingate", "paypal", "mock"]),
 })
 
 export async function webhookRoutes(server: FastifyInstance) {
@@ -49,6 +53,23 @@ export async function webhookRoutes(server: FastifyInstance) {
           request.log.error(e)
           return reply.status(401).send({
             error: getErrorMessage(e, "Invalid CoinGate webhook"),
+          })
+        }
+      } else if (provider === "paypal") {
+        try {
+          const verifiedPayload = await verifyAndUnwrapPayPalWebhook({
+            payload: request.body,
+            rawBody: request.rawBody,
+            headers: request.headers as Record<
+              string,
+              string | string[] | undefined
+            >,
+          })
+          payloadToIngest = await preparePayPalWebhookForIngest(verifiedPayload)
+        } catch (e: unknown) {
+          request.log.error(e)
+          return reply.status(401).send({
+            error: getErrorMessage(e, "Invalid PayPal webhook"),
           })
         }
       } else if (provider === "mock" && process.env.NODE_ENV === "production") {

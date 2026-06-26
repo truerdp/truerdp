@@ -17,7 +17,13 @@ export interface InvoiceSummary {
     id: number | null
     reference: string | null
     status: "pending" | "confirmed" | "failed" | null
-    method: "upi" | "usdt_trc20" | "dodo_checkout" | "coingate_checkout" | null
+    method:
+      | "upi"
+      | "usdt_trc20"
+      | "dodo_checkout"
+      | "coingate_checkout"
+      | "paypal_checkout"
+      | null
   } | null
   order: {
     id: number

@@ -1,7 +1,8 @@
 "use client"
 
-import { FormEvent, useEffect, useState } from "react"
+import { FormEvent, useState } from "react"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { parseAsString, useQueryState } from "nuqs"
 import { toast } from "sonner"
 
 import { clientApi } from "@workspace/api/client"
@@ -35,65 +36,35 @@ type BillingProfileForm = Omit<
   reason: string
 }
 
-const emptyBillingProfileForm: BillingProfileForm = {
-  email: "",
-  phone: "",
-  companyName: "",
-  taxId: "",
-  addressLine1: "",
-  addressLine2: "",
-  city: "",
-  state: "",
-  postalCode: "",
-  country: "",
-  reason: "",
-}
-
 type BillingProfileCardProps = {
   data: AdminUser360Details
 }
 
 export function BillingProfileCard({ data }: BillingProfileCardProps) {
+  const [ticketId] = useQueryState("ticket", parseAsString)
+  const ticketReference = getTicketReference(ticketId)
+  const formKey = getBillingProfileFormKey(data, ticketReference)
+
+  return (
+    <BillingProfileCardContent
+      key={formKey}
+      data={data}
+      ticketReference={ticketReference}
+    />
+  )
+}
+
+function BillingProfileCardContent({
+  data,
+  ticketReference,
+}: BillingProfileCardProps & {
+  ticketReference: string
+}) {
   const queryClient = useQueryClient()
-  const [form, setForm] = useState<BillingProfileForm>(emptyBillingProfileForm)
+  const [form, setForm] = useState<BillingProfileForm>(() =>
+    getInitialBillingProfileForm(data, ticketReference)
+  )
   const [error, setError] = useState<string | null>(null)
-
-  useEffect(() => {
-    const billingProfile = data.billingProfile
-    const latestBillingDetails = data.latestBillingDetails
-
-    setForm({
-      email: prefillValue(
-        billingProfile?.email,
-        latestBillingDetails?.email ?? data.user.email
-      ),
-      phone: prefillValue(billingProfile?.phone, latestBillingDetails?.phone),
-      companyName: prefillValue(
-        billingProfile?.companyName,
-        latestBillingDetails?.companyName
-      ),
-      taxId: prefillValue(billingProfile?.taxId, latestBillingDetails?.taxId),
-      addressLine1: prefillValue(
-        billingProfile?.addressLine1,
-        latestBillingDetails?.addressLine1
-      ),
-      addressLine2: prefillValue(
-        billingProfile?.addressLine2,
-        latestBillingDetails?.addressLine2
-      ),
-      city: prefillValue(billingProfile?.city, latestBillingDetails?.city),
-      state: prefillValue(billingProfile?.state, latestBillingDetails?.state),
-      postalCode: prefillValue(
-        billingProfile?.postalCode,
-        latestBillingDetails?.postalCode
-      ),
-      country: prefillValue(
-        billingProfile?.country,
-        latestBillingDetails?.country
-      ),
-      reason: "",
-    })
-  }, [data.billingProfile, data.latestBillingDetails, data.user.email])
 
   const updateBillingProfile = useMutation({
     mutationFn: () =>
@@ -171,7 +142,7 @@ export function BillingProfileCard({ data }: BillingProfileCardProps) {
   const isSaving = updateBillingProfile.isPending
 
   return (
-    <Card>
+    <Card id="billing-profile">
       <CardHeader>
         <CardTitle>Stored Billing Profile</CardTitle>
         <CardDescription>
@@ -335,4 +306,60 @@ function prefillValue(
   }
 
   return fallbackValue?.trim() ?? ""
+}
+
+function getTicketReference(ticketId: string | null) {
+  return ticketId && /^\d+$/.test(ticketId) ? `Support ticket #${ticketId}` : ""
+}
+
+function getInitialBillingProfileForm(
+  data: AdminUser360Details,
+  ticketReference: string
+): BillingProfileForm {
+  const billingProfile = data.billingProfile
+  const latestBillingDetails = data.latestBillingDetails
+
+  return {
+    email: prefillValue(
+      billingProfile?.email,
+      latestBillingDetails?.email ?? data.user.email
+    ),
+    phone: prefillValue(billingProfile?.phone, latestBillingDetails?.phone),
+    companyName: prefillValue(
+      billingProfile?.companyName,
+      latestBillingDetails?.companyName
+    ),
+    taxId: prefillValue(billingProfile?.taxId, latestBillingDetails?.taxId),
+    addressLine1: prefillValue(
+      billingProfile?.addressLine1,
+      latestBillingDetails?.addressLine1
+    ),
+    addressLine2: prefillValue(
+      billingProfile?.addressLine2,
+      latestBillingDetails?.addressLine2
+    ),
+    city: prefillValue(billingProfile?.city, latestBillingDetails?.city),
+    state: prefillValue(billingProfile?.state, latestBillingDetails?.state),
+    postalCode: prefillValue(
+      billingProfile?.postalCode,
+      latestBillingDetails?.postalCode
+    ),
+    country: prefillValue(
+      billingProfile?.country,
+      latestBillingDetails?.country
+    ),
+    reason: ticketReference,
+  }
+}
+
+function getBillingProfileFormKey(
+  data: AdminUser360Details,
+  ticketReference: string
+) {
+  const initialForm = getInitialBillingProfileForm(data, ticketReference)
+
+  return JSON.stringify({
+    userId: data.user.id,
+    ...initialForm,
+  })
 }

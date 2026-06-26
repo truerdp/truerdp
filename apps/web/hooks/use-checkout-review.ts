@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import { useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
 import { clientApi } from "@workspace/api/client"
-import { useOrder, type BillingOrder } from "@/hooks/use-order"
+import { isBillingOrder, useOrder, type BillingOrder } from "@/hooks/use-order"
 import { useProfile } from "@/hooks/use-profile"
 import { useTransactions } from "@/hooks/use-transactions"
 import { findExistingPendingTransaction } from "@/hooks/checkout-helpers"
@@ -18,8 +18,8 @@ export function useCheckoutReview(orderId: number, hasValidOrderId: boolean) {
 
   const {
     data: order,
-    isLoading,
-    error,
+    isLoading: isOrderLoading,
+    error: orderError,
   } = useOrder(hasValidOrderId ? orderId : null)
   const {
     data: profile,
@@ -28,15 +28,29 @@ export function useCheckoutReview(orderId: number, hasValidOrderId: boolean) {
   } = useProfile()
   const { data: transactions } = useTransactions()
 
+  const isAuthenticated = !isProfileLoading && Boolean(profile)
+  const error = isAuthenticated ? orderError : null
+  const isLoading = isOrderLoading || isProfileLoading
+
   useEffect(() => {
-    if (!hasValidOrderId || isProfileLoading || !isProfileError) {
+    if (!hasValidOrderId || isProfileLoading) {
       return
     }
-    const redirectPath = webPaths.checkoutReviewOrder(orderId)
-    router.push(
-      `${webPaths.login}?redirect=${encodeURIComponent(redirectPath)}`
-    )
-  }, [hasValidOrderId, isProfileError, isProfileLoading, orderId, router])
+
+    if (isProfileError || !profile) {
+      const redirectPath = webPaths.checkoutReviewOrder(orderId)
+      router.push(
+        `${webPaths.login}?redirect=${encodeURIComponent(redirectPath)}`
+      )
+    }
+  }, [
+    hasValidOrderId,
+    isProfileError,
+    isProfileLoading,
+    profile,
+    orderId,
+    router,
+  ])
 
   useEffect(() => {
     setCouponCode(order?.invoice?.couponCode ?? "")
@@ -56,22 +70,27 @@ export function useCheckoutReview(orderId: number, hasValidOrderId: boolean) {
     billingOrder: BillingOrder,
     code: string | null
   ) => {
+    const normalizedCode = code === null ? null : code.trim()
+
     try {
       setIsUpdatingCoupon(true)
-      const response = await clientApi<{ order: unknown; message: string }>(
-        `/orders/${billingOrder.orderId}/coupon`,
-        {
-          method: "PATCH",
-          body: { code },
-        }
-      )
+      const response = await clientApi<{
+        order: BillingOrder
+        message: string
+      }>(`/orders/${billingOrder.orderId}/coupon`, {
+        method: "PATCH",
+        body: { code: normalizedCode },
+      })
+      if (!isBillingOrder(response.order)) {
+        throw new Error("Order details are incomplete. Please refresh.")
+      }
+
+      queryClient.setQueryData(["order", billingOrder.orderId], response.order)
       await queryClient.invalidateQueries({
         queryKey: ["order", billingOrder.orderId],
       })
+      setCouponCode(response.order.invoice?.couponCode ?? "")
       toast.success(response.message)
-      if (!code) {
-        setCouponCode("")
-      }
     } catch (submitError) {
       const message =
         submitError instanceof Error

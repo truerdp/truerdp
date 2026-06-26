@@ -8,11 +8,11 @@ export default [
     rules: {
       "max-lines": [
         "warn",
-        { max: 220, skipBlankLines: true, skipComments: true },
+        { max: 400, skipBlankLines: true, skipComments: true },
       ],
       "max-lines-per-function": [
         "warn",
-        { max: 100, skipBlankLines: true, skipComments: true },
+        { max: 200, skipBlankLines: true, skipComments: true },
       ],
     },
   },

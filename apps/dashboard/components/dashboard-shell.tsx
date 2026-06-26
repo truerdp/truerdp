@@ -22,6 +22,7 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@workspace/ui/components/sidebar"
+import ThemeToggle from "@/components/theme-toggle"
 
 function getBreadcrumbState(segments: string[]) {
   if (segments.length === 0) {
@@ -128,6 +129,9 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
                 </BreadcrumbItem>
               </BreadcrumbList>
             </Breadcrumb>
+            <div className="ml-auto flex items-center gap-2">
+              <ThemeToggle />
+            </div>
           </header>
           <div className="flex flex-1 flex-col p-6 print:p-0">{children}</div>
         </SidebarInset>

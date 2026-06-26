@@ -85,5 +85,12 @@ export function extractGatewayRedirectUrlFromMetadata(input: {
       : null
   }
 
+  if (input.method === "paypal_checkout") {
+    const value = metadata.paypal_approval_url
+    return typeof value === "string" && value.trim().length > 0
+      ? value.trim()
+      : null
+  }
+
   return null
 }

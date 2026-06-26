@@ -211,6 +211,13 @@
       "when": 1781470800000,
       "tag": "0029_cart_order_items",
       "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1782484800000,
+      "tag": "0030_add_paypal_checkout_payment_method",
+      "breakpoints": true
     }
   ]
 }

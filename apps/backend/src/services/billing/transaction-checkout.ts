@@ -3,6 +3,7 @@ import type { CoinGateShopperInput } from "../coingate-payments/shared.js"
 import { createCoinGateOrderForTransaction } from "../coingate-payments.js"
 import { createCheckoutSessionForTransaction } from "../dodo-payments.js"
 import type { DodoDiscountInput } from "../dodo-payments/shared.js"
+import { createPayPalOrderForTransaction } from "../paypal-payments.js"
 import { db } from "../../db.js"
 import { transactions, type OrderBillingDetails } from "../../schema.js"
 import { markTransactionSetupFailed } from "./transaction-attempts.js"
@@ -139,6 +140,47 @@ export async function runCoinGateHostedCheckout(input: {
       .where(eq(transactions.id, input.transactionId))
 
     return session.paymentUrl
+  } catch (error) {
+    await markTransactionSetupFailed(input.transactionId, error)
+    throw error
+  }
+}
+
+export async function runPayPalHostedCheckout(input: {
+  transactionId: number
+  orderId: number
+  invoiceNumber: string
+  amountMinor: number
+  currency: string
+  reference: string
+  planName: string
+  durationDays: number
+}) {
+  try {
+    const session = await createPayPalOrderForTransaction({
+      amountMinor: input.amountMinor,
+      currency: input.currency,
+      orderId: input.orderId,
+      invoiceNumber: input.invoiceNumber,
+      transactionId: input.transactionId,
+      reference: input.reference,
+      planName: input.planName,
+      durationDays: input.durationDays,
+    })
+
+    await db
+      .update(transactions)
+      .set({
+        metadata: {
+          paypal_order_id: session.orderId,
+          paypal_approval_url: session.approvalUrl,
+          paypal_status: session.status,
+          paypal_environment: session.environment,
+        } as unknown as typeof transactions.$inferInsert.metadata,
+      })
+      .where(eq(transactions.id, input.transactionId))
+
+    return session.approvalUrl
   } catch (error) {
     await markTransactionSetupFailed(input.transactionId, error)
     throw error

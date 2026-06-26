@@ -53,6 +53,7 @@ export function formatMethod(
     | "usdt_trc20"
     | "dodo_checkout"
     | "coingate_checkout"
+    | "paypal_checkout"
     | null
     | undefined
 ) {
@@ -69,6 +70,8 @@ export function formatMethod(
       return "Dodo Checkout"
     case "coingate_checkout":
       return "CoinGate"
+    case "paypal_checkout":
+      return "PayPal"
     default:
       return String(method).replaceAll("_", " ")
   }
