@@ -225,6 +225,13 @@
       "when": 1782488400000,
       "tag": "0031_ensure_paypal_checkout_payment_method",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1782892800000,
+      "tag": "0032_payment_settings",
+      "breakpoints": true
     }
   ]
 }

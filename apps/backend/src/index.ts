@@ -16,6 +16,7 @@ import { orderRoutes } from "./routes/order.js"
 import { cartRoutes } from "./routes/cart.js"
 import { supportRoutes } from "./routes/support.js"
 import { impersonationRoutes } from "./routes/impersonation.js"
+import { paymentSettingsRoutes } from "./routes/payment-settings.js"
 import fastifyRawBody from "fastify-raw-body"
 import { startExpiryReminderScheduler } from "./services/billing/reminder-scheduler.js"
 import { createAdminAuditLog } from "./services/admin-audit.js"
@@ -178,6 +179,7 @@ server.register(planRoutes)
 server.register(cartRoutes)
 server.register(orderRoutes)
 server.register(transactionRoutes)
+server.register(paymentSettingsRoutes)
 server.register(adminRoutes)
 server.register(impersonationRoutes)
 server.register(instanceRoutes)

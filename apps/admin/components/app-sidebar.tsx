@@ -24,6 +24,7 @@ import {
   Package02Icon,
   UserAdd01Icon,
   Audit01Icon,
+  Settings02Icon,
 } from "@hugeicons/core-free-icons"
 import { adminPaths } from "@/lib/paths"
 import { useProfile } from "@/hooks/use-profile"
@@ -54,6 +55,11 @@ const navMain = [
     title: "Plans",
     url: adminPaths.plans,
     icon: <HugeiconsIcon icon={Package02Icon} strokeWidth={2} />,
+  },
+  {
+    title: "Payment Settings",
+    url: adminPaths.paymentSettings,
+    icon: <HugeiconsIcon icon={Settings02Icon} strokeWidth={2} />,
   },
   {
     title: "Audit Logs",
@@ -141,6 +147,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 segments.length === 1) ||
               (item.url === adminPaths.users && segments[0] === "users") ||
               (item.url === adminPaths.plans && segments[0] === "plans") ||
+              (item.url === adminPaths.paymentSettings &&
+                segments[0] === "payment-settings") ||
               (item.url === adminPaths.auditLogs &&
                 segments[0] === "audit-logs") ||
               (item.url === adminPaths.webhookEvents &&

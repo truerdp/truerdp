@@ -3435,6 +3435,134 @@
         }
       }
     },
+    "/payment-settings": {
+      "get": {
+        "summary": "Get public payment method settings",
+        "tags": [
+          "Transactions"
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "enabledMethods": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "methods": {
+                      "type": "object",
+                      "properties": {
+                        "upi": {
+                          "type": "object",
+                          "properties": {
+                            "enabled": {
+                              "type": "boolean"
+                            }
+                          },
+                          "required": [
+                            "enabled"
+                          ]
+                        },
+                        "usdt_trc20": {
+                          "type": "object",
+                          "properties": {
+                            "enabled": {
+                              "type": "boolean"
+                            },
+                            "walletAddress": {
+                              "type": [
+                                "null",
+                                "string"
+                              ]
+                            },
+                            "qrCodeImageUrl": {
+                              "type": [
+                                "null",
+                                "string"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "enabled",
+                            "walletAddress",
+                            "qrCodeImageUrl"
+                          ]
+                        },
+                        "dodo_checkout": {
+                          "type": "object",
+                          "properties": {
+                            "enabled": {
+                              "type": "boolean"
+                            }
+                          },
+                          "required": [
+                            "enabled"
+                          ]
+                        },
+                        "coingate_checkout": {
+                          "type": "object",
+                          "properties": {
+                            "enabled": {
+                              "type": "boolean"
+                            }
+                          },
+                          "required": [
+                            "enabled"
+                          ]
+                        },
+                        "paypal_checkout": {
+                          "type": "object",
+                          "properties": {
+                            "enabled": {
+                              "type": "boolean"
+                            }
+                          },
+                          "required": [
+                            "enabled"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "upi",
+                        "usdt_trc20",
+                        "dodo_checkout",
+                        "coingate_checkout",
+                        "paypal_checkout"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "enabledMethods",
+                    "methods"
+                  ]
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/admin/plans": {
       "get": {
         "responses": {
@@ -4290,6 +4418,280 @@
         "responses": {
           "200": {
             "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/admin/payment-settings": {
+      "get": {
+        "summary": "Get admin payment settings",
+        "tags": [
+          "Admin"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "upiEnabled": {
+                      "type": "boolean"
+                    },
+                    "usdtTrc20Enabled": {
+                      "type": "boolean"
+                    },
+                    "dodoCheckoutEnabled": {
+                      "type": "boolean"
+                    },
+                    "coingateCheckoutEnabled": {
+                      "type": "boolean"
+                    },
+                    "paypalCheckoutEnabled": {
+                      "type": "boolean"
+                    },
+                    "usdtTrc20WalletAddress": {
+                      "type": [
+                        "null",
+                        "string"
+                      ]
+                    },
+                    "usdtTrc20QrCodeImageUrl": {
+                      "type": [
+                        "null",
+                        "string"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "upiEnabled",
+                    "usdtTrc20Enabled",
+                    "dodoCheckoutEnabled",
+                    "coingateCheckoutEnabled",
+                    "paypalCheckoutEnabled",
+                    "usdtTrc20WalletAddress",
+                    "usdtTrc20QrCodeImageUrl"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "summary": "Update admin payment settings",
+        "tags": [
+          "Admin"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "upiEnabled": {
+                    "type": "boolean"
+                  },
+                  "usdtTrc20Enabled": {
+                    "type": "boolean"
+                  },
+                  "dodoCheckoutEnabled": {
+                    "type": "boolean"
+                  },
+                  "coingateCheckoutEnabled": {
+                    "type": "boolean"
+                  },
+                  "paypalCheckoutEnabled": {
+                    "type": "boolean"
+                  },
+                  "usdtTrc20WalletAddress": {
+                    "type": [
+                      "null",
+                      "string"
+                    ]
+                  },
+                  "usdtTrc20QrCodeImageUrl": {
+                    "type": [
+                      "null",
+                      "string"
+                    ]
+                  }
+                },
+                "required": [
+                  "upiEnabled",
+                  "usdtTrc20Enabled",
+                  "dodoCheckoutEnabled",
+                  "coingateCheckoutEnabled",
+                  "paypalCheckoutEnabled",
+                  "usdtTrc20WalletAddress",
+                  "usdtTrc20QrCodeImageUrl"
+                ]
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "settings": {
+                      "type": "object",
+                      "properties": {
+                        "upiEnabled": {
+                          "type": "boolean"
+                        },
+                        "usdtTrc20Enabled": {
+                          "type": "boolean"
+                        },
+                        "dodoCheckoutEnabled": {
+                          "type": "boolean"
+                        },
+                        "coingateCheckoutEnabled": {
+                          "type": "boolean"
+                        },
+                        "paypalCheckoutEnabled": {
+                          "type": "boolean"
+                        },
+                        "usdtTrc20WalletAddress": {
+                          "type": [
+                            "null",
+                            "string"
+                          ]
+                        },
+                        "usdtTrc20QrCodeImageUrl": {
+                          "type": [
+                            "null",
+                            "string"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "upiEnabled",
+                        "usdtTrc20Enabled",
+                        "dodoCheckoutEnabled",
+                        "coingateCheckoutEnabled",
+                        "paypalCheckoutEnabled",
+                        "usdtTrc20WalletAddress",
+                        "usdtTrc20QrCodeImageUrl"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "message",
+                    "settings"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
           }
         }
       }

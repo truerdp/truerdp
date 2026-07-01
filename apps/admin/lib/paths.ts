@@ -6,6 +6,7 @@ export const adminPaths = {
   instanceDetails: (instanceId: number) => `/instances/${instanceId}` as Route,
   users: "/users" as Route,
   plans: "/plans" as Route,
+  paymentSettings: "/payment-settings" as Route,
   auditLogs: "/audit-logs" as Route,
   webhookEvents: "/webhook-events" as Route,
   coupons: "/coupons" as Route,

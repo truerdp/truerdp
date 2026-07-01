@@ -4,6 +4,7 @@ export const queryKeys = {
   users: () => ["users"] as const,
   userDetails: (id: number) => ["users", id] as const,
   plans: () => ["plans"] as const,
+  paymentSettings: () => ["payment-settings"] as const,
   auditLogs: (params: Record<string, string | number | undefined>) =>
     ["audit-logs", params] as const,
   webhookEvents: (params: Record<string, string | number | undefined>) =>

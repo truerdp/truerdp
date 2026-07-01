@@ -34,6 +34,7 @@ import { planRoutes } from "../routes/plan.js"
 import { webhookRoutes } from "../routes/webhook.js"
 import { orderRoutes } from "../routes/order.js"
 import { supportRoutes } from "../routes/support.js"
+import { paymentSettingsRoutes } from "../routes/payment-settings.js"
 import fastifyRawBody from "fastify-raw-body"
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
@@ -113,6 +114,7 @@ async function exportSpec() {
   server.register(planRoutes)
   server.register(orderRoutes)
   server.register(transactionRoutes)
+  server.register(paymentSettingsRoutes)
   server.register(adminRoutes)
   server.register(instanceRoutes)
   server.register(supportRoutes)

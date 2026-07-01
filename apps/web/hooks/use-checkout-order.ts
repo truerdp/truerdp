@@ -6,17 +6,11 @@ import { toast } from "sonner"
 import { clientApi } from "@workspace/api/client"
 
 import { useOrder } from "@/hooks/use-order"
+import { usePaymentSettings, type PaymentMethod } from "@/hooks/use-payment-settings"
 import { useProfile } from "@/hooks/use-profile"
 import { useTransactions } from "@/hooks/use-transactions"
 import { findExistingPendingTransaction } from "@/hooks/checkout-helpers"
 import { webPaths } from "@/lib/paths"
-
-export type PaymentMethod =
-  | "dodo_checkout"
-  | "coingate_checkout"
-  | "paypal_checkout"
-  | "upi"
-  | "usdt_trc20"
 
 interface CreateTransactionResponse {
   id: number
@@ -25,7 +19,7 @@ interface CreateTransactionResponse {
 
 export function useCheckoutOrder(orderId: number, hasValidOrderId: boolean) {
   const router = useRouter()
-  const [method, setMethod] = useState<PaymentMethod>("usdt_trc20")
+  const [method, setMethod] = useState<PaymentMethod | null>(null)
   const [txId, setTxId] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -39,15 +33,38 @@ export function useCheckoutOrder(orderId: number, hasValidOrderId: boolean) {
     isLoading: isProfileLoading,
     isError: isProfileError,
   } = useProfile()
+  const {
+    data: paymentSettings,
+    isLoading: isPaymentSettingsLoading,
+    error: paymentSettingsError,
+  } = usePaymentSettings()
   const { data: transactions } = useTransactions()
 
   const isAuthenticated = !isProfileLoading && Boolean(profile)
-  const error = isAuthenticated ? orderError : null
-  const isLoading = isOrderLoading || isProfileLoading
+  const error = paymentSettingsError ?? (isAuthenticated ? orderError : null)
+  const isLoading =
+    isOrderLoading || isProfileLoading || isPaymentSettingsLoading
 
   const hasBillingDetails = order
     ? Boolean((order as unknown as { billingDetails?: unknown }).billingDetails)
     : false
+
+  useEffect(() => {
+    if (!paymentSettings) {
+      return
+    }
+
+    if (paymentSettings.enabledMethods.length === 0) {
+      if (method !== null) {
+        setMethod(null)
+      }
+      return
+    }
+
+    if (!method || !paymentSettings.enabledMethods.includes(method)) {
+      setMethod(paymentSettings.enabledMethods[0] ?? null)
+    }
+  }, [paymentSettings, method])
 
   useEffect(() => {
     if (!hasValidOrderId || isProfileLoading) {
@@ -72,6 +89,11 @@ export function useCheckoutOrder(orderId: number, hasValidOrderId: boolean) {
 
   const createTransaction = async () => {
     if (!order || order.status !== "pending_payment") {
+      return
+    }
+
+    if (!method) {
+      toast.error("No payment methods are currently available")
       return
     }
 
@@ -131,6 +153,7 @@ export function useCheckoutOrder(orderId: number, hasValidOrderId: boolean) {
     error,
     method,
     setMethod,
+    paymentSettings,
     txId,
     setTxId,
     isSubmitting,

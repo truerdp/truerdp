@@ -26,6 +26,7 @@ export default function CheckoutOrderPage() {
     error,
     method,
     setMethod,
+    paymentSettings,
     txId,
     setTxId,
     isSubmitting,
@@ -59,11 +60,12 @@ export default function CheckoutOrderPage() {
       ) : null}
       {!isLoading && !error && !order ? <CheckoutOrderNotFound /> : null}
 
-      {!isLoading && !error && order ? (
+      {!isLoading && !error && order && paymentSettings ? (
         <CheckoutPaymentCard
           order={order}
           method={method}
           setMethod={setMethod}
+          paymentSettings={paymentSettings}
           txId={txId}
           setTxId={setTxId}
           isSubmitting={isSubmitting}

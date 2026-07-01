@@ -1,4 +1,5 @@
 import { HugeiconsIcon } from "@hugeicons/react"
+import Image from "next/image"
 import {
   CreditCardIcon,
   DollarCircleIcon,
@@ -14,7 +15,10 @@ import { toast } from "sonner"
 
 import type { BillingOrder } from "@/hooks/use-order"
 import { formatAmount } from "@/lib/format"
-import type { PaymentMethod } from "@/hooks/use-checkout-order"
+import type {
+  CheckoutPaymentSettings,
+  PaymentMethod,
+} from "@/hooks/use-payment-settings"
 import {
   Alert,
   AlertDescription,
@@ -45,12 +49,12 @@ import {
   FieldLabel,
   FieldTitle,
 } from "@workspace/ui/components/field"
-import Image from "next/image"
 
 interface PaymentCardProps {
   order: BillingOrder
-  method: PaymentMethod
-  setMethod: (method: PaymentMethod) => void
+  method: PaymentMethod | null
+  setMethod: (method: PaymentMethod | null) => void
+  paymentSettings: CheckoutPaymentSettings
   txId: string
   setTxId: (txId: string) => void
   hasBillingDetails: boolean
@@ -68,6 +72,7 @@ export function CheckoutPaymentCard({
   order,
   method,
   setMethod,
+  paymentSettings,
   txId,
   setTxId,
   hasBillingDetails,
@@ -76,9 +81,57 @@ export function CheckoutPaymentCard({
   onCreateTransaction,
 }: PaymentCardProps) {
   const [isCopied, setIsCopied] = useState(false)
+  const trc20Settings = paymentSettings.methods.usdt_trc20
+  const paymentMethodOptions = [
+    {
+      id: "usdt_trc20",
+      value: "usdt_trc20",
+      title: "USDT TRC20",
+      description: "Crypto Payment (Recommended)",
+      icon: UsdtIcon,
+      enabled: paymentSettings.methods.usdt_trc20.enabled,
+    },
+    {
+      id: "dodo_checkout",
+      value: "dodo_checkout",
+      title: "Card / Wallets",
+      description: "Dodo Checkout",
+      icon: CreditCardIcon,
+      enabled: paymentSettings.methods.dodo_checkout.enabled,
+    },
+    {
+      id: "coingate_checkout",
+      value: "coingate_checkout",
+      title: "Other Crypto",
+      description: "CoinGate Checkout",
+      icon: BitcoinIcon,
+      enabled: paymentSettings.methods.coingate_checkout.enabled,
+    },
+    {
+      id: "paypal_checkout",
+      value: "paypal_checkout",
+      title: "PayPal",
+      description: "Hosted Checkout",
+      icon: PaypalIcon,
+      enabled: paymentSettings.methods.paypal_checkout.enabled,
+    },
+    {
+      id: "upi",
+      value: "upi",
+      title: "UPI",
+      description: "Manual Payment",
+      icon: DollarCircleIcon,
+      enabled: paymentSettings.methods.upi.enabled,
+    },
+  ].filter((option) => option.enabled)
 
   const handleCopyAddress = () => {
-    navigator.clipboard.writeText("TUE67fuWyc4XLMeDFpywCgZuoNcdmSAfE2")
+    if (!trc20Settings.walletAddress) {
+      toast.error("TRC20 wallet address is unavailable")
+      return
+    }
+
+    navigator.clipboard.writeText(trc20Settings.walletAddress)
     toast.success("Wallet address copied to clipboard")
     setIsCopied(true)
     setTimeout(() => setIsCopied(false), 2000)
@@ -179,48 +232,38 @@ export function CheckoutPaymentCard({
           </Alert>
         ) : null}
 
+        {paymentMethodOptions.length === 0 ? (
+          <Alert variant="destructive">
+            <HugeiconsIcon icon={CreditCardIcon} strokeWidth={2} />
+            <AlertTitle>No payment methods available</AlertTitle>
+            <AlertDescription>
+              Checkout is temporarily unavailable because no payment methods are
+              currently enabled.
+            </AlertDescription>
+          </Alert>
+        ) : null}
+
         {/* Payment Method Selection */}
         <div className="flex flex-col gap-4">
           <h3 className="text-lg font-semibold tracking-tight">
             Choose payment method
           </h3>
           <RadioGroup
-            value={method}
+            value={method ?? ""}
             onValueChange={(value) => setMethod(value as PaymentMethod)}
             className="grid grid-cols-1 gap-4 md:grid-cols-2"
           >
-            <PaymentMethodCard
-              id="usdt_trc20"
-              value="usdt_trc20"
-              title="USDT TRC20"
-              description="Crypto Payment (Recommended)"
-              icon={UsdtIcon}
-              selected={method === "usdt_trc20"}
-            />
-            <PaymentMethodCard
-              id="dodo_checkout"
-              value="dodo_checkout"
-              title="Card / Wallets"
-              description="Dodo Checkout"
-              icon={CreditCardIcon}
-              selected={method === "dodo_checkout"}
-            />
-            <PaymentMethodCard
-              id="coingate_checkout"
-              value="coingate_checkout"
-              title="Other Crypto"
-              description="CoinGate Checkout"
-              icon={BitcoinIcon}
-              selected={method === "coingate_checkout"}
-            />
-            <PaymentMethodCard
-              id="paypal_checkout"
-              value="paypal_checkout"
-              title="PayPal"
-              description="Hosted Checkout"
-              icon={PaypalIcon}
-              selected={method === "paypal_checkout"}
-            />
+            {paymentMethodOptions.map((option) => (
+              <PaymentMethodCard
+                key={option.id}
+                id={option.id}
+                value={option.value}
+                title={option.title}
+                description={option.description}
+                icon={option.icon}
+                selected={method === option.value}
+              />
+            ))}
           </RadioGroup>
         </div>
 
@@ -253,6 +296,15 @@ export function CheckoutPaymentCard({
                 captures it securely after approval.
               </AlertDescription>
             </Alert>
+          ) : method === "upi" ? (
+            <Alert className="bg-muted/30">
+              <HugeiconsIcon icon={DollarCircleIcon} strokeWidth={2} />
+              <AlertTitle>Manual UPI payment</AlertTitle>
+              <AlertDescription>
+                Complete the transfer using the shared UPI instructions, then
+                wait for admin confirmation.
+              </AlertDescription>
+            </Alert>
           ) : method === "usdt_trc20" ? (
             <div className="flex flex-col gap-6 rounded-xl border bg-card p-6 shadow-sm">
               <Alert>
@@ -267,14 +319,16 @@ export function CheckoutPaymentCard({
               </Alert>
 
               <div className="flex flex-col items-start gap-8 md:flex-row md:items-center">
-                <div className="mx-auto flex-shrink-0 rounded-xl border bg-white p-2 shadow-sm md:mx-0">
-                  <Image
-                    src="/payment/usdt-qr.png"
-                    alt="USDT TRC20 QR Code"
-                    width={180}
-                    height={180}
-                    className="rounded-lg"
-                  />
+                <div className="mx-auto shrink-0 rounded-xl border bg-white p-2 shadow-sm md:mx-0">
+                  {trc20Settings.qrCodeImageUrl ? (
+                    <Image
+                      src={trc20Settings.qrCodeImageUrl}
+                      alt="USDT TRC20 QR Code"
+                      width={180}
+                      height={180}
+                      className="rounded-lg"
+                    />
+                  ) : null}
                 </div>
 
                 <div className="flex w-full flex-1 flex-col gap-5">
@@ -293,7 +347,7 @@ export function CheckoutPaymentCard({
                     </Label>
                     <div className="flex items-center gap-2">
                       <code className="flex-1 rounded-md bg-muted px-4 py-2.5 font-mono text-sm font-semibold break-all">
-                        TUE67fuWyc4XLMeDFpywCgZuoNcdmSAfE2
+                        {trc20Settings.walletAddress}
                       </code>
                       <Button
                         type="button"
@@ -342,6 +396,7 @@ export function CheckoutPaymentCard({
           onClick={onCreateTransaction}
           disabled={
             isSubmitting ||
+            !method ||
             order.status !== "pending_payment" ||
             !hasBillingDetails ||
             (method === "usdt_trc20" && txId.trim().length === 0)
@@ -383,7 +438,7 @@ function PaymentMethodCard({
   value: string
   title: string
   description: string
-  icon: any
+  icon: typeof CreditCardIcon
   selected: boolean
 }) {
   return (

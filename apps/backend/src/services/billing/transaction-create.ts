@@ -27,6 +27,10 @@ import {
   getOrderPlanPriceUsdCents,
   requireInsertedRecord,
 } from "./shared.js"
+import {
+  getPaymentSettings,
+  isPaymentMethodEnabled,
+} from "../payment-settings.js"
 
 export async function createBillingTransaction(input: {
   userId: number
@@ -35,6 +39,19 @@ export async function createBillingTransaction(input: {
   txId?: string
   ipAddress?: string | null
 }) {
+  const settings = await getPaymentSettings()
+
+  if (!isPaymentMethodEnabled(settings, input.method)) {
+    throw new BillingError(400, "Selected payment method is not available")
+  }
+
+  if (
+    input.method === "usdt_trc20" &&
+    (!settings.usdtTrc20WalletAddress || !settings.usdtTrc20QrCodeImageUrl)
+  ) {
+    throw new BillingError(400, "USDT TRC20 payment is not fully configured")
+  }
+
   const orderResult = await getBillingOrderById(input.orderId)
 
   if (!orderResult) {
