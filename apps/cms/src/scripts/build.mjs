@@ -1,5 +1,4 @@
 import { spawnSync } from "node:child_process"
-import { readFileSync, writeFileSync } from "node:fs"
 import path from "node:path"
 import process from "node:process"
 
@@ -12,18 +11,6 @@ const nextCommand = path.join(
   binDir,
   process.platform === "win32" ? "next.cmd" : "next"
 )
-const importMapPath = path.join(
-  process.cwd(),
-  "app",
-  "(payload)",
-  "admin",
-  "importMap.js"
-)
-const s3ImportSource = "@payloadcms/storage-s3/client"
-const s3ImportName = "S3ClientUploadHandler_storageS3"
-const s3ImportStatement = `import { S3ClientUploadHandler as ${s3ImportName} } from "${s3ImportSource}"`
-const s3ImportMapKey =
-  '"@payloadcms/storage-s3/client#S3ClientUploadHandler": ' + s3ImportName
 
 function runStep(command, args, label) {
   const result = spawnSync(command, args, {
@@ -38,46 +25,6 @@ function runStep(command, args, label) {
   }
 }
 
-function ensureS3UploadHandlerImportMap() {
-  const importMapContents = readFileSync(importMapPath, "utf8")
-
-  if (importMapContents.includes(s3ImportMapKey)) {
-    return
-  }
-
-  let nextContents = importMapContents
-
-  if (!nextContents.includes(s3ImportStatement)) {
-    nextContents = `${s3ImportStatement}\n${nextContents}`
-  }
-
-  const closingBraceIndex = nextContents.lastIndexOf("}")
-
-  if (closingBraceIndex === -1) {
-    throw new Error("Failed to locate import map closing brace")
-  }
-
-  nextContents = `${nextContents.slice(0, closingBraceIndex)},\n  ${s3ImportMapKey}\n${nextContents.slice(closingBraceIndex)}`
-
-  if (!nextContents.includes(s3ImportMapKey)) {
-    throw new Error("Failed to inject S3 client upload handler into import map")
-  }
-
-  writeFileSync(importMapPath, nextContents)
-}
-
-function shouldUseR2ClientUploads() {
-  return (
-    process.env.NODE_ENV === "production" &&
-    Boolean(process.env.R2_BUCKET?.trim()) &&
-    Boolean(process.env.R2_ACCESS_KEY_ID?.trim()) &&
-    Boolean(process.env.R2_SECRET_ACCESS_KEY?.trim()) &&
-    Boolean(
-      process.env.R2_ENDPOINT?.trim() || process.env.R2_ACCOUNT_ID?.trim()
-    )
-  )
-}
-
 function shouldRunMigrations() {
   if (process.env.PAYLOAD_RUN_MIGRATIONS_ON_BUILD === "true") {
     return true
@@ -89,10 +36,6 @@ function shouldRunMigrations() {
 }
 
 runStep(payloadCommand, ["generate:importmap"], "payload generate:importmap")
-
-if (shouldUseR2ClientUploads()) {
-  ensureS3UploadHandlerImportMap()
-}
 
 if (shouldRunMigrations()) {
   runStep(payloadCommand, ["migrate"], "payload migrate")

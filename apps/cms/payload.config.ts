@@ -120,7 +120,6 @@ export default buildConfig({
             endpoint: r2Endpoint,
             region: "auto",
           },
-          clientUploads: true,
           collections: {
             media: true,
           },
