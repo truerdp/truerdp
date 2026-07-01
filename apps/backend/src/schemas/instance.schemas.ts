@@ -13,6 +13,69 @@ export const errorResponse = {
   },
 }
 
+export const instanceTransactionSummarySchema = {
+  type: "object",
+  properties: {
+    id: { type: "integer" },
+    amount: { type: "integer" },
+    method: { type: "string" },
+    status: { type: "string" },
+    createdAt: { type: "string", format: "date-time" },
+    confirmedAt: { type: ["string", "null"], format: "date-time" },
+    reference: { type: ["string", "null"] },
+    cryptoTxId: { type: ["string", "null"] },
+    failureReason: { type: ["string", "null"] },
+    kind: { type: "string" },
+    orderId: { type: "integer" },
+    order: {
+      type: "object",
+      properties: {
+        id: { type: "integer" },
+        status: { type: "string" },
+      },
+      required: ["id", "status"],
+    },
+    invoice: {
+      type: "object",
+      properties: {
+        id: { type: "integer" },
+        invoiceNumber: { type: "string" },
+        status: { type: "string" },
+        totalAmount: { type: "integer" },
+        currency: { type: "string" },
+        expiresAt: { type: "string", format: "date-time" },
+        paidAt: { type: ["string", "null"], format: "date-time" },
+        createdAt: { type: "string", format: "date-time" },
+      },
+      required: [
+        "id",
+        "invoiceNumber",
+        "status",
+        "totalAmount",
+        "currency",
+        "expiresAt",
+        "paidAt",
+        "createdAt",
+      ],
+    },
+  },
+  required: [
+    "id",
+    "amount",
+    "method",
+    "status",
+    "createdAt",
+    "confirmedAt",
+    "reference",
+    "cryptoTxId",
+    "failureReason",
+    "kind",
+    "orderId",
+    "order",
+    "invoice",
+  ],
+}
+
 export const instanceSummaryResponseSchema = {
   type: "object",
   properties: {
@@ -104,6 +167,21 @@ export const renewInstanceSchema = {
     },
     400: errorResponse,
     403: errorResponse,
+    404: errorResponse,
+    500: errorResponse,
+  },
+}
+
+export const listInstanceTransactionsSchema = {
+  tags: ["Instances"],
+  summary: "List instance transactions",
+  security: [{ bearerAuth: [] }],
+  params: idParamSchema,
+  response: {
+    200: {
+      type: "array",
+      items: instanceTransactionSummarySchema,
+    },
     404: errorResponse,
     500: errorResponse,
   },

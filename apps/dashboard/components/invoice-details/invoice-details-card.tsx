@@ -1,9 +1,11 @@
+import Link from "next/link"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { Invoice03Icon } from "@hugeicons/core-free-icons"
 
 import type { InvoiceSummary } from "@/hooks/use-invoices"
 import { buildWebCheckoutReviewUrl } from "@/lib/auth"
 import { formatAmount } from "@/lib/format"
+import { dashboardPaths } from "@/lib/paths"
 import { Badge } from "@workspace/ui/components/badge"
 import { Button } from "@workspace/ui/components/button"
 import { SiteLogo } from "@workspace/ui/components/site-logo"
@@ -145,7 +147,18 @@ export function InvoiceDetailsCard({ invoice }: InvoiceDetailsCardProps) {
           <Badge variant="outline" className="uppercase">
             Order Status: {invoice.order.status}
           </Badge>
-          <Badge variant="outline">Order #{invoice.order.id}</Badge>
+          <Link href={dashboardPaths.orderDetail(invoice.order.id)}>
+            <Badge variant="outline">Order #{invoice.order.id}</Badge>
+          </Link>
+          {invoice.transaction?.id ? (
+            <Link
+              href={dashboardPaths.transactionDetail(invoice.transaction.id)}
+            >
+              <Badge variant="outline">
+                Transaction #{invoice.transaction.id}
+              </Badge>
+            </Link>
+          ) : null}
           {urgency ? (
             <Badge variant={urgency.variant}>{urgency.label}</Badge>
           ) : null}

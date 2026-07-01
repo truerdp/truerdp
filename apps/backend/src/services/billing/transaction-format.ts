@@ -27,7 +27,9 @@ export function formatBillingTransactionResponse(record: BillingTransactionRecor
     confirmedAt: record.transaction.confirmedAt,
     reference: record.transaction.reference,
     cryptoTxId: (record.transaction.metadata as any)?.cryptoTxId ?? null,
+    failureReason: record.transaction.failureReason,
     kind: record.order.kind,
+    orderId: record.order.id,
     order: {
       id: record.order.id,
       status: record.order.status,
@@ -40,6 +42,7 @@ export function formatBillingTransactionResponse(record: BillingTransactionRecor
       currency: record.invoice.currency,
       expiresAt: record.invoice.expiresAt,
       paidAt: record.invoice.paidAt,
+      createdAt: record.invoice.createdAt,
     },
     plan: {
       id: record.plan.id,

@@ -47,7 +47,7 @@ export function useConfirmTransaction() {
       clientApi(`/admin/transactions/${transactionId}/confirm`, {
         method: "POST",
       }),
-    onSuccess: async () => {
+    onSuccess: async (response) => {
       toast.success("Transaction confirmed")
 
       await queryClient.invalidateQueries({
@@ -59,8 +59,22 @@ export function useConfirmTransaction() {
       })
 
       await queryClient.invalidateQueries({
+        queryKey: queryKeys.orders(),
+      })
+
+      await queryClient.invalidateQueries({
         queryKey: queryKeys.pendingTransactions(),
       })
+
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.allInstances(),
+      })
+
+      if (response.instance?.id) {
+        await queryClient.invalidateQueries({
+          queryKey: queryKeys.instanceDetails(response.instance.id),
+        })
+      }
 
       await queryClient.invalidateQueries({
         queryKey: queryKeys.expiringSoonInstances(),

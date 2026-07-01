@@ -28,6 +28,10 @@ export function useFailTransaction() {
       })
 
       await queryClient.invalidateQueries({
+        queryKey: queryKeys.orders(),
+      })
+
+      await queryClient.invalidateQueries({
         queryKey: queryKeys.pendingTransactions(),
       })
     },

@@ -161,10 +161,15 @@ export function OrdersTable({ orders }: OrdersTableProps) {
             </TableCell>
             <TableCell>
               <div className="flex items-center gap-2">
+                <Link href={dashboardPaths.orderDetail(order.id)}>
+                  <Button size="sm" variant="outline">
+                    View order
+                  </Button>
+                </Link>
                 {order.invoice ? (
                   <Link href={dashboardPaths.invoiceDetail(order.invoice.id)}>
-                    <Button size="sm" variant="outline">
-                      View
+                    <Button size="sm" variant="ghost">
+                      Invoice
                     </Button>
                   </Link>
                 ) : null}

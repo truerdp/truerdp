@@ -118,6 +118,7 @@ export async function mapTransactionSummaries(rows: TransactionSummaryRow[]) {
       cryptoTxId: (row.transaction.metadata as any)?.cryptoTxId ?? null,
       failureReason: row.transaction.failureReason,
       kind: row.order.kind,
+      orderId: row.order.id,
       order: {
         id: row.order.id,
         status: row.order.status,
