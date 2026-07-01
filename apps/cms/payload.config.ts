@@ -33,6 +33,7 @@ const r2Endpoint =
   (r2AccountId
     ? `https://${r2AccountId}.r2.cloudflarestorage.com`
     : "")
+const shouldUseR2 = process.env.NODE_ENV === "production"
 const hasAnyR2Config = [
   r2AccountId,
   r2AccessKeyId,
@@ -47,7 +48,7 @@ const isR2Configured = [
   r2Bucket,
 ].every(Boolean)
 
-if (hasAnyR2Config && !isR2Configured) {
+if (shouldUseR2 && hasAnyR2Config && !isR2Configured) {
   throw new Error(
     "R2 config is incomplete. Set R2_BUCKET, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, and either R2_ENDPOINT or R2_ACCOUNT_ID."
   )
@@ -107,7 +108,7 @@ export default buildConfig({
   typescript: {
     outputFile: path.resolve(dirname, "payload-types.ts"),
   },
-  plugins: isR2Configured
+  plugins: shouldUseR2 && isR2Configured
     ? [
         s3Storage({
           bucket: r2Bucket,
