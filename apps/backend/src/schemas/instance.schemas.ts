@@ -17,6 +17,7 @@ export const instanceSummaryResponseSchema = {
   type: "object",
   properties: {
     id: { type: "integer" },
+    orderId: { type: "integer" },
     status: { type: "string" },
     ipAddress: { type: ["string", "null"] },
     username: { type: ["string", "null"] },
@@ -25,6 +26,7 @@ export const instanceSummaryResponseSchema = {
   },
   required: [
     "id",
+    "orderId",
     "status",
     "ipAddress",
     "username",

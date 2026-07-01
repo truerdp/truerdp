@@ -26,6 +26,8 @@ export default function CheckoutOrderPage() {
     error,
     method,
     setMethod,
+    txId,
+    setTxId,
     isSubmitting,
     hasBillingDetails,
     existingPendingTransaction,
@@ -62,6 +64,8 @@ export default function CheckoutOrderPage() {
           order={order}
           method={method}
           setMethod={setMethod}
+          txId={txId}
+          setTxId={setTxId}
           isSubmitting={isSubmitting}
           hasBillingDetails={hasBillingDetails}
           existingPendingTransaction={existingPendingTransaction}

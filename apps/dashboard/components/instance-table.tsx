@@ -10,13 +10,13 @@ import {
   TableHeader,
   TableRow,
 } from "@workspace/ui/components/table"
-import { buttonVariants } from "@workspace/ui/components/button"
 import { Badge } from "@workspace/ui/components/badge"
 import InstancesEmptyState from "@/components/instances-empty-state"
 import { dashboardPaths } from "@/lib/paths"
 
 export interface Instance {
   id: number
+  orderId: number
   status:
     | "pending"
     | "provisioning"
@@ -101,10 +101,10 @@ export default function InstanceTable({ instances }: InstanceTableProps) {
       <TableHeader>
         <TableRow>
           <TableHead>ID</TableHead>
+          <TableHead>Order</TableHead>
           <TableHead>Status</TableHead>
           <TableHead>IP Address</TableHead>
           <TableHead>Expiry Date</TableHead>
-          <TableHead>Action</TableHead>
         </TableRow>
       </TableHeader>
 
@@ -118,7 +118,22 @@ export default function InstanceTable({ instances }: InstanceTableProps) {
 
           return (
             <TableRow key={instance.id}>
-              <TableCell className="font-mono text-sm">{instance.id}</TableCell>
+              <TableCell>
+                <Link
+                  href={dashboardPaths.instanceDetail(instance.id)}
+                  className="font-mono text-sm underline-offset-2 hover:underline"
+                >
+                  {instance.id}
+                </Link>
+              </TableCell>
+              <TableCell>
+                <Link
+                  href={dashboardPaths.orderDetail(instance.orderId)}
+                  className="font-mono text-sm underline-offset-2 hover:underline"
+                >
+                  #{instance.orderId}
+                </Link>
+              </TableCell>
               <TableCell>
                 <Badge variant={getStatusVariant(instance.status)}>
                   {formatStatus(instance.status)}
@@ -145,18 +160,6 @@ export default function InstanceTable({ instances }: InstanceTableProps) {
                     </Badge>
                   ) : null}
                 </div>
-              </TableCell>
-              <TableCell>
-                <Link
-                  href={dashboardPaths.instanceDetail(instance.id)}
-                  className={buttonVariants({
-                    variant: "default",
-                    size: "sm",
-                  })}
-                  aria-label={`View instance ${instance.id}`}
-                >
-                  View
-                </Link>
               </TableCell>
             </TableRow>
           )

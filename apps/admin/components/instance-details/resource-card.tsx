@@ -1,5 +1,4 @@
-import { Check } from "@hugeicons/core-free-icons"
-import { HugeiconsIcon } from "@hugeicons/react"
+import type { ReactNode } from "react"
 
 import type { InstanceDetailsData } from "@/components/instance-details/helpers"
 import {
@@ -10,13 +9,25 @@ import { Badge } from "@workspace/ui/components/badge"
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "@workspace/ui/components/card"
+import { Separator } from "@workspace/ui/components/separator"
 
 type ResourceCardProps = {
   data: InstanceDetailsData
+}
+
+function Row({ label, value }: { label: string; value: ReactNode }) {
+  return (
+    <>
+      <div className="flex items-center justify-between gap-4">
+        <span className="text-sm text-muted-foreground">{label}</span>
+        <span className="text-right text-sm">{value}</span>
+      </div>
+      <Separator />
+    </>
+  )
 }
 
 export function ResourceCard({ data }: ResourceCardProps) {
@@ -29,76 +40,44 @@ export function ResourceCard({ data }: ResourceCardProps) {
   return (
     <Card>
       <CardHeader>
-        <div className="flex items-start justify-between">
-          <div>
-            <CardTitle>Resource Information</CardTitle>
-            <CardDescription>
-              Infrastructure and connectivity details
-            </CardDescription>
-          </div>
-          <Badge variant={getResourceStatusVariant(resource.status)}>
-            {resource.status.charAt(0).toUpperCase() + resource.status.slice(1)}
-          </Badge>
-        </div>
+        <CardTitle>Resource Information</CardTitle>
       </CardHeader>
-      <CardContent className="space-y-6">
-        <div>
-          <h3 className="mb-3 text-sm font-medium">Connection Details</h3>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div>
-              <p className="text-xs text-muted-foreground">IP Address</p>
-              <p className="mt-1 font-mono text-sm">
-                {server?.ipAddress || "-"}
-              </p>
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">Username</p>
-              <p className="mt-1 font-mono text-sm">
-                {resource.username || "-"}
-              </p>
-            </div>
-          </div>
+      <CardContent className="flex flex-col gap-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <Badge
+            variant={getResourceStatusVariant(resource.status)}
+            className="uppercase"
+          >
+            {resource.status}
+          </Badge>
+          {server ? (
+            <Badge variant="outline" className="uppercase">
+              {server.status}
+            </Badge>
+          ) : null}
         </div>
-
-        <div>
-          <h3 className="mb-3 text-sm font-medium">Provider Information</h3>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div>
-              <p className="text-xs text-muted-foreground">Provider</p>
-              <p className="mt-1 text-sm">{server?.provider || "-"}</p>
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">External ID</p>
-              <p className="mt-1 font-mono text-sm">
-                {server?.externalId || "-"}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div>
-          <h3 className="mb-3 text-sm font-medium">Assignment Timeline</h3>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div>
-              <p className="text-xs text-muted-foreground">Assigned At</p>
-              <div className="mt-1 flex items-center gap-2">
-                <HugeiconsIcon
-                  icon={Check}
-                  className="h-4 w-4 text-green-600"
-                />
-                <span className="text-sm">
-                  {formatDateTime(resource.assignedAt)}
-                </span>
-              </div>
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">Released At</p>
-              <p className="mt-1 text-sm">
-                {formatDateTime(resource.releasedAt)}
-              </p>
-            </div>
-          </div>
-        </div>
+        <Separator />
+        <Row
+          label="IP Address"
+          value={<span className="font-mono">{server?.ipAddress ?? "-"}</span>}
+        />
+        <Row
+          label="Username"
+          value={<span className="font-mono">{resource.username ?? "-"}</span>}
+        />
+        <Row label="Provider" value={server?.provider ?? "-"} />
+        <Row
+          label="External ID"
+          value={<span className="font-mono">{server?.externalId ?? "-"}</span>}
+        />
+        <Row label="Assigned At" value={formatDateTime(resource.assignedAt)} />
+        <Row label="Released At" value={formatDateTime(resource.releasedAt)} />
+        <Row label="Server CPU" value={server ? `${server.cpu} cores` : "-"} />
+        <Row label="Server RAM" value={server ? `${server.ram} GB` : "-"} />
+        <Row
+          label="Server Storage"
+          value={server ? `${server.storage} GB` : "-"}
+        />
       </CardContent>
     </Card>
   )

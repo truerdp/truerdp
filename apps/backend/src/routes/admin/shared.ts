@@ -227,6 +227,17 @@ const adminInvoiceListQuerySchema = z.object({
     .optional(),
 })
 
+const adminOrderListQuerySchema = z.object({
+  page: z.coerce.number().int().min(1).default(1),
+  pageSize: z.coerce.number().int().min(1).max(100).default(20),
+  search: z.string().trim().optional(),
+  orderStatus: z
+    .enum(["pending_payment", "processing", "completed", "cancelled"])
+    .optional(),
+  invoiceStatus: z.enum(["none", "unpaid", "paid", "expired"]).optional(),
+  kind: z.enum(["new_purchase", "renewal"]).optional(),
+})
+
 const adminWebhookEventListQuerySchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
   pageSize: z.coerce.number().int().min(1).max(100).default(20),
@@ -239,6 +250,7 @@ export const adminQuerySchemas = {
   adminAuditLogQuerySchema,
   expiryReminderRunSchema,
   adminInvoiceListQuerySchema,
+  adminOrderListQuerySchema,
   adminWebhookEventListQuerySchema,
 }
 

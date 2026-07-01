@@ -113,7 +113,7 @@ function PrintInvoiceHeader({
             variant={getInvoiceStatusVariant(status)}
             className="px-2 py-0.5 text-[10px] font-semibold uppercase"
           >
-            {status}
+            Status: {status}
           </Badge>
         </div>
       </div>
@@ -140,10 +140,10 @@ export function InvoiceDetailsCard({ invoice }: InvoiceDetailsCardProps) {
             variant={getInvoiceStatusVariant(invoice.status)}
             className="uppercase"
           >
-            {invoice.status}
+            Status: {invoice.status}
           </Badge>
           <Badge variant="outline" className="uppercase">
-            {invoice.order.status}
+            Order Status: {invoice.order.status}
           </Badge>
           <Badge variant="outline">Order #{invoice.order.id}</Badge>
           {urgency ? (

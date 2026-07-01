@@ -1,38 +1,26 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useMemo, useState } from "react"
 import { useQuery } from "@tanstack/react-query"
 
+import Link from "next/link"
+
 import { queryKeys } from "@/lib/query-keys"
+import { dashboardPaths } from "@/lib/paths"
 import { clientApi } from "@workspace/api/client"
-import { CreateTicketDialog } from "@/components/support-page/create-ticket-dialog"
 import { TicketsTable } from "@/components/support-page/tickets-table"
 import type { TicketSummary } from "@/components/support-page/types"
-import type { SupportTicketPrefill } from "@/lib/support-prefill"
+import { Button } from "@workspace/ui/components/button"
 import { Input } from "@workspace/ui/components/input"
+import { Add01Icon } from "@hugeicons/core-free-icons"
+import { HugeiconsIcon } from "@hugeicons/react"
 
-type SupportPageClientProps = {
-  prefill: SupportTicketPrefill | null
-}
-
-export function SupportPageClient({ prefill }: SupportPageClientProps) {
+export function SupportPageClient() {
   const [search, setSearch] = useState("")
   const { data: tickets = [], isLoading } = useQuery<TicketSummary[]>({
     queryKey: queryKeys.supportTickets(),
     queryFn: () => clientApi("/support/tickets"),
   })
-  const initialSubject = prefill?.subject ?? ""
-  const initialMessage = prefill?.message ?? ""
-  const hasPrefill =
-    initialSubject.trim().length > 0 || initialMessage.trim().length > 0
-
-  useEffect(() => {
-    if (!hasPrefill) {
-      return
-    }
-
-    void fetch("/support/prefill/clear", { method: "POST" })
-  }, [hasPrefill])
 
   const filteredTickets = useMemo(() => {
     const normalized = search.trim().toLowerCase()
@@ -58,13 +46,14 @@ export function SupportPageClient({ prefill }: SupportPageClientProps) {
             Track support requests and open a new ticket when you need help.
           </p>
         </div>
-        <CreateTicketDialog
-          key={`${initialSubject}\n${initialMessage}`}
-          initialSubject={initialSubject}
-          initialMessage={initialMessage}
-          autoOpen={hasPrefill}
-          redirectOnCreate={hasPrefill}
-        />
+        <Button render={<Link href={dashboardPaths.supportNew} />}>
+          <HugeiconsIcon
+            icon={Add01Icon}
+            strokeWidth={2}
+            data-icon="inline-start"
+          />
+          Create new ticket
+        </Button>
       </div>
 
       <div className="flex max-w-md flex-col gap-2">

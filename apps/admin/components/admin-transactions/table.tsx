@@ -1,7 +1,9 @@
 import { HugeiconsIcon } from "@hugeicons/react"
 import { TaskDone02Icon } from "@hugeicons/core-free-icons"
+import Link from "next/link"
 
 import { AdminUserLink } from "@/components/admin-user-link"
+import { adminPaths } from "@/lib/paths"
 import type { AdminTransaction } from "@/hooks/use-transactions"
 import {
   formatAmount,
@@ -40,6 +42,7 @@ export function AdminTransactionsTable({
         <TableHeader>
           <TableRow>
             <TableHead>Transaction</TableHead>
+            <TableHead>Order</TableHead>
             <TableHead>User</TableHead>
             <TableHead>Plan</TableHead>
             <TableHead>Amount</TableHead>
@@ -54,10 +57,25 @@ export function AdminTransactionsTable({
             <TableRow key={transaction.id}>
               <TableCell>
                 <div className="flex flex-col">
-                  <span className="font-mono text-sm">#{transaction.id}</span>
+                  <Link
+                    href={adminPaths.transactionDetails(transaction.id)}
+                    className="font-mono text-sm underline-offset-2 hover:underline"
+                  >
+                    #{transaction.id}
+                  </Link>
                   <span className="text-xs text-muted-foreground">
                     {transaction.reference}
                   </span>
+                </div>
+              </TableCell>
+              <TableCell>
+                <div className="flex flex-col gap-1">
+                  <Link
+                    href={adminPaths.orderDetails(transaction.order.id)}
+                    className="font-mono text-sm underline-offset-2 hover:underline"
+                  >
+                    #{transaction.order.id}
+                  </Link>
                 </div>
               </TableCell>
               <TableCell>
@@ -81,9 +99,16 @@ export function AdminTransactionsTable({
                 {formatAmount(transaction.amount, transaction.invoice.currency)}
               </TableCell>
               <TableCell>
-                <Badge variant="outline" className="uppercase">
-                  {transaction.method}
-                </Badge>
+                <div className="flex flex-col gap-1.5 items-start">
+                  <Badge variant="outline" className="uppercase">
+                    {transaction.method}
+                  </Badge>
+                  {transaction.cryptoTxId && transaction.method === "usdt_trc20" && (
+                    <span className="text-[10px] text-muted-foreground break-all max-w-[120px]" title={transaction.cryptoTxId}>
+                      Hash: {transaction.cryptoTxId}
+                    </span>
+                  )}
+                </div>
               </TableCell>
               <TableCell>
                 <Badge

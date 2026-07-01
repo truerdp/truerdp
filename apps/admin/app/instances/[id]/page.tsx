@@ -1,4 +1,16 @@
+import Link from "next/link"
+import { HugeiconsIcon } from "@hugeicons/react"
+import { ArrowLeft02Icon } from "@hugeicons/core-free-icons"
+
 import { InstanceDetails } from "@/components/instance-details"
+import { adminPaths } from "@/lib/paths"
+import { buttonVariants } from "@workspace/ui/components/button"
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyTitle,
+} from "@workspace/ui/components/empty"
 
 interface InstanceDetailPageProps {
   params: Promise<{
@@ -14,11 +26,35 @@ export default async function InstanceDetailPage({
 
   if (Number.isNaN(instanceId)) {
     return (
-      <div className="flex items-center justify-center py-8">
-        <p className="text-red-600">Invalid instance ID</p>
-      </div>
+      <Empty className="w-full border">
+        <EmptyHeader>
+          <EmptyTitle>Missing instance reference</EmptyTitle>
+          <EmptyDescription>
+            Open an instance from the instances list.
+          </EmptyDescription>
+        </EmptyHeader>
+      </Empty>
     )
   }
 
-  return <InstanceDetails instanceId={instanceId} />
+  return (
+    <section className="flex w-full flex-col gap-4">
+      <Link
+        href={adminPaths.instances}
+        className={buttonVariants({
+          variant: "ghost",
+          size: "sm",
+          className: "self-start",
+        })}
+      >
+        <HugeiconsIcon
+          icon={ArrowLeft02Icon}
+          strokeWidth={2}
+          data-icon="inline-start"
+        />
+        Back to instances
+      </Link>
+      <InstanceDetails instanceId={instanceId} />
+    </section>
+  )
 }

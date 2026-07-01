@@ -23,7 +23,7 @@ export function InstanceDetails({ instanceId }: InstanceDetailsProps) {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-8">
-        <Spinner className="h-6 w-6" />
+        <Spinner className="size-6" />
       </div>
     )
   }
@@ -31,7 +31,7 @@ export function InstanceDetails({ instanceId }: InstanceDetailsProps) {
   if (error || !data) {
     return (
       <Alert variant="destructive">
-        <HugeiconsIcon icon={AlertCircle} className="h-4 w-4" />
+        <HugeiconsIcon icon={AlertCircle} className="size-4" />
         <AlertTitle>Error</AlertTitle>
         <AlertDescription>
           Failed to load instance details. Please try again.
@@ -41,7 +41,7 @@ export function InstanceDetails({ instanceId }: InstanceDetailsProps) {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="flex w-full flex-col gap-4">
       <InstanceCard data={data} />
       <ResourceCard data={data} />
     </div>

@@ -851,6 +851,263 @@
             }
           }
         }
+      },
+      "get": {
+        "summary": "List user orders",
+        "tags": [
+          "Orders"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "integer"
+                      },
+                      "userId": {
+                        "type": "integer"
+                      },
+                      "kind": {
+                        "type": "string"
+                      },
+                      "status": {
+                        "type": "string"
+                      },
+                      "billingDetails": {
+                        "anyOf": [
+                          {
+                            "type": "object",
+                            "properties": {
+                              "firstName": {
+                                "type": "string"
+                              },
+                              "lastName": {
+                                "type": "string"
+                              },
+                              "email": {
+                                "type": "string",
+                                "format": "email"
+                              },
+                              "phone": {
+                                "type": "string"
+                              },
+                              "companyName": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "taxId": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "addressLine1": {
+                                "type": "string"
+                              },
+                              "addressLine2": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "city": {
+                                "type": "string"
+                              },
+                              "state": {
+                                "type": "string"
+                              },
+                              "postalCode": {
+                                "type": "string"
+                              },
+                              "country": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "firstName",
+                              "lastName",
+                              "email",
+                              "phone",
+                              "addressLine1",
+                              "city",
+                              "state",
+                              "postalCode",
+                              "country"
+                            ]
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "createdAt": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "updatedAt": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "plan": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "integer"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "cpu": {
+                            "type": "integer"
+                          },
+                          "ram": {
+                            "type": "integer"
+                          },
+                          "storage": {
+                            "type": "integer"
+                          },
+                          "durationDays": {
+                            "type": "integer"
+                          },
+                          "priceUsdCents": {
+                            "type": "integer"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name",
+                          "cpu",
+                          "ram",
+                          "storage",
+                          "durationDays",
+                          "priceUsdCents"
+                        ]
+                      },
+                      "invoice": {
+                        "anyOf": [
+                          {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "integer"
+                              },
+                              "invoiceNumber": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "status": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "totalAmount": {
+                                "type": [
+                                  "integer",
+                                  "null"
+                                ]
+                              },
+                              "currency": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "expiresAt": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ],
+                                "format": "date-time"
+                              },
+                              "paidAt": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ],
+                                "format": "date-time"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "invoiceNumber",
+                              "status",
+                              "totalAmount",
+                              "currency",
+                              "expiresAt",
+                              "paidAt"
+                            ]
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "instance": {
+                        "anyOf": [
+                          {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "integer"
+                              },
+                              "status": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "status"
+                            ]
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "userId",
+                      "kind",
+                      "status",
+                      "billingDetails",
+                      "createdAt",
+                      "updatedAt",
+                      "plan",
+                      "invoice",
+                      "instance"
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/orders/{id}": {
@@ -1722,6 +1979,9 @@
                       "coingate_checkout",
                       "paypal_checkout"
                     ]
+                  },
+                  "txId": {
+                    "type": "string"
                   }
                 }
               }
@@ -1846,6 +2106,12 @@
                         "format": "date-time"
                       },
                       "reference": {
+                        "type": [
+                          "null",
+                          "string"
+                        ]
+                      },
+                      "cryptoTxId": {
                         "type": [
                           "null",
                           "string"
@@ -2005,6 +2271,7 @@
                       "createdAt",
                       "confirmedAt",
                       "reference",
+                      "cryptoTxId",
                       "failureReason",
                       "kind",
                       "order",
@@ -2036,7 +2303,7 @@
         }
       }
     },
-    "/transactions/{transactionId}/checkout-status": {
+    "/transactions/{transactionId}": {
       "get": {
         "summary": "Get checkout return status from database",
         "tags": [
@@ -2115,6 +2382,12 @@
                       "format": "date-time"
                     },
                     "reference": {
+                      "type": [
+                        "null",
+                        "string"
+                      ]
+                    },
+                    "cryptoTxId": {
                       "type": [
                         "null",
                         "string"
@@ -2274,6 +2547,297 @@
                     "createdAt",
                     "confirmedAt",
                     "reference",
+                    "cryptoTxId",
+                    "failureReason",
+                    "kind",
+                    "order",
+                    "pricing",
+                    "invoice",
+                    "plan",
+                    "instance"
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/transactions/{transactionId}/checkout-status": {
+      "get": {
+        "summary": "Get checkout return status from database",
+        "tags": [
+          "Transactions"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer"
+            },
+            "in": "path",
+            "name": "transactionId",
+            "required": true
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "integer"
+                    },
+                    "userId": {
+                      "type": "integer"
+                    },
+                    "user": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "integer"
+                        },
+                        "firstName": {
+                          "type": "string"
+                        },
+                        "lastName": {
+                          "type": "string"
+                        },
+                        "email": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "firstName",
+                        "lastName",
+                        "email"
+                      ]
+                    },
+                    "amount": {
+                      "type": "integer"
+                    },
+                    "method": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "string"
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "confirmedAt": {
+                      "type": [
+                        "null",
+                        "string"
+                      ],
+                      "format": "date-time"
+                    },
+                    "reference": {
+                      "type": [
+                        "null",
+                        "string"
+                      ]
+                    },
+                    "cryptoTxId": {
+                      "type": [
+                        "null",
+                        "string"
+                      ]
+                    },
+                    "failureReason": {
+                      "type": [
+                        "null",
+                        "string"
+                      ]
+                    },
+                    "kind": {
+                      "type": "string"
+                    },
+                    "order": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "integer"
+                        },
+                        "status": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "status"
+                      ]
+                    },
+                    "pricing": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "integer"
+                        },
+                        "durationDays": {
+                          "type": "integer"
+                        },
+                        "priceUsdCents": {
+                          "type": [
+                            "null",
+                            "integer"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "durationDays",
+                        "priceUsdCents"
+                      ]
+                    },
+                    "invoice": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "integer"
+                        },
+                        "invoiceNumber": {
+                          "type": "string"
+                        },
+                        "status": {
+                          "type": "string"
+                        },
+                        "totalAmount": {
+                          "type": "integer"
+                        },
+                        "currency": {
+                          "type": "string"
+                        },
+                        "expiresAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "paidAt": {
+                          "type": [
+                            "null",
+                            "string"
+                          ],
+                          "format": "date-time"
+                        },
+                        "createdAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "invoiceNumber",
+                        "status",
+                        "totalAmount",
+                        "currency",
+                        "expiresAt",
+                        "paidAt",
+                        "createdAt"
+                      ]
+                    },
+                    "plan": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "integer"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "cpu": {
+                          "type": "integer"
+                        },
+                        "ram": {
+                          "type": "integer"
+                        },
+                        "storage": {
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name",
+                        "cpu",
+                        "ram",
+                        "storage"
+                      ]
+                    },
+                    "instance": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "integer"
+                            },
+                            "ipAddress": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "ipAddress"
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "userId",
+                    "user",
+                    "amount",
+                    "method",
+                    "status",
+                    "createdAt",
+                    "confirmedAt",
+                    "reference",
+                    "cryptoTxId",
                     "failureReason",
                     "kind",
                     "order",
@@ -3243,8 +3807,74 @@
         }
       }
     },
+    "/admin/invoices/{id}": {
+      "get": {
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/admin/orders": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/admin/orders/{id}": {
+      "get": {
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
     "/admin/transactions": {
       "get": {
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/admin/transactions/{id}": {
+      "get": {
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
         "responses": {
           "200": {
             "description": "Default Response"
@@ -3479,6 +4109,9 @@
                       "id": {
                         "type": "integer"
                       },
+                      "orderId": {
+                        "type": "integer"
+                      },
                       "status": {
                         "type": "string"
                       },
@@ -3511,6 +4144,7 @@
                     },
                     "required": [
                       "id",
+                      "orderId",
                       "status",
                       "ipAddress",
                       "username",
@@ -3572,6 +4206,9 @@
                     "id": {
                       "type": "integer"
                     },
+                    "orderId": {
+                      "type": "integer"
+                    },
                     "status": {
                       "type": "string"
                     },
@@ -3604,6 +4241,7 @@
                   },
                   "required": [
                     "id",
+                    "orderId",
                     "status",
                     "ipAddress",
                     "username",

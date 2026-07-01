@@ -3,6 +3,10 @@ export const queryKeys = {
   instances: () => ["instances"] as const,
   instance: (id: string | number) => ["instance", String(id)] as const,
   transactions: () => ["transactions"] as const,
+  transaction: (id: string | number) =>
+    ["transactions", String(id)] as const,
+  orders: () => ["orders"] as const,
+  order: (id: string | number) => ["orders", String(id)] as const,
   invoices: () => ["invoices"] as const,
   supportTickets: () => ["support", "tickets"] as const,
   supportTicket: (id: string | number) =>

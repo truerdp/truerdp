@@ -17,6 +17,79 @@ export type AdminInvoiceListParams = {
     | "paypal_checkout"
 }
 
+type AdminInvoiceRow = {
+  invoice: {
+    id: number
+    invoiceNumber: string
+    status: "unpaid" | "paid" | "expired"
+    totalAmount: number
+    currency: string
+    expiresAt: Date
+    paidAt: Date | null
+    createdAt: Date
+  }
+  order: {
+    id: number
+    userId: number
+    status: "pending_payment" | "processing" | "completed" | "cancelled"
+    billingDetails: unknown
+    planName: string
+    durationDays: number
+    kind: "new_purchase" | "renewal"
+  }
+  user: {
+    id: number
+    firstName: string
+    lastName: string
+    email: string
+  }
+  transaction: {
+    id: number | null
+    reference: string | null
+    status: "pending" | "confirmed" | "failed" | null
+    method:
+      | "upi"
+      | "usdt_trc20"
+      | "dodo_checkout"
+      | "coingate_checkout"
+      | "paypal_checkout"
+      | null
+    createdAt: string | null
+  }
+}
+
+function mapAdminInvoiceRow(row: AdminInvoiceRow) {
+  return {
+    id: row.invoice.id,
+    invoiceNumber: row.invoice.invoiceNumber,
+    status: row.invoice.status,
+    totalAmount: row.invoice.totalAmount,
+    currency: row.invoice.currency,
+    expiresAt: row.invoice.expiresAt,
+    paidAt: row.invoice.paidAt,
+    createdAt: row.invoice.createdAt,
+    transaction: {
+      id: row.transaction.id,
+      reference: row.transaction.reference,
+      status: row.transaction.status,
+      method: row.transaction.method,
+      createdAt: row.transaction.createdAt,
+    },
+    order: {
+      id: row.order.id,
+      userId: row.order.userId,
+      status: row.order.status,
+      billingDetails: row.order.billingDetails,
+    },
+    user: row.user,
+    plan: {
+      name: row.order.planName,
+      durationDays: row.order.durationDays,
+      kind: row.order.kind,
+    },
+  }
+}
+
 export async function listAdminInvoices(params: AdminInvoiceListParams) {
   const latestTransactionIdSql = sql<number | null>`(
     select ${transactions.id}
@@ -158,40 +231,7 @@ export async function listAdminInvoices(params: AdminInvoiceListParams) {
     .offset(offset)
 
   return {
-    items: rows.map((row) => ({
-      id: row.invoice.id,
-      invoiceNumber: row.invoice.invoiceNumber,
-      status: row.invoice.status,
-      totalAmount: row.invoice.totalAmount,
-      currency: row.invoice.currency,
-      expiresAt: row.invoice.expiresAt,
-      paidAt: row.invoice.paidAt,
-      createdAt: row.invoice.createdAt,
-      transaction: {
-        id: row.transaction.id,
-        reference: row.transaction.reference,
-        status: row.transaction.status,
-        method: row.transaction.method,
-        createdAt: row.transaction.createdAt,
-      },
-      order: {
-        id: row.order.id,
-        userId: row.order.userId,
-        status: row.order.status,
-        billingDetails: row.order.billingDetails,
-      },
-      user: {
-        id: row.user.id,
-        firstName: row.user.firstName,
-        lastName: row.user.lastName,
-        email: row.user.email,
-      },
-      plan: {
-        name: row.order.planName,
-        durationDays: row.order.durationDays,
-        kind: row.order.kind,
-      },
-    })),
+    items: rows.map(mapAdminInvoiceRow),
     pagination: {
       page,
       pageSize: params.pageSize,
@@ -199,4 +239,96 @@ export async function listAdminInvoices(params: AdminInvoiceListParams) {
       totalPages,
     },
   }
+}
+
+export async function getAdminInvoiceById(invoiceId: number) {
+  const latestTransactionIdSql = sql<number | null>`(
+    select ${transactions.id}
+    from ${transactions}
+    where ${transactions.invoiceId} = ${invoices.id}
+    order by ${transactions.createdAt} desc
+    limit 1
+  )`
+
+  const latestTransactionReferenceSql = sql<string | null>`(
+    select ${transactions.reference}
+    from ${transactions}
+    where ${transactions.invoiceId} = ${invoices.id}
+    order by ${transactions.createdAt} desc
+    limit 1
+  )`
+
+  const latestTransactionStatusSql = sql<"pending" | "confirmed" | "failed" | null>`(
+    select ${transactions.status}
+    from ${transactions}
+    where ${transactions.invoiceId} = ${invoices.id}
+    order by ${transactions.createdAt} desc
+    limit 1
+  )`
+
+  const latestTransactionMethodSql = sql<
+    | "upi"
+    | "usdt_trc20"
+    | "dodo_checkout"
+    | "coingate_checkout"
+    | "paypal_checkout"
+    | null
+  >`(
+    select ${transactions.method}
+    from ${transactions}
+    where ${transactions.invoiceId} = ${invoices.id}
+    order by ${transactions.createdAt} desc
+    limit 1
+  )`
+
+  const latestTransactionCreatedAtSql = sql<string | null>`(
+    select ${transactions.createdAt}::text
+    from ${transactions}
+    where ${transactions.invoiceId} = ${invoices.id}
+    order by ${transactions.createdAt} desc
+    limit 1
+  )`
+
+  const rows = await db
+    .select({
+      invoice: {
+        id: invoices.id,
+        invoiceNumber: invoices.invoiceNumber,
+        status: invoices.status,
+        totalAmount: invoices.totalAmount,
+        currency: invoices.currency,
+        expiresAt: invoices.expiresAt,
+        paidAt: invoices.paidAt,
+        createdAt: invoices.createdAt,
+      },
+      order: {
+        id: orders.id,
+        userId: orders.userId,
+        status: orders.status,
+        billingDetails: orders.billingDetails,
+        planName: orders.planName,
+        durationDays: orders.durationDays,
+        kind: orders.kind,
+      },
+      user: {
+        id: users.id,
+        firstName: users.firstName,
+        lastName: users.lastName,
+        email: users.email,
+      },
+      transaction: {
+        id: latestTransactionIdSql,
+        reference: latestTransactionReferenceSql,
+        status: latestTransactionStatusSql,
+        method: latestTransactionMethodSql,
+        createdAt: latestTransactionCreatedAtSql,
+      },
+    })
+    .from(invoices)
+    .innerJoin(orders, eq(invoices.orderId, orders.id))
+    .innerJoin(users, eq(orders.userId, users.id))
+    .where(eq(invoices.id, invoiceId))
+    .limit(1)
+
+  return rows[0] ? mapAdminInvoiceRow(rows[0]) : null
 }

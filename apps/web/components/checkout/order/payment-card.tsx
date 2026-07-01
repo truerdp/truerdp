@@ -1,5 +1,16 @@
 import { HugeiconsIcon } from "@hugeicons/react"
-import { CreditCardIcon, DollarCircleIcon } from "@hugeicons/core-free-icons"
+import {
+  CreditCardIcon,
+  DollarCircleIcon,
+  Copy01Icon,
+  InformationCircleIcon,
+  Tick01Icon,
+  PaypalIcon,
+  BitcoinIcon,
+  UsdtIcon,
+} from "@hugeicons/core-free-icons"
+import { useState } from "react"
+import { toast } from "sonner"
 
 import type { BillingOrder } from "@/hooks/use-order"
 import { formatAmount } from "@/lib/format"
@@ -21,16 +32,27 @@ import {
 } from "@workspace/ui/components/card"
 import { Separator } from "@workspace/ui/components/separator"
 import { Spinner } from "@workspace/ui/components/spinner"
+import { Label } from "@workspace/ui/components/label"
+import { Input } from "@workspace/ui/components/input"
 import {
-  ToggleGroup,
-  ToggleGroupItem,
-} from "@workspace/ui/components/toggle-group"
+  RadioGroup,
+  RadioGroupItem,
+} from "@workspace/ui/components/radio-group"
+import {
+  Field,
+  FieldContent,
+  FieldDescription,
+  FieldLabel,
+  FieldTitle,
+} from "@workspace/ui/components/field"
 import Image from "next/image"
 
 interface PaymentCardProps {
   order: BillingOrder
   method: PaymentMethod
   setMethod: (method: PaymentMethod) => void
+  txId: string
+  setTxId: (txId: string) => void
   hasBillingDetails: boolean
   isSubmitting: boolean
   existingPendingTransaction: {
@@ -46,27 +68,80 @@ export function CheckoutPaymentCard({
   order,
   method,
   setMethod,
+  txId,
+  setTxId,
   hasBillingDetails,
   isSubmitting,
   existingPendingTransaction,
   onCreateTransaction,
 }: PaymentCardProps) {
+  const [isCopied, setIsCopied] = useState(false)
+
+  const handleCopyAddress = () => {
+    navigator.clipboard.writeText("TUE67fuWyc4XLMeDFpywCgZuoNcdmSAfE2")
+    toast.success("Wallet address copied to clipboard")
+    setIsCopied(true)
+    setTimeout(() => setIsCopied(false), 2000)
+  }
+
+  const orderSubtotal = order.invoice?.subtotal ?? order.pricing.priceUsdCents
+  const totalAmount = order.invoice?.totalAmount ?? order.pricing.priceUsdCents
+
   return (
-    <Card>
+    <Card className="shadow-lg">
       <CardHeader>
-        <CardTitle>Payment</CardTitle>
+        <CardTitle className="text-2xl">Payment Details</CardTitle>
         <CardDescription>
-          Choose payment method to create or reuse your payment attempt.
+          Review your order summary and choose a payment method to proceed.
         </CardDescription>
       </CardHeader>
-      <CardContent className="flex flex-col gap-6">
-        <div className="flex flex-wrap items-center gap-2">
-          <Badge variant="secondary">
-            {order.items.length} line{order.items.length === 1 ? "" : "s"}
-          </Badge>
-          <Badge variant="outline">Order #{order.orderId}</Badge>
+
+      <CardContent className="flex flex-col gap-8">
+        {/* Order Summary Section */}
+        <div className="flex flex-col gap-4 rounded-xl border bg-card p-6 shadow-sm">
+          <div className="mb-2 flex flex-wrap items-center gap-2">
+            <Badge
+              variant="secondary"
+              className="px-3 py-1 text-sm font-medium"
+            >
+              {order.items.length} line{order.items.length === 1 ? "" : "s"}
+            </Badge>
+            <Badge variant="outline" className="px-3 py-1 text-sm font-medium">
+              Order #{order.orderId}
+            </Badge>
+          </div>
+
+          <div className="flex flex-col">
+            {order.items.map((item) => (
+              <SummaryRow
+                key={item.id}
+                label={`${item.planName} x ${item.quantity}`}
+                value={formatAmount(item.lineTotalUsdCents)}
+              />
+            ))}
+            <SummaryRow label="Subtotal" value={formatAmount(orderSubtotal)} />
+            {order.invoice?.discount ? (
+              <SummaryRow
+                label={`Discount${
+                  order.invoice.couponCode
+                    ? ` (${order.invoice.couponCode})`
+                    : ""
+                }`}
+                value={`-${formatAmount(order.invoice.discount)}`}
+              />
+            ) : null}
+            <div className="mt-2 flex items-center justify-between rounded-md bg-muted/50 px-2 py-4">
+              <span className="text-base font-semibold text-foreground">
+                Total due
+              </span>
+              <span className="text-xl font-bold tracking-tight text-primary">
+                {formatAmount(totalAmount)}
+              </span>
+            </div>
+          </div>
         </div>
 
+        {/* State Alerts */}
         {order.status !== "pending_payment" ? (
           <Alert variant="destructive">
             <HugeiconsIcon icon={CreditCardIcon} strokeWidth={2} />
@@ -104,142 +179,180 @@ export function CheckoutPaymentCard({
           </Alert>
         ) : null}
 
-        <div className="rounded-xl border p-4">
-          {order.items.map((item) => (
-            <SummaryRow
-              key={item.id}
-              label={`${item.planName} x ${item.quantity}`}
-              value={formatAmount(item.lineTotalUsdCents)}
-            />
-          ))}
-          <SummaryRow
-            label="Subtotal"
-            value={formatAmount(
-              order.invoice?.subtotal ?? order.pricing.priceUsdCents
-            )}
-          />
-          {order.invoice?.discount ? (
-            <SummaryRow
-              label={`Discount${
-                order.invoice.couponCode ? ` (${order.invoice.couponCode})` : ""
-              }`}
-              value={`-${formatAmount(order.invoice.discount)}`}
-            />
-          ) : null}
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">Total due</span>
-            <span className="text-lg font-semibold">
-              {formatAmount(
-                order.invoice?.totalAmount ?? order.pricing.priceUsdCents
-              )}
-            </span>
-          </div>
-        </div>
-
-        <div className="flex flex-col gap-2">
-          <p className="text-sm font-medium">Choose payment method</p>
-          <ToggleGroup
-            value={[method]}
-            onValueChange={(value) => {
-              const selected = value[0] as PaymentMethod | undefined
-              if (
-                selected === "dodo_checkout" ||
-                selected === "coingate_checkout" ||
-                selected === "paypal_checkout" ||
-                selected === "upi" ||
-                selected === "usdt_trc20"
-              ) {
-                setMethod(selected)
-              }
-            }}
-            className="max-md:flex-col max-md:items-start"
+        {/* Payment Method Selection */}
+        <div className="flex flex-col gap-4">
+          <h3 className="text-lg font-semibold tracking-tight">
+            Choose payment method
+          </h3>
+          <RadioGroup
+            value={method}
+            onValueChange={(value) => setMethod(value as PaymentMethod)}
+            className="grid grid-cols-1 gap-4 md:grid-cols-2"
           >
-            <ToggleGroupItem value="usdt_trc20">
-              USDT TRC20 (Recommended)
-            </ToggleGroupItem>
-            <ToggleGroupItem value="dodo_checkout">
-              Credit/Debit Card (Dodo Checkout)
-            </ToggleGroupItem>
-            <ToggleGroupItem value="coingate_checkout">
-              CoinGate (Crypto)
-            </ToggleGroupItem>
-            <ToggleGroupItem value="paypal_checkout">PayPal</ToggleGroupItem>
-            {/* <ToggleGroupItem value="upi">UPI</ToggleGroupItem> */}
-          </ToggleGroup>
+            <PaymentMethodCard
+              id="usdt_trc20"
+              value="usdt_trc20"
+              title="USDT TRC20"
+              description="Crypto Payment (Recommended)"
+              icon={UsdtIcon}
+              selected={method === "usdt_trc20"}
+            />
+            <PaymentMethodCard
+              id="dodo_checkout"
+              value="dodo_checkout"
+              title="Card / Wallets"
+              description="Dodo Checkout"
+              icon={CreditCardIcon}
+              selected={method === "dodo_checkout"}
+            />
+            <PaymentMethodCard
+              id="coingate_checkout"
+              value="coingate_checkout"
+              title="Other Crypto"
+              description="CoinGate Checkout"
+              icon={BitcoinIcon}
+              selected={method === "coingate_checkout"}
+            />
+            <PaymentMethodCard
+              id="paypal_checkout"
+              value="paypal_checkout"
+              title="PayPal"
+              description="Hosted Checkout"
+              icon={PaypalIcon}
+              selected={method === "paypal_checkout"}
+            />
+          </RadioGroup>
         </div>
 
-        {method === "dodo_checkout" ? (
-          <Alert>
-            <HugeiconsIcon icon={DollarCircleIcon} strokeWidth={2} />
-            <AlertTitle>Secure hosted checkout</AlertTitle>
-            <AlertDescription>
-              You will be redirected to a secure payment page supporting cards,
-              wallets, and domestic/international methods.
-            </AlertDescription>
-          </Alert>
-        ) : method === "coingate_checkout" ? (
-          <Alert>
-            <HugeiconsIcon icon={DollarCircleIcon} strokeWidth={2} />
-            <AlertTitle>Crypto checkout via CoinGate</AlertTitle>
-            <AlertDescription>
-              You will be redirected to CoinGate to pay with supported
-              cryptocurrencies. Confirmation syncs automatically.
-            </AlertDescription>
-          </Alert>
-        ) : method === "paypal_checkout" ? (
-          <Alert>
-            <HugeiconsIcon icon={DollarCircleIcon} strokeWidth={2} />
-            <AlertTitle>PayPal hosted checkout</AlertTitle>
-            <AlertDescription>
-              You will be redirected to PayPal to approve the payment. TrueRDP
-              captures it securely after approval.
-            </AlertDescription>
-          </Alert>
-        ) : method === "usdt_trc20" ? (
-          <div className="flex items-center gap-4 rounded-md border p-3 max-md:flex-col">
-            <Image
-              src="/payment/usdt-qr.png"
-              alt="USDT Payment"
-              className="rounded-md border border-muted-foreground/10 shadow-sm max-md:h-[150px] max-md:w-[150px]"
-              width={200}
-              height={200}
-            />
-            <div className="flex flex-col gap-2">
-              <p className="text-sm">
-                Send USDT on TRC20 network to the address below with the exact
-                amount. Admin will review and confirm the transaction within 24
-                hours.
-              </p>
-              <div className="rounded-md bg-muted p-2 font-mono text-sm break-all">
-                TUE67fuWyc4XLMeDFpywCgZuoNcdmSAfE2
-              </div>
-            </div>
-          </div>
-        ) : method === "upi" ? (
-          <>
-            <Alert>
+        {/* Selected Method Details */}
+        <div className="pt-2">
+          {method === "dodo_checkout" ? (
+            <Alert className="bg-muted/30">
               <HugeiconsIcon icon={DollarCircleIcon} strokeWidth={2} />
-              <AlertTitle>Manual confirmation flow</AlertTitle>
+              <AlertTitle>Secure hosted checkout</AlertTitle>
               <AlertDescription>
-                Creates a pending transaction for admin review.
+                You will be redirected to a secure payment page supporting
+                cards, wallets, and domestic/international methods.
               </AlertDescription>
             </Alert>
-          </>
-        ) : null}
+          ) : method === "coingate_checkout" ? (
+            <Alert className="bg-muted/30">
+              <HugeiconsIcon icon={DollarCircleIcon} strokeWidth={2} />
+              <AlertTitle>Crypto checkout via CoinGate</AlertTitle>
+              <AlertDescription>
+                You will be redirected to CoinGate to pay with supported
+                cryptocurrencies. Confirmation syncs automatically.
+              </AlertDescription>
+            </Alert>
+          ) : method === "paypal_checkout" ? (
+            <Alert className="bg-muted/30">
+              <HugeiconsIcon icon={DollarCircleIcon} strokeWidth={2} />
+              <AlertTitle>PayPal hosted checkout</AlertTitle>
+              <AlertDescription>
+                You will be redirected to PayPal to approve the payment. TrueRDP
+                captures it securely after approval.
+              </AlertDescription>
+            </Alert>
+          ) : method === "usdt_trc20" ? (
+            <div className="flex flex-col gap-6 rounded-xl border bg-card p-6 shadow-sm">
+              <Alert>
+                <HugeiconsIcon
+                  icon={InformationCircleIcon}
+                  strokeWidth={2}
+                  className="text-blue-500"
+                />
+                <AlertTitle>
+                  Crypto payments are verified within 24 hours after submission.
+                </AlertTitle>
+              </Alert>
+
+              <div className="flex flex-col items-start gap-8 md:flex-row md:items-center">
+                <div className="mx-auto flex-shrink-0 rounded-xl border bg-white p-2 shadow-sm md:mx-0">
+                  <Image
+                    src="/payment/usdt-qr.png"
+                    alt="USDT TRC20 QR Code"
+                    width={180}
+                    height={180}
+                    className="rounded-lg"
+                  />
+                </div>
+
+                <div className="flex w-full flex-1 flex-col gap-5">
+                  <div className="flex flex-col gap-2">
+                    <Label className="text-sm text-muted-foreground">
+                      Amount to send
+                    </Label>
+                    <div className="text-2xl font-bold text-primary">
+                      {formatAmount(totalAmount)} USDT
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col gap-2">
+                    <Label className="text-sm text-muted-foreground">
+                      Wallet Address (TRC20)
+                    </Label>
+                    <div className="flex items-center gap-2">
+                      <code className="flex-1 rounded-md bg-muted px-4 py-2.5 font-mono text-sm font-semibold break-all">
+                        TUE67fuWyc4XLMeDFpywCgZuoNcdmSAfE2
+                      </code>
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        size="icon"
+                        className="h-10 w-10 shrink-0"
+                        onClick={handleCopyAddress}
+                        title="Copy to clipboard"
+                      >
+                        <HugeiconsIcon
+                          icon={isCopied ? Tick01Icon : Copy01Icon}
+                          strokeWidth={2}
+                          size={18}
+                        />
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col gap-2">
+                    <Label
+                      htmlFor="txId"
+                      className="text-sm text-muted-foreground"
+                    >
+                      Transaction Hash (TxID){" "}
+                      <span className="text-destructive">*</span>
+                    </Label>
+                    <Input
+                      id="txId"
+                      placeholder="Paste your transaction hash here..."
+                      value={txId}
+                      onChange={(e) => setTxId(e.target.value)}
+                      className="h-11 font-mono text-sm"
+                      required
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : null}
+        </div>
       </CardContent>
-      <CardFooter>
+      <CardFooter className="px-6 pt-2 pb-6">
         <Button
+          size="lg"
+          className="h-12 w-full text-base font-semibold"
           onClick={onCreateTransaction}
           disabled={
             isSubmitting ||
             order.status !== "pending_payment" ||
-            !hasBillingDetails
+            !hasBillingDetails ||
+            (method === "usdt_trc20" && txId.trim().length === 0)
           }
         >
           {isSubmitting ? <Spinner data-icon="inline-start" /> : null}
           {existingPendingTransaction
             ? "Continue with unpaid invoice"
-            : "Create transaction"}
+            : method === "usdt_trc20"
+              ? "Confirm Payment Sent"
+              : "Proceed to pay"}
         </Button>
       </CardFooter>
     </Card>
@@ -249,11 +362,45 @@ export function CheckoutPaymentCard({
 function SummaryRow({ label, value }: { label: string; value: string }) {
   return (
     <>
-      <div className="flex items-center justify-between text-sm">
+      <div className="flex items-center justify-between py-3 text-sm">
         <span className="text-muted-foreground">{label}</span>
-        <span>{value}</span>
+        <span className="font-medium text-foreground">{value}</span>
       </div>
-      <Separator className="my-3" />
+      <Separator className="bg-border/50" />
     </>
+  )
+}
+
+function PaymentMethodCard({
+  id,
+  value,
+  title,
+  description,
+  icon,
+  selected,
+}: {
+  id: string
+  value: string
+  title: string
+  description: string
+  icon: any
+  selected: boolean
+}) {
+  return (
+    <FieldLabel htmlFor={id}>
+      <Field orientation="horizontal">
+        <HugeiconsIcon
+          icon={icon}
+          strokeWidth={2}
+          className={selected ? "text-primary" : "text-muted-foreground"}
+          size={24}
+        />
+        <FieldContent>
+          <FieldTitle>{title}</FieldTitle>
+          <FieldDescription>{description}</FieldDescription>
+        </FieldContent>
+        <RadioGroupItem value={value} id={id} />
+      </Field>
+    </FieldLabel>
   )
 }

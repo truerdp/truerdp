@@ -1,12 +1,23 @@
 "use client"
 
+import Link from "next/link"
 import { useParams } from "next/navigation"
+import { HugeiconsIcon } from "@hugeicons/react"
+import { ArrowLeft02Icon } from "@hugeicons/core-free-icons"
 
 import { useInstance } from "@/hooks/use-instance"
 import { useInstanceTransactions } from "@/hooks/use-instance-transactions"
 import { InstanceDetailsTable } from "@/components/instance-details-page/details-table"
 import { getInstanceBillingState } from "@/components/instance-details-page/helpers"
 import { InstanceDetailsSkeleton } from "@/components/instance-details-page/skeleton"
+import { dashboardPaths } from "@/lib/paths"
+import { buttonVariants } from "@workspace/ui/components/button"
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyTitle,
+} from "@workspace/ui/components/empty"
 
 export default function InstanceDetails() {
   const { id } = useParams()
@@ -29,19 +40,35 @@ export default function InstanceDetails() {
   }
 
   if (error || !data) {
-    return <div>Failed to load instance</div>
+    return (
+      <Empty className="w-full border">
+        <EmptyHeader>
+          <EmptyTitle>Instance not found</EmptyTitle>
+          <EmptyDescription>
+            This instance may belong to another account or no longer exist.
+          </EmptyDescription>
+        </EmptyHeader>
+      </Empty>
+    )
   }
 
   return (
-    <section className="space-y-4">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">
-          Instance #{data.id}
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          Review your provisioned instance details.
-        </p>
-      </div>
+    <section className="flex w-full flex-col gap-4">
+      <Link
+        href={dashboardPaths.instances}
+        className={buttonVariants({
+          variant: "ghost",
+          size: "sm",
+          className: "self-start",
+        })}
+      >
+        <HugeiconsIcon
+          icon={ArrowLeft02Icon}
+          strokeWidth={2}
+          data-icon="inline-start"
+        />
+        Back to instances
+      </Link>
       <InstanceDetailsTable
         data={data}
         hasPendingRenewal={hasPendingRenewal}

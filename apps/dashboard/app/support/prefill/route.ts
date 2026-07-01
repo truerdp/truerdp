@@ -9,7 +9,7 @@ import {
 
 export async function POST(request: NextRequest) {
   const response = NextResponse.redirect(
-    new URL(dashboardPaths.support, request.url),
+    new URL(dashboardPaths.supportNew, request.url),
     303
   )
 
@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
     value: encodedPrefill,
     httpOnly: true,
     maxAge: SUPPORT_PREFILL_MAX_AGE_SECONDS,
-    path: dashboardPaths.support,
+    path: dashboardPaths.supportNew,
     sameSite: "lax",
     secure: process.env.NODE_ENV === "production",
   })
@@ -67,6 +67,6 @@ function clearPrefillCookie(response: NextResponse) {
     name: SUPPORT_PREFILL_COOKIE,
     value: "",
     maxAge: 0,
-    path: dashboardPaths.support,
+    path: dashboardPaths.supportNew,
   })
 }

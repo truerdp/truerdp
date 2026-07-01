@@ -7,6 +7,10 @@ import { users } from "../../schema.js"
 import type { GenericRouteRequest } from "../../types/requests.js"
 import {
   listAdminInvoices,
+  getAdminInvoiceById,
+  getAdminOrderById,
+  getAdminTransactionById,
+  listAdminOrders,
   listAdminTransactions,
   listPendingTransactions,
   sendExpiryReminderSweep,
@@ -33,6 +37,7 @@ const {
   adminAuditLogQuerySchema,
   expiryReminderRunSchema,
   adminInvoiceListQuerySchema,
+  adminOrderListQuerySchema,
 } = adminQuerySchemas
 
 export async function registerAdminUsersBillingRoutes(server: FastifyInstance) {
@@ -403,6 +408,89 @@ export async function registerAdminUsersBillingRoutes(server: FastifyInstance) {
   )
 
   server.get(
+    "/admin/invoices/:id",
+    { preHandler: verifyAuth },
+    async (request: GenericRouteRequest, reply) => {
+      try {
+        if (!requireAdmin(request.user, reply)) {
+          return
+        }
+
+        const invoiceId = Number((request.params as Record<string, unknown>).id)
+
+        if (Number.isNaN(invoiceId)) {
+          return reply.status(400).send({ error: "Invalid invoice id" })
+        }
+
+        const invoice = await getAdminInvoiceById(invoiceId)
+
+        if (!invoice) {
+          return reply.status(404).send({ error: "Invoice not found" })
+        }
+
+        return invoice
+      } catch (err: unknown) {
+        server.log.error(err)
+        return reply.status(500).send({
+          error: "Internal server error",
+        })
+      }
+    }
+  )
+
+  server.get(
+    "/admin/orders",
+    { preHandler: verifyAuth },
+    async (request: GenericRouteRequest, reply) => {
+      try {
+        if (!requireAdmin(request.user, reply)) {
+          return
+        }
+
+        const query = adminOrderListQuerySchema.parse(request.query ?? {})
+
+        return await listAdminOrders(query)
+      } catch (err: unknown) {
+        server.log.error(err)
+        return reply.status(500).send({
+          error: "Internal server error",
+        })
+      }
+    }
+  )
+
+  server.get(
+    "/admin/orders/:id",
+    { preHandler: verifyAuth },
+    async (request: GenericRouteRequest, reply) => {
+      try {
+        if (!requireAdmin(request.user, reply)) {
+          return
+        }
+
+        const orderId = Number((request.params as Record<string, unknown>).id)
+
+        if (Number.isNaN(orderId)) {
+          return reply.status(400).send({ error: "Invalid order id" })
+        }
+
+        const order = await getAdminOrderById(orderId)
+
+        if (!order) {
+          return reply.status(404).send({ error: "Order not found" })
+        }
+
+        return order
+      } catch (err: unknown) {
+        server.log.error(err)
+        return reply.status(500).send({
+          error: "Internal server error",
+        })
+      }
+    }
+  )
+
+  server.get(
     "/admin/transactions",
     { preHandler: verifyAuth },
     async (request: GenericRouteRequest, reply) => {
@@ -414,6 +502,39 @@ export async function registerAdminUsersBillingRoutes(server: FastifyInstance) {
         const query = adminListPaginationQuerySchema.parse(request.query ?? {})
 
         return await listAdminTransactions(query)
+      } catch (err: unknown) {
+        server.log.error(err)
+        return reply.status(500).send({
+          error: "Internal server error",
+        })
+      }
+    }
+  )
+
+  server.get(
+    "/admin/transactions/:id",
+    { preHandler: verifyAuth },
+    async (request: GenericRouteRequest, reply) => {
+      try {
+        if (!requireAdmin(request.user, reply)) {
+          return
+        }
+
+        const transactionId = Number(
+          (request.params as Record<string, unknown>).id
+        )
+
+        if (Number.isNaN(transactionId)) {
+          return reply.status(400).send({ error: "Invalid transaction id" })
+        }
+
+        const transaction = await getAdminTransactionById(transactionId)
+
+        if (!transaction) {
+          return reply.status(404).send({ error: "Transaction not found" })
+        }
+
+        return transaction
       } catch (err: unknown) {
         server.log.error(err)
         return reply.status(500).send({

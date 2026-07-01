@@ -20,6 +20,7 @@ export const createTransactionBodySchema = {
       type: "string",
       enum: supportedPaymentMethodSchema.options,
     },
+    txId: { type: "string" },
   },
 }
 
@@ -138,6 +139,7 @@ export const transactionSummarySchema = {
     createdAt: { type: "string", format: "date-time" },
     confirmedAt: { type: ["string", "null"], format: "date-time" },
     reference: { type: ["string", "null"] },
+    cryptoTxId: { type: ["string", "null"] },
     failureReason: { type: ["string", "null"] },
     kind: { type: "string" },
     order: transactionOrderSchema,
@@ -158,6 +160,7 @@ export const transactionSummarySchema = {
     "createdAt",
     "confirmedAt",
     "reference",
+    "cryptoTxId",
     "failureReason",
     "kind",
     "order",

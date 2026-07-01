@@ -16,6 +16,7 @@ export function buildTransactionSummaryQuery() {
         status: transactions.status,
         reference: transactions.reference,
         failureReason: transactions.failureReason,
+        metadata: transactions.metadata,
         createdAt: transactions.createdAt,
         confirmedAt: transactions.confirmedAt,
       },
@@ -114,6 +115,7 @@ export async function mapTransactionSummaries(rows: TransactionSummaryRow[]) {
       createdAt: row.transaction.createdAt,
       confirmedAt: row.transaction.confirmedAt,
       reference: row.transaction.reference,
+      cryptoTxId: (row.transaction.metadata as any)?.cryptoTxId ?? null,
       failureReason: row.transaction.failureReason,
       kind: row.order.kind,
       order: {

@@ -145,3 +145,11 @@ export function useInvoices(query: AdminInvoiceListQuery) {
     },
   })
 }
+
+export function useInvoice(id: string | number, enabled = true) {
+  return useQuery<AdminInvoiceSummary>({
+    queryKey: queryKeys.invoice(id),
+    queryFn: () => clientApi(`/admin/invoices/${id}`),
+    enabled,
+  })
+}

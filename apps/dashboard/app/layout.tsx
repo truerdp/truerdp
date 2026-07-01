@@ -66,7 +66,7 @@ export default function RootLayout({
       )}
     >
       <body suppressHydrationWarning>
-        <ThemeProvider>
+        <ThemeProvider defaultTheme="light" enableSystem={false}>
           <TooltipProvider>
             <AppProviders>
               <DashboardShell>{children}</DashboardShell>

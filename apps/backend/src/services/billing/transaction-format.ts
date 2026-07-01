@@ -26,6 +26,7 @@ export function formatBillingTransactionResponse(record: BillingTransactionRecor
     createdAt: record.transaction.createdAt,
     confirmedAt: record.transaction.confirmedAt,
     reference: record.transaction.reference,
+    cryptoTxId: (record.transaction.metadata as any)?.cryptoTxId ?? null,
     kind: record.order.kind,
     order: {
       id: record.order.id,

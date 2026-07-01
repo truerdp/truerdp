@@ -32,6 +32,7 @@ export async function createBillingTransaction(input: {
   userId: number
   orderId: number
   method: SupportedPaymentMethod
+  txId?: string
   ipAddress?: string | null
 }) {
   const orderResult = await getBillingOrderById(input.orderId)
@@ -100,6 +101,20 @@ export async function createBillingTransaction(input: {
   })
 
   if (reusableTransaction) {
+    if (input.method === "usdt_trc20" && input.txId) {
+      const existingMetadata = (reusableTransaction.transaction.metadata as Record<string, unknown>) || {}
+      if (existingMetadata.cryptoTxId !== input.txId) {
+        const newMetadata = { ...existingMetadata, cryptoTxId: input.txId }
+        await db
+          .update(transactions)
+          .set({ metadata: newMetadata, method: "usdt_trc20" })
+          .where(eq(transactions.id, reusableTransaction.transaction.id))
+        
+        ;(reusableTransaction.transaction as any).metadata = newMetadata
+        ;(reusableTransaction.transaction as any).method = "usdt_trc20"
+      }
+    }
+
     const response = formatBillingTransactionResponse(reusableTransaction)
     const gatewayRedirectUrl = extractGatewayRedirectUrlFromMetadata({
       method: input.method,
@@ -158,6 +173,7 @@ export async function createBillingTransaction(input: {
         method: input.method,
         status: "pending",
         reference: createTransactionReference(),
+        metadata: (input.method === "usdt_trc20" && input.txId) ? { cryptoTxId: input.txId } : null,
       })
       .returning()
 

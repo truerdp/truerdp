@@ -64,9 +64,18 @@ export function InvoicesTable({ invoices }: InvoicesTableProps) {
                 >
                   {invoice.invoiceNumber}
                 </Link>
-                <span className="text-xs text-muted-foreground">
-                  TX {invoice.transaction?.reference || "-"}
-                </span>
+                {invoice.transaction?.id ? (
+                  <Link
+                    href={dashboardPaths.transactionDetail(
+                      invoice.transaction.id
+                    )}
+                    className="text-xs text-muted-foreground underline-offset-2 hover:underline"
+                  >
+                    TX {invoice.transaction.reference || invoice.transaction.id}
+                  </Link>
+                ) : (
+                  <span className="text-xs text-muted-foreground">TX -</span>
+                )}
               </div>
             </TableCell>
             <TableCell>

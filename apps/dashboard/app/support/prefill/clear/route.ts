@@ -10,7 +10,7 @@ export async function POST() {
     name: SUPPORT_PREFILL_COOKIE,
     value: "",
     maxAge: 0,
-    path: dashboardPaths.support,
+    path: dashboardPaths.supportNew,
   })
 
   return response

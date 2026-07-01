@@ -22,8 +22,15 @@ export interface AdminTransaction {
     | "usdt_trc20"
   status: "pending" | "confirmed" | "failed"
   createdAt: string
-  reference: string
+  confirmedAt: string | null
+  reference: string | null
+  cryptoTxId: string | null
+  failureReason: string | null
   kind: "new_purchase" | "renewal"
+  order: {
+    id: number
+    status: string
+  }
   invoice: {
     id: number
     invoiceNumber: string
@@ -125,5 +132,13 @@ export function useTransactions(query: AdminTransactionListQuery) {
         },
       }
     },
+  })
+}
+
+export function useTransaction(id: string | number, enabled = true) {
+  return useQuery<AdminTransaction>({
+    queryKey: queryKeys.transaction(id),
+    queryFn: () => clientApi(`/admin/transactions/${id}`),
+    enabled,
   })
 }

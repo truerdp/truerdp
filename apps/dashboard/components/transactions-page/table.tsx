@@ -50,6 +50,7 @@ export function TransactionsTable({ transactions }: TransactionsTableProps) {
       <TableHeader>
         <TableRow>
           <TableHead>ID</TableHead>
+          <TableHead>Order</TableHead>
           <TableHead>Details</TableHead>
           <TableHead>Amount</TableHead>
           <TableHead>Method</TableHead>
@@ -65,7 +66,26 @@ export function TransactionsTable({ transactions }: TransactionsTableProps) {
             key={tx.id}
             className={tx.status === "pending" ? "bg-yellow-50/60" : undefined}
           >
-            <TableCell className="font-mono text-sm">#{tx.id}</TableCell>
+            <TableCell>
+              <div className="flex flex-col">
+                <Link
+                  href={dashboardPaths.transactionDetail(tx.id)}
+                  className="font-mono text-sm underline-offset-2 hover:underline"
+                >
+                  #{tx.id}
+                </Link>
+              </div>
+            </TableCell>
+            <TableCell>
+              <div className="flex flex-col gap-1">
+                <Link
+                  href={dashboardPaths.orderDetail(tx.order.id)}
+                  className="font-mono text-sm underline-offset-2 hover:underline"
+                >
+                  #{tx.order.id}
+                </Link>
+              </div>
+            </TableCell>
             <TableCell>
               <div className="flex flex-col gap-1.5">
                 <div className="inline-flex items-center gap-2 text-sm font-medium">
@@ -121,7 +141,16 @@ export function TransactionsTable({ transactions }: TransactionsTableProps) {
             <TableCell className="font-medium">
               {formatAmount(tx.amount)}
             </TableCell>
-            <TableCell>{formatMethod(tx.method)}</TableCell>
+            <TableCell>
+              <div className="flex flex-col gap-1.5 items-start">
+                <span>{formatMethod(tx.method)}</span>
+                {tx.cryptoTxId && tx.method === "usdt_trc20" && (
+                  <span className="text-[10px] text-muted-foreground break-all max-w-[120px]" title={tx.cryptoTxId}>
+                    Hash: {tx.cryptoTxId}
+                  </span>
+                )}
+              </div>
+            </TableCell>
             <TableCell>
               <Badge variant={getStatusVariant(tx.status)}>
                 {formatStatus(tx.status)}

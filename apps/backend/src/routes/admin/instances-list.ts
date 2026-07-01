@@ -41,6 +41,7 @@ export async function registerAdminInstancesListRoutes(
         const result = await db
           .select({
             id: instances.id,
+            orderId: instances.originOrderId,
             userId: instances.userId,
             userEmail: users.email,
             status: instances.status,

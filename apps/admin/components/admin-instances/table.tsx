@@ -1,4 +1,4 @@
-import { useRouter } from "next/navigation"
+import Link from "next/link"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { MoreHorizontalCircle01Icon } from "@hugeicons/core-free-icons"
 
@@ -41,14 +41,13 @@ export function AdminInstancesTable({
   onTerminate,
   onSuspendToggle,
 }: AdminInstancesTableProps) {
-  const router = useRouter()
-
   return (
     <div className="rounded-lg border">
       <Table>
         <TableHeader>
           <TableRow>
             <TableHead>Instance</TableHead>
+            <TableHead>Order</TableHead>
             <TableHead>User</TableHead>
             <TableHead>Status</TableHead>
             <TableHead>IP Address</TableHead>
@@ -66,7 +65,20 @@ export function AdminInstancesTable({
             return (
               <TableRow key={instance.id}>
                 <TableCell>
-                  <div className="font-mono text-sm">#{instance.id}</div>
+                  <Link
+                    href={adminPaths.instanceDetails(instance.id)}
+                    className="font-mono text-sm underline-offset-2 hover:underline"
+                  >
+                    #{instance.id}
+                  </Link>
+                </TableCell>
+                <TableCell>
+                  <Link
+                    href={adminPaths.orderDetails(instance.orderId)}
+                    className="font-mono text-sm underline-offset-2 hover:underline"
+                  >
+                    #{instance.orderId}
+                  </Link>
                 </TableCell>
                 <TableCell>
                   <AdminUserLink
@@ -134,13 +146,6 @@ export function AdminInstancesTable({
                       <span className="sr-only">Open actions</span>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem
-                        onClick={() =>
-                          router.push(adminPaths.instanceDetails(instance.id))
-                        }
-                      >
-                        View
-                      </DropdownMenuItem>
                       {needsProvisioning ? (
                         <DropdownMenuItem
                           onClick={() => onProvision(instance.id)}

@@ -14,8 +14,31 @@ export interface Transaction {
     | "coingate_checkout"
     | "paypal_checkout"
   status: "pending" | "confirmed" | "failed"
+  reference: string | null
+  cryptoTxId: string | null
   createdAt: string
   confirmedAt: string | null
+  failureReason: string | null
+  kind: "new_purchase" | "renewal"
+  order: {
+    id: number
+    status: string
+  }
+  invoice: {
+    id: number
+    invoiceNumber: string
+    status: "unpaid" | "paid" | "expired"
+    totalAmount: number
+    currency: string
+    expiresAt: string
+    paidAt: string | null
+    createdAt: string
+  }
+  pricing: {
+    id: number
+    durationDays: number
+    priceUsdCents: number | null
+  }
 
   plan: {
     id: number
@@ -35,5 +58,13 @@ export function useTransactions() {
   return useQuery<Transaction[]>({
     queryKey: queryKeys.transactions(),
     queryFn: () => clientApi("/transactions"),
+  })
+}
+
+export function useTransaction(id: string | number, enabled = true) {
+  return useQuery<Transaction>({
+    queryKey: queryKeys.transaction(id),
+    queryFn: () => clientApi(`/transactions/${id}`),
+    enabled,
   })
 }

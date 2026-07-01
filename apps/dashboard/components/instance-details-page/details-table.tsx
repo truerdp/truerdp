@@ -1,6 +1,7 @@
 import { format } from "date-fns"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { Alert02Icon } from "@hugeicons/core-free-icons"
+import type { ReactNode } from "react"
 
 import CredentialsDialog from "@/components/credentials-dialog"
 import RenewButton from "@/components/renew-button"
@@ -14,13 +15,12 @@ import {
 } from "@workspace/ui/components/alert"
 import { Badge } from "@workspace/ui/components/badge"
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@workspace/ui/components/table"
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@workspace/ui/components/card"
+import { Separator } from "@workspace/ui/components/separator"
 import {
   formatDate,
   formatStatus,
@@ -40,6 +40,18 @@ type InstanceDetailsTableProps = {
   billingStatus: BillingStatus
 }
 
+function Row({ label, value }: { label: string; value: ReactNode }) {
+  return (
+    <>
+      <div className="flex items-center justify-between gap-4">
+        <span className="text-sm text-muted-foreground">{label}</span>
+        <span className="text-right text-sm">{value}</span>
+      </div>
+      <Separator />
+    </>
+  )
+}
+
 export function InstanceDetailsTable({
   data,
   hasPendingRenewal,
@@ -56,10 +68,10 @@ export function InstanceDetailsTable({
           <HugeiconsIcon
             icon={Alert02Icon}
             strokeWidth={2}
-            className="h-4 w-4 text-yellow-700"
+            className="size-4 text-yellow-700"
           />
           <AlertTitle className="text-sm font-medium">
-            Renewal requested (#{latestPendingTransaction?.id} •{" "}
+            Renewal requested (#{latestPendingTransaction?.id} -{" "}
             {formatAmount(latestPendingTransaction?.amount ?? 0)}). Awaiting
             admin confirmation.
           </AlertTitle>
@@ -75,56 +87,51 @@ export function InstanceDetailsTable({
         </Alert>
       )}
 
-      <div className="rounded-lg border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>ID</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Billing</TableHead>
-              <TableHead>IP Address</TableHead>
-              <TableHead>Username</TableHead>
-              <TableHead>Start Date</TableHead>
-              <TableHead>Expiry Date</TableHead>
-              <TableHead>Action</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            <TableRow>
-              <TableCell className="font-mono text-sm">{data.id}</TableCell>
-              <TableCell>
-                <Badge variant={getStatusVariant(data.status)}>
-                  {formatStatus(data.status)}
-                </Badge>
-              </TableCell>
-              <TableCell>
-                <Badge variant={getBillingStatusVariant(billingStatus)}>
-                  {formatStatus(billingStatus)}
-                </Badge>
-              </TableCell>
-              <TableCell className="font-mono">
-                {data.ipAddress ?? "-"}
-              </TableCell>
-              <TableCell>{data.username ?? "-"}</TableCell>
-              <TableCell>{formatDate(data.startDate)}</TableCell>
-              <TableCell
-                className={cn("font-medium", isExpired ? "text-red-500" : "")}
+      <Card>
+        <CardHeader>
+          <CardTitle>Instance #{data.id}</CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-3">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge variant={getStatusVariant(data.status)} className="uppercase">
+                Status: {formatStatus(data.status)}
+              </Badge>
+              <Badge
+                variant={getBillingStatusVariant(billingStatus)}
+                className="uppercase"
               >
+                Billing: {formatStatus(billingStatus)}
+              </Badge>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <CredentialsDialog instanceId={data.id} />
+              {canShowRenew && (
+                <RenewButton instanceId={data.id} disabled={!canRenew} />
+              )}
+            </div>
+          </div>
+          <Separator />
+          <Row
+            label="IP Address"
+            value={<span className="font-mono">{data.ipAddress ?? "-"}</span>}
+          />
+          <Row
+            label="Username"
+            value={<span className="font-mono">{data.username ?? "-"}</span>}
+          />
+          <Row label="Start Date" value={formatDate(data.startDate)} />
+          <Row
+            label="Expiry Date"
+            value={
+              <span className={cn("font-medium", isExpired && "text-red-500")}>
                 {formatDate(data.expiryDate)}
-                {isExpired && " (expired)"}
-              </TableCell>
-              <TableCell>
-                <div className="flex flex-wrap items-center gap-2">
-                  <CredentialsDialog instanceId={data.id} />
-                  {canShowRenew && (
-                    <RenewButton instanceId={data.id} disabled={!canRenew} />
-                  )}
-                </div>
-              </TableCell>
-            </TableRow>
-          </TableBody>
-        </Table>
-      </div>
+                {isExpired ? " (expired)" : ""}
+              </span>
+            }
+          />
+        </CardContent>
+      </Card>
     </>
   )
 }

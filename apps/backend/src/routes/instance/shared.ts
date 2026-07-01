@@ -9,6 +9,7 @@ export const renewInstanceSchema = z.object({
 
 type InstanceRow = {
   id: number
+  orderId: number
   userId: number
   status: typeof instances.$inferSelect.status
   startDate: Date | null
@@ -35,6 +36,7 @@ export function getEffectiveInstanceStatus(input: {
 function instanceSummarySelect() {
   return {
     id: instances.id,
+    orderId: instances.originOrderId,
     userId: instances.userId,
     status: instances.status,
     startDate: instances.startDate,
@@ -47,6 +49,7 @@ function instanceSummarySelect() {
 export function formatInstanceSummary(instance: InstanceRow) {
   return {
     id: instance.id,
+    orderId: instance.orderId,
     status: getEffectiveInstanceStatus(instance),
     ipAddress: instance.ipAddress,
     username: instance.username,

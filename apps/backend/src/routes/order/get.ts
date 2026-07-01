@@ -2,15 +2,37 @@ import { FastifyInstance } from "fastify"
 import { z } from "zod"
 import { verifyAuth } from "../../middleware/auth.js"
 import type { GenericRouteRequest, RouteReply } from "../../types/requests.js"
-import { BillingError, getBillingOrderForUser } from "../../services/billing.js"
+import {
+  BillingError,
+  getBillingOrderForUser,
+  listUserOrders,
+} from "../../services/billing.js"
 import { getErrorMessage } from "../../utils/error.js"
-import { getOrderSchema } from "../../schemas/order.schemas.js"
+import {
+  getOrderSchema,
+  listOrdersSchema,
+} from "../../schemas/order.schemas.js"
 
 const orderIdParamsSchema = z.object({
   id: z.coerce.number().int().positive(),
 })
 
 export async function registerOrderGetRoutes(server: FastifyInstance) {
+  server.get(
+    "/orders",
+    { preHandler: verifyAuth, schema: listOrdersSchema },
+    async (request: GenericRouteRequest, reply: RouteReply) => {
+      try {
+        return await listUserOrders(request.user!.userId)
+      } catch (err: unknown) {
+        request.log.error(err)
+        return reply.status(500).send({
+          error: "Internal server error",
+        })
+      }
+    }
+  )
+
   server.get(
     "/orders/:id",
     { preHandler: verifyAuth, schema: getOrderSchema },

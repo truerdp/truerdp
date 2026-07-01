@@ -6,6 +6,7 @@ import { queryKeys } from "@/lib/query-keys"
 
 export interface Instance {
   id: number
+  orderId: number
   userId: number
   userEmail: string | null
   status:

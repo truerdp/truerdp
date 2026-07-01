@@ -1,5 +1,8 @@
+import Link from "next/link"
+
 import { AdminUserLink } from "@/components/admin-user-link"
 import { AdminPaginationControls } from "@/components/admin-pagination-controls"
+import { adminPaths } from "@/lib/paths"
 import { Badge } from "@workspace/ui/components/badge"
 import {
   Table,
@@ -63,12 +66,28 @@ export function AdminInvoicesTable({
               <TableRow key={invoice.id}>
                 <TableCell>
                   <div className="flex flex-col">
-                    <span className="font-mono text-sm">
+                    <Link
+                      href={adminPaths.invoiceDetails(invoice.id)}
+                      className="font-mono text-sm underline-offset-2 hover:underline"
+                    >
                       {invoice.invoiceNumber}
-                    </span>
-                    <span className="text-xs text-muted-foreground">
-                      TX {invoice.transaction.reference || "-"}
-                    </span>
+                    </Link>
+                    {invoice.transaction.id ? (
+                      <Link
+                        href={adminPaths.transactionDetails(
+                          invoice.transaction.id
+                        )}
+                        className="text-xs text-muted-foreground underline-offset-2 hover:underline"
+                      >
+                        TX{" "}
+                        {invoice.transaction.reference ||
+                          invoice.transaction.id}
+                      </Link>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">
+                        TX -
+                      </span>
+                    )}
                   </div>
                 </TableCell>
                 <TableCell>

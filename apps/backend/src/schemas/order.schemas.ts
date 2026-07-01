@@ -149,6 +149,106 @@ export const billingOrderResponseSchema = {
 
 export const getOrderResponseSchema = billingOrderResponseSchema
 
+export const orderSummaryInvoiceSchema = {
+  type: "object",
+  properties: {
+    id: { type: "integer" },
+    invoiceNumber: { type: ["string", "null"] },
+    status: { type: ["string", "null"] },
+    totalAmount: { type: ["integer", "null"] },
+    currency: { type: ["string", "null"] },
+    expiresAt: { type: ["string", "null"], format: "date-time" },
+    paidAt: { type: ["string", "null"], format: "date-time" },
+  },
+  required: [
+    "id",
+    "invoiceNumber",
+    "status",
+    "totalAmount",
+    "currency",
+    "expiresAt",
+    "paidAt",
+  ],
+}
+
+export const orderSummaryPlanSchema = {
+  type: "object",
+  properties: {
+    id: { type: "integer" },
+    name: { type: "string" },
+    cpu: { type: "integer" },
+    ram: { type: "integer" },
+    storage: { type: "integer" },
+    durationDays: { type: "integer" },
+    priceUsdCents: { type: "integer" },
+  },
+  required: [
+    "id",
+    "name",
+    "cpu",
+    "ram",
+    "storage",
+    "durationDays",
+    "priceUsdCents",
+  ],
+}
+
+export const orderSummaryInstanceSchema = {
+  type: "object",
+  properties: {
+    id: { type: "integer" },
+    status: { type: "string" },
+  },
+  required: ["id", "status"],
+}
+
+export const orderSummarySchema = {
+  type: "object",
+  properties: {
+    id: { type: "integer" },
+    userId: { type: "integer" },
+    kind: { type: "string" },
+    status: { type: "string" },
+    billingDetails: {
+      anyOf: [orderBillingDetailsSchema, { type: "null" }],
+    },
+    createdAt: { type: "string", format: "date-time" },
+    updatedAt: { type: "string", format: "date-time" },
+    plan: orderSummaryPlanSchema,
+    invoice: {
+      anyOf: [orderSummaryInvoiceSchema, { type: "null" }],
+    },
+    instance: {
+      anyOf: [orderSummaryInstanceSchema, { type: "null" }],
+    },
+  },
+  required: [
+    "id",
+    "userId",
+    "kind",
+    "status",
+    "billingDetails",
+    "createdAt",
+    "updatedAt",
+    "plan",
+    "invoice",
+    "instance",
+  ],
+}
+
+export const listOrdersSchema = {
+  tags: ["Orders"],
+  summary: "List user orders",
+  security: [{ bearerAuth: [] }],
+  response: {
+    200: {
+      type: "array",
+      items: orderSummarySchema,
+    },
+    500: errorResponse,
+  },
+}
+
 export const updateBillingBodySchema = {
   type: "object",
   required: billingFieldsRequired,

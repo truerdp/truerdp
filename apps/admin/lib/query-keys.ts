@@ -11,8 +11,13 @@ export const queryKeys = {
   coupons: () => ["coupons"] as const,
   supportTickets: () => ["support", "tickets"] as const,
   supportTicket: (id: number) => ["support", "tickets", id] as const,
+  orders: () => ["orders"] as const,
+  order: (id: string | number) => ["orders", String(id)] as const,
   invoices: () => ["invoices"] as const,
+  invoice: (id: string | number) => ["invoices", String(id)] as const,
   transactions: () => ["transactions"] as const,
+  transaction: (id: string | number) =>
+    ["transactions", String(id)] as const,
   servers: () => ["servers"] as const,
   expiringSoonInstances: () => ["instances", "expiring-soon"] as const,
   expiredInstances: () => ["instances", "expired"] as const,

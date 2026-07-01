@@ -26,6 +26,7 @@ interface CreateTransactionResponse {
 export function useCheckoutOrder(orderId: number, hasValidOrderId: boolean) {
   const router = useRouter()
   const [method, setMethod] = useState<PaymentMethod>("usdt_trc20")
+  const [txId, setTxId] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const {
@@ -91,6 +92,7 @@ export function useCheckoutOrder(orderId: number, hasValidOrderId: boolean) {
           body: {
             orderId: order.orderId,
             method,
+            ...(method === "usdt_trc20" ? { txId } : {}),
           },
         }
       )
@@ -129,6 +131,8 @@ export function useCheckoutOrder(orderId: number, hasValidOrderId: boolean) {
     error,
     method,
     setMethod,
+    txId,
+    setTxId,
     isSubmitting,
     hasBillingDetails,
     existingPendingTransaction,

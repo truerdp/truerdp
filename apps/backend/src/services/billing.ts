@@ -23,6 +23,7 @@ export { createBillingTransaction } from "./billing/transaction-create.js"
 export {
   listUserTransactions,
   getUserTransactionById,
+  getAdminTransactionById,
   listUserInvoices,
   listInstanceTransactions,
   listPendingTransactions,
@@ -31,8 +32,15 @@ export {
 } from "./billing/transaction-lists.js"
 export {
   type AdminInvoiceListParams,
+  getAdminInvoiceById,
   listAdminInvoices,
 } from "./billing/admin-invoices.js"
+export {
+  type AdminOrderListParams,
+  getAdminOrderById,
+  listAdminOrders,
+  listUserOrders,
+} from "./billing/order-lists.js"
 export { confirmPendingTransaction } from "./billing/transaction-confirm.js"
 export {
   failPendingTransactionByAdmin,

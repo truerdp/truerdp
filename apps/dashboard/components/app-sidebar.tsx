@@ -44,6 +44,11 @@ const navMain = [
     icon: <HugeiconsIcon icon={ComputerTerminalIcon} strokeWidth={2} />,
   },
   {
+    title: "Orders",
+    url: dashboardPaths.orders,
+    icon: <HugeiconsIcon icon={CreditCardIcon} strokeWidth={2} />,
+  },
+  {
     title: "Transactions",
     url: dashboardPaths.transactions,
     icon: <HugeiconsIcon icon={CreditCardIcon} strokeWidth={2} />,
@@ -103,6 +108,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               (item.url === dashboardPaths.overview && segments.length === 0) ||
               (item.url === dashboardPaths.instances &&
                 primarySegment === "instances") ||
+              (item.url === dashboardPaths.orders &&
+                primarySegment === "orders") ||
               (item.url === dashboardPaths.transactions &&
                 primarySegment === "transactions") ||
               (item.url === dashboardPaths.invoices &&

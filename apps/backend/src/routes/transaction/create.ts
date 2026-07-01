@@ -22,6 +22,7 @@ export async function registerTransactionCreateRoutes(server: FastifyInstance) {
           userId,
           orderId: body.orderId,
           method: body.method,
+          txId: body.txId,
           ipAddress: request.ip,
         })
 

@@ -28,6 +28,15 @@ export async function getUserTransactionById(
   return transaction ?? null
 }
 
+export async function getAdminTransactionById(transactionId: number) {
+  const rows = await buildTransactionSummaryQuery()
+    .where(eq(transactions.id, transactionId))
+    .limit(1)
+  const [transaction] = await mapTransactionSummaries(rows)
+
+  return transaction ?? null
+}
+
 export async function listUserInvoices(userId: number) {
   const rows = await db
     .select({

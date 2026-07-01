@@ -109,60 +109,63 @@ export function BillingDetailsPanel({
   )
 }
 
+function buildBillingList(details?: OrderBillingDetails) {
+  const fields = [
+    ["Name", details ? `${details.firstName} ${details.lastName}`.trim() : ""],
+    ["Billing email", details?.email],
+    ["Phone", details?.phone],
+    ["Company", details?.companyName],
+    ["GST/VAT ID", details?.taxId],
+    ["Address line 1", details?.addressLine1],
+    ["Address line 2", details?.addressLine2],
+    ["City", details?.city],
+    ["State/Region", details?.state],
+    ["Postal code", details?.postalCode],
+    ["Country", details?.country],
+  ]
+
+  return `
+<ul>
+${fields
+  .map(([label, value]) => `<li><strong>${label}:</strong> ${value || ""}</li>`)
+  .join("\n")}
+</ul>`
+}
+
 function buildBillingSupportPrefill(
   dashboardUrl: string,
   orderId: number,
   details: OrderBillingDetails | null
 ) {
-  const message = details
-    ? [
-        "I need help updating locked billing details for checkout.",
-        "",
-        `Order ID: ${orderId}`,
-        "",
-        "Current billing details:",
-        `Name: ${`${details.firstName} ${details.lastName}`.trim() || "-"}`,
-        `Billing email: ${details.email || "-"}`,
-        `Phone: ${details.phone || "-"}`,
-        `Company: ${details.companyName || "-"}`,
-        `GST/VAT ID: ${details.taxId || "-"}`,
-        `Address line 1: ${details.addressLine1 || "-"}`,
-        `Address line 2: ${details.addressLine2 || "-"}`,
-        `City: ${details.city || "-"}`,
-        `State/Region: ${details.state || "-"}`,
-        `Postal code: ${details.postalCode || "-"}`,
-        `Country: ${details.country || "-"}`,
-        "",
-        "Requested billing change:",
-        "",
-      ]
-    : [
-        "I need help adding billing details for checkout.",
-        "",
-        `Order ID: ${orderId}`,
-        "",
-        "Billing details are missing on my account, so checkout is blocked.",
-        "",
-        "Requested billing details:",
-        "Name:",
-        "Billing email:",
-        "Phone:",
-        "Company:",
-        "GST/VAT ID:",
-        "Address line 1:",
-        "Address line 2:",
-        "City:",
-        "State/Region:",
-        "Postal code:",
-        "Country:",
-        "",
-      ]
+  const isUpdate = !!details
+
+  const message = isUpdate
+    ? `
+<p>I need help updating locked billing details for checkout.</p>
+
+<p><strong>Order ID:</strong> ${orderId}</p>
+
+<p><strong>Current billing details:</strong></p>
+${buildBillingList(details)}
+
+<p><strong>Requested billing change:</strong></p>
+`
+    : `
+<p>I need help adding billing details for checkout.</p>
+
+<p><strong>Order ID:</strong> ${orderId}</p>
+
+<p>Billing details are missing on my account, so checkout is blocked.</p>
+
+<p><strong>Requested billing details:</strong></p>
+${buildBillingList()}
+`
 
   return {
     action: `${dashboardUrl}/support/prefill`,
-    subject: details
+    subject: isUpdate
       ? `Locked billing change for order #${orderId}`
       : `Missing billing details for order #${orderId}`,
-    message: message.join("\n"),
+    message,
   }
 }

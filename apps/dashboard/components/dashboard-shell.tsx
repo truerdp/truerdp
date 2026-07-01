@@ -81,6 +81,28 @@ function getBreadcrumbState(segments: string[]) {
     }
   }
 
+  if (segments[0] === "support") {
+    if (segments[1] === "new") {
+      return {
+        currentLabel: "Create Ticket",
+        parentLabel: "Support",
+        parentHref: dashboardPaths.support,
+      }
+    }
+    if (segments.length > 1) {
+      return {
+        currentLabel: `Ticket #${segments[1]}`,
+        parentLabel: "Support",
+        parentHref: dashboardPaths.support,
+      }
+    }
+    return {
+      currentLabel: "Support",
+      parentLabel: null,
+      parentHref: dashboardPaths.overview,
+    }
+  }
+
   return {
     currentLabel: "Dashboard",
     parentLabel: null,

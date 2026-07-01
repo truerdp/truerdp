@@ -25,7 +25,7 @@ import { Skeleton } from "@workspace/ui/components/skeleton"
 
 export function MissingInvoiceReference() {
   return (
-    <Empty className="max-w-3xl border">
+    <Empty className="w-full border">
       <EmptyHeader>
         <EmptyTitle>Missing invoice reference</EmptyTitle>
         <EmptyDescription>
@@ -48,7 +48,7 @@ export function MissingInvoiceReference() {
 
 export function InvoiceNotFound() {
   return (
-    <Empty className="max-w-3xl border">
+    <Empty className="w-full border">
       <EmptyHeader>
         <EmptyTitle>Invoice not found</EmptyTitle>
         <EmptyDescription>
@@ -71,7 +71,7 @@ export function InvoiceNotFound() {
 
 export function InvoiceDetailsError() {
   return (
-    <Alert variant="destructive" className="max-w-3xl">
+    <Alert variant="destructive" className="w-full">
       <HugeiconsIcon icon={CreditCardIcon} strokeWidth={2} />
       <AlertTitle>Failed to load invoice details</AlertTitle>
       <AlertDescription>
@@ -83,7 +83,7 @@ export function InvoiceDetailsError() {
 
 export function InvoiceDetailsSkeleton() {
   return (
-    <Card className="max-w-3xl">
+    <Card className="w-full">
       <CardHeader>
         <Skeleton className="h-6 w-56" />
         <Skeleton className="h-4 w-72" />
