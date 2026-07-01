@@ -32,6 +32,7 @@ const allowedTags = new Set([
   "H1",
   "H2",
   "H3",
+  "IMG",
   "I",
   "LI",
   "OL",
@@ -78,6 +79,23 @@ function sanitizeUrl(url: string) {
   return ""
 }
 
+function sanitizeImageSrc(src: string) {
+  const trimmedSrc = src.trim()
+  if (!trimmedSrc) {
+    return ""
+  }
+
+  if (
+    /^data:image\/(?:png|jpe?g|gif|webp|avif|bmp);base64,[a-z0-9+/=]+$/i.test(
+      trimmedSrc
+    )
+  ) {
+    return trimmedSrc
+  }
+
+  return sanitizeUrl(trimmedSrc)
+}
+
 function unwrapElement(element: Element) {
   const parent = element.parentNode
   if (!parent) {
@@ -102,6 +120,10 @@ function sanitizeElement(element: Element) {
   }
 
   const href = element.tagName === "A" ? element.getAttribute("href") || "" : ""
+  const src =
+    element.tagName === "IMG" ? element.getAttribute("src") || "" : ""
+  const alt =
+    element.tagName === "IMG" ? element.getAttribute("alt")?.trim() || "" : ""
   const classNames = Array.from(element.classList)
 
   for (const attribute of Array.from(element.attributes)) {
@@ -115,6 +137,20 @@ function sanitizeElement(element: Element) {
       element.setAttribute("rel", "noreferrer noopener")
       element.setAttribute("target", "_blank")
     }
+  }
+
+  if (element.tagName === "IMG") {
+    const safeSrc = sanitizeImageSrc(src)
+    if (!safeSrc) {
+      element.remove()
+      return
+    }
+
+    element.setAttribute("src", safeSrc)
+    if (alt) {
+      element.setAttribute("alt", alt)
+    }
+    element.setAttribute("loading", "lazy")
   }
 
   const supportedClasses = classNames.filter((className) =>

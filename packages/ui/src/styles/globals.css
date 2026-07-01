@@ -182,6 +182,13 @@
     text-underline-offset: 3px;
   }
 
+  .rich-text-content :where(img) {
+    display: block;
+    max-width: 100%;
+    height: auto;
+    border-radius: var(--radius-sm);
+  }
+
   .rich-text-content .ql-align-center {
     text-align: center;
   }

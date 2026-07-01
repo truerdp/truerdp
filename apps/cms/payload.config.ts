@@ -1,5 +1,6 @@
 import { postgresAdapter } from "@payloadcms/db-postgres"
 import { lexicalEditor } from "@payloadcms/richtext-lexical"
+import { s3Storage } from "@payloadcms/storage-s3"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
 import { buildConfig } from "payload"
@@ -23,6 +24,34 @@ const dirname = path.dirname(filename)
 
 const publicUrl = process.env.PAYLOAD_PUBLIC_URL ?? "http://localhost:3004"
 const webUrl = process.env.WEB_BASE_URL ?? "http://localhost:3000"
+const r2AccountId = process.env.R2_ACCOUNT_ID?.trim() ?? ""
+const r2AccessKeyId = process.env.R2_ACCESS_KEY_ID?.trim() ?? ""
+const r2SecretAccessKey = process.env.R2_SECRET_ACCESS_KEY?.trim() ?? ""
+const r2Bucket = process.env.R2_BUCKET?.trim() ?? ""
+const r2Endpoint =
+  process.env.R2_ENDPOINT?.trim() ||
+  (r2AccountId
+    ? `https://${r2AccountId}.r2.cloudflarestorage.com`
+    : "")
+const hasAnyR2Config = [
+  r2AccountId,
+  r2AccessKeyId,
+  r2SecretAccessKey,
+  r2Bucket,
+  process.env.R2_ENDPOINT?.trim() ?? "",
+].some(Boolean)
+const isR2Configured = [
+  r2Endpoint,
+  r2AccessKeyId,
+  r2SecretAccessKey,
+  r2Bucket,
+].every(Boolean)
+
+if (hasAnyR2Config && !isR2Configured) {
+  throw new Error(
+    "R2 config is incomplete. Set R2_BUCKET, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, and either R2_ENDPOINT or R2_ACCOUNT_ID."
+  )
+}
 
 export default buildConfig({
   admin: {
@@ -78,6 +107,25 @@ export default buildConfig({
   typescript: {
     outputFile: path.resolve(dirname, "payload-types.ts"),
   },
+  plugins: isR2Configured
+    ? [
+        s3Storage({
+          bucket: r2Bucket,
+          config: {
+            credentials: {
+              accessKeyId: r2AccessKeyId,
+              secretAccessKey: r2SecretAccessKey,
+            },
+            endpoint: r2Endpoint,
+            region: "auto",
+          },
+          clientUploads: true,
+          collections: {
+            media: true,
+          },
+        }),
+      ]
+    : [],
   db: postgresAdapter({
     pool: {
       connectionString: process.env.DATABASE_URL || "",
