@@ -51,7 +51,13 @@ function ensureS3UploadHandlerImportMap() {
     nextContents = `${s3ImportStatement}\n${nextContents}`
   }
 
-  nextContents = nextContents.replace(/\n}$/, `,\n  ${s3ImportMapKey}\n}`)
+  const closingBraceIndex = nextContents.lastIndexOf("}")
+
+  if (closingBraceIndex === -1) {
+    throw new Error("Failed to locate import map closing brace")
+  }
+
+  nextContents = `${nextContents.slice(0, closingBraceIndex)},\n  ${s3ImportMapKey}\n${nextContents.slice(closingBraceIndex)}`
 
   if (!nextContents.includes(s3ImportMapKey)) {
     throw new Error("Failed to inject S3 client upload handler into import map")
