@@ -9,6 +9,7 @@ import {
   AlertTitle,
 } from "@workspace/ui/components/alert"
 import { BackButton } from "@workspace/ui/components/back-button"
+import { Button } from "@workspace/ui/components/button"
 import { Card, CardContent, CardHeader } from "@workspace/ui/components/card"
 import {
   Empty,
