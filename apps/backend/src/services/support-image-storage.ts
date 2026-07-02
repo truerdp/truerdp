@@ -38,6 +38,35 @@ function getRequiredEnv(name: string) {
   return value
 }
 
+export function assertSupportImageStorageConfig() {
+  if (getStorageMode() !== "r2") {
+    return
+  }
+
+  const missing = [
+    "R2_BUCKET",
+    "R2_ACCESS_KEY_ID",
+    "R2_SECRET_ACCESS_KEY",
+    "R2_PUBLIC_BASE_URL",
+  ].filter((name) => !process.env[name]?.trim())
+
+  if (!process.env.R2_ENDPOINT?.trim() && !process.env.R2_ACCOUNT_ID?.trim()) {
+    missing.push("R2_ENDPOINT or R2_ACCOUNT_ID")
+  }
+
+  if (missing.length > 0) {
+    throw new Error(
+      `Support image R2 config is incomplete. Set ${missing.join(", ")}.`
+    )
+  }
+
+  try {
+    new URL(process.env.R2_PUBLIC_BASE_URL!.trim())
+  } catch {
+    throw new Error("R2_PUBLIC_BASE_URL must be a valid absolute URL")
+  }
+}
+
 function getR2Client() {
   if (cachedClient) {
     return cachedClient

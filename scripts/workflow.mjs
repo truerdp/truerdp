@@ -471,6 +471,78 @@ function renderBackendEnv() {
   ensureProductionInfisicalReady()
 
   run("infisical", ["agent", "--config", config])
+  validateProductionBackendEnvFile("apps/backend/.env.production.infisical")
+}
+
+function validateProductionBackendEnvFile(file) {
+  const envPath = join(root, file)
+
+  if (!existsSync(envPath)) {
+    console.error(`Missing rendered backend env file: ${file}`)
+    process.exit(1)
+  }
+
+  const env = readDotenv(envPath)
+  const missing = [
+    "R2_BUCKET",
+    "R2_ACCESS_KEY_ID",
+    "R2_SECRET_ACCESS_KEY",
+    "R2_PUBLIC_BASE_URL",
+  ].filter((key) => !env[key])
+
+  if (!env.R2_ENDPOINT && !env.R2_ACCOUNT_ID) {
+    missing.push("R2_ENDPOINT or R2_ACCOUNT_ID")
+  }
+
+  if (missing.length > 0) {
+    console.error(
+      [
+        "Rendered production backend env is missing support image R2 config:",
+        ...missing.map((key) => `- ${key}`),
+        "Set these in Infisical prod at /, then rerun prod:backend.",
+      ].join("\n")
+    )
+    process.exit(1)
+  }
+
+  try {
+    new URL(env.R2_PUBLIC_BASE_URL)
+  } catch {
+    console.error("Rendered R2_PUBLIC_BASE_URL must be a valid absolute URL.")
+    process.exit(1)
+  }
+}
+
+function readDotenv(file) {
+  const values = {}
+
+  for (const line of readFileSync(file, "utf8").split(/\r?\n/)) {
+    const trimmed = line.trim()
+
+    if (!trimmed || trimmed.startsWith("#")) {
+      continue
+    }
+
+    const separatorIndex = trimmed.indexOf("=")
+
+    if (separatorIndex <= 0) {
+      continue
+    }
+
+    const key = trimmed.slice(0, separatorIndex).trim()
+    let value = trimmed.slice(separatorIndex + 1).trim()
+
+    if (
+      (value.startsWith('"') && value.endsWith('"')) ||
+      (value.startsWith("'") && value.endsWith("'"))
+    ) {
+      value = value.slice(1, -1)
+    }
+
+    values[key] = value.trim()
+  }
+
+  return values
 }
 
 function ensureBackendAgentConfig() {

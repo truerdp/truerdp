@@ -339,12 +339,21 @@ COINGATE_RECEIVE_CURRENCY=DO_NOT_CONVERT
 BACKEND_BASE_URL=http://localhost:3003
 EXPIRY_REMINDER_SWEEP_INTERVAL_MINUTES=0
 EXPIRY_REMINDER_SWEEP_DAYS_AHEAD=3
+R2_BUCKET=
+R2_ACCESS_KEY_ID=
+R2_SECRET_ACCESS_KEY=
+R2_PUBLIC_BASE_URL=
+R2_ACCOUNT_ID=
+# Or set R2_ENDPOINT instead of R2_ACCOUNT_ID.
+R2_ENDPOINT=
 ```
 
 Notes:
 
 - Better Auth (`/api/auth/*`) is now the primary auth path used by the web app.
 - Keep `BETTER_AUTH_*` and `CORS_ALLOWED_ORIGINS` aligned across web/dashboard/admin origins.
+- Production support ticket image uploads require the R2 values above. Local
+  development stores support images under `apps/backend/.uploads` instead.
 
 Payload CMS env values (set in `apps/cms/.env` and shared app env as needed):
 
@@ -355,6 +364,12 @@ CMS_INTERNAL_API_URL=http://localhost:3004
 CMS_INTERNAL_API_TOKEN=change-this-cms-internal-token
 CMS_REVALIDATE_SECRET=change-this-revalidate-secret
 WEB_BASE_URL=http://localhost:3000
+R2_ACCOUNT_ID=
+R2_BUCKET=
+R2_ACCESS_KEY_ID=
+R2_SECRET_ACCESS_KEY=
+R2_ENDPOINT=
+R2_PUBLIC_BASE_URL=
 ```
 
 Payload routes used by the apps:

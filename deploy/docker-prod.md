@@ -152,6 +152,23 @@ The agent writes:
 apps/backend/.env.production.infisical
 ```
 
+Support ticket image uploads require these Cloudflare R2 values in Infisical
+`prod` at `/` before `pnpm run prod:backend` will start the backend:
+
+```env
+R2_BUCKET=
+R2_ACCESS_KEY_ID=
+R2_SECRET_ACCESS_KEY=
+R2_PUBLIC_BASE_URL=
+R2_ACCOUNT_ID=
+# Or set R2_ENDPOINT instead of R2_ACCOUNT_ID.
+R2_ENDPOINT=
+```
+
+Use a public bucket/custom-domain URL for `R2_PUBLIC_BASE_URL`, without a
+trailing slash. The backend stores support images under the `support-tickets/`
+prefix and returns URLs rooted at that base.
+
 If Infisical is unavailable during an emergency, you can still set
 `BACKEND_ENV_FILE=apps/backend/.env.production.local` and create that ignored
 file manually. Treat that as a temporary break-glass path, not the normal

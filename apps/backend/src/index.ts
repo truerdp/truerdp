@@ -22,6 +22,7 @@ import fastifyRawBody from "fastify-raw-body"
 import { startExpiryReminderScheduler } from "./services/billing/reminder-scheduler.js"
 import { createAdminAuditLog } from "./services/admin-audit.js"
 import { supportMultipartOptions } from "./routes/support/uploads.js"
+import { assertSupportImageStorageConfig } from "./services/support-image-storage.js"
 
 const server = Fastify({
   logger: true,
@@ -214,6 +215,8 @@ server.get(
 const start = async () => {
   try {
     const port = Number(process.env.PORT) || 3003
+
+    assertSupportImageStorageConfig()
 
     await server.listen({
       port,

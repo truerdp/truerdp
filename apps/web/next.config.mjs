@@ -44,6 +44,7 @@ const remotePatternSources = [
   process.env.CMS_INTERNAL_API_URL,
   process.env.NEXT_PUBLIC_ADMIN_URL,
   process.env.R2_ENDPOINT,
+  process.env.R2_PUBLIC_BASE_URL,
 ]
 
 const seenRemotePatterns = new Set()

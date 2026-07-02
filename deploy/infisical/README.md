@@ -20,6 +20,24 @@ or generated env files by hand.
 Keep `NEXT_PUBLIC_*` values in Infisical for consistency, but remember they are
 public frontend config after a Next.js build.
 
+Production support ticket image uploads use Cloudflare R2. Set these backend
+secrets at the root path in `prod` before deploying:
+
+```env
+R2_BUCKET=
+R2_ACCESS_KEY_ID=
+R2_SECRET_ACCESS_KEY=
+R2_PUBLIC_BASE_URL=
+R2_ACCOUNT_ID=
+# Or set R2_ENDPOINT instead of R2_ACCOUNT_ID.
+R2_ENDPOINT=
+```
+
+`R2_PUBLIC_BASE_URL` must be the public URL prefix that serves objects from the
+bucket, for example a Cloudflare R2 custom domain or public development URL. It
+is used to build stored support ticket image URLs and should not include a
+trailing slash.
+
 ## Vercel Syncs
 
 Create one Vercel App Connection in Infisical, then create one Secret Sync per
