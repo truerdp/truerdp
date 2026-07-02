@@ -104,7 +104,7 @@ jobs:
             git fetch origin main
             git checkout main
             git pull --ff-only origin main
-            pnpm run prod:backend:preflight
+            node scripts/workflow.mjs prod:backend:preflight
           SSH
 
       - name: Run migrations
@@ -126,7 +126,7 @@ jobs:
             git fetch origin main
             git checkout main
             git pull --ff-only origin main
-            pnpm run prod:backend
+            node scripts/workflow.mjs prod:backend
             docker image prune -f
           SSH
 

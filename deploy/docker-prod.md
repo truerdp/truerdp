@@ -98,9 +98,10 @@ git clone <your-github-repo-url> truerdp
 cd /opt/truerdp
 ```
 
-The host Node.js version is not used by the backend container. If `pnpm` warns
-that host Node is below the repo engine, it is only a host-side warning for the
-wrapper script. The container runs Node from `node:24-alpine`.
+The host Node.js version is not used by the backend container. The GitHub
+deploy workflow invokes `node scripts/workflow.mjs prod:backend` directly on
+the VPS so it does not depend on host `pnpm` compatibility. The container runs
+Node from `node:24-alpine`.
 
 ## 4) Root compose env
 
@@ -358,7 +359,7 @@ The deploy workflow does this in order:
 3. Runs Drizzle migrations against Neon.
 4. SSHes into the VPS.
 5. Pulls `main`.
-6. Runs `pnpm run prod:backend` on the VPS.
+6. Runs `node scripts/workflow.mjs prod:backend` on the VPS.
 7. Checks `https://api.truerdp.com/`.
 
 Required GitHub environment or repository secrets:
@@ -451,5 +452,6 @@ docker compose -f docker-compose.prod.yml ps
 curl http://127.0.0.1:3003/
 ```
 
-If host `pnpm` warns about Node `<24`, either ignore it when using Docker or
-upgrade host Node later. The production container uses Node 24.
+If host `pnpm` errors because the VPS Node.js version is too old for the pinned
+pnpm version, run `node scripts/workflow.mjs prod:backend` directly or upgrade
+host Node later. The production container uses Node 24.
