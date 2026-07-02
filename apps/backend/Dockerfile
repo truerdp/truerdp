@@ -10,7 +10,7 @@ RUN corepack prepare pnpm@11.7.0 --activate
 COPY . .
 
 # Install dependencies
-RUN pnpm install --frozen-lockfile
+RUN pnpm install --frozen-lockfile --trust-lockfile
 
 EXPOSE 3003
 

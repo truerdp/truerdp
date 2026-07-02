@@ -8,7 +8,7 @@ RUN corepack prepare pnpm@11.7.0 --activate
 # Copy monorepo sources needed to install workspace deps and build backend.
 COPY . .
 
-RUN pnpm install --frozen-lockfile
+RUN pnpm install --frozen-lockfile --trust-lockfile
 RUN pnpm --filter backend build
 
 FROM node:24-alpine AS runner
