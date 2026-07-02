@@ -4,7 +4,6 @@ import Link from "next/link"
 import { useParams } from "next/navigation"
 import { HugeiconsIcon } from "@hugeicons/react"
 import {
-  ArrowLeft02Icon,
   ArrowRight01Icon,
   CreditCardIcon,
   Invoice03Icon,
@@ -15,6 +14,7 @@ import {
   AlertDescription,
   AlertTitle,
 } from "@workspace/ui/components/alert"
+import { BackButton } from "@workspace/ui/components/back-button"
 import { Badge } from "@workspace/ui/components/badge"
 import { Button } from "@workspace/ui/components/button"
 import {
@@ -61,16 +61,9 @@ export default function CheckoutReviewPage() {
   return (
     <main className="mx-auto w-full max-w-3xl px-6 py-12">
       <div className="mb-4">
-        <Link href={webPaths.cart}>
-          <Button variant="ghost" size="sm">
-            <HugeiconsIcon
-              icon={ArrowLeft02Icon}
-              strokeWidth={2}
-              data-icon="inline-start"
-            />
-            Back to cart
-          </Button>
-        </Link>
+        <BackButton render={<Link href={webPaths.cart} />}>
+          Back to cart
+        </BackButton>
       </div>
 
       {isLoading ? <CheckoutReviewLoading /> : null}

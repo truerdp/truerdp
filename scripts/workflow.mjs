@@ -1,8 +1,11 @@
 import { existsSync, copyFileSync, mkdirSync, readFileSync } from "node:fs"
-import { spawn, spawnSync } from "node:child_process"
-import { join } from "node:path"
+import { spawnSync } from "node:child_process"
+import { delimiter, dirname, join } from "node:path"
 
 const root = process.cwd()
+const packageJson = JSON.parse(readFileSync(join(root, "package.json"), "utf8"))
+const requiredPnpmVersion =
+  packageJson.packageManager?.match(/^pnpm@(.+)$/)?.[1] ?? null
 const backendAgentConfig = "deploy/infisical/runtime/backend-agent.yaml"
 const backendAgentConfigExample = "deploy/infisical/backend-agent.yaml.example"
 const infisicalAuthUrl =
@@ -16,9 +19,13 @@ const command = process.argv[2]
 
 const commands = {
   dev: runDev,
+  "dev:backend": runDevBackend,
+  "dev:backend:restart": runDevBackendRestart,
+  "dev:backend:rebuild": runDevBackendRebuild,
   "dev:frontend": runDevFrontend,
   "dev:frontend:no-infisical": runDevFrontendWithoutInfisical,
   "dev:no-infisical": runDevWithoutInfisical,
+  "dev:stop": runDevStop,
   "prod:backend:preflight": runProdBackendPreflight,
   "prod:backend": runProdBackend,
   "prod:backend:refresh": runProdBackendRefresh,
@@ -31,27 +38,30 @@ if (!command || !commands[command]) {
       "Usage: node scripts/workflow.mjs <command>",
       "",
       "Commands:",
-      "  dev                   Start local DB/backend Docker and frontend apps",
-      "  dev:frontend          Start frontend apps with Infisical when available",
+      "  dev                       Start local DB/backend Docker and frontend apps",
+      "  dev:backend               Start local DB/backend Docker without rebuilding",
+      "  dev:backend:restart       Restart the existing backend container",
+      "  dev:backend:rebuild       Rebuild and recreate local DB/backend Docker",
+      "  dev:frontend              Start frontend apps with Infisical when available",
       "  dev:frontend:no-infisical Start frontend apps from local shell/.env only",
-      "  prod:backend:preflight Check production backend deploy prerequisites",
-      "  prod:backend          Render Infisical backend env and deploy backend",
-      "  prod:backend:refresh  Re-render Infisical env and recreate backend",
-      "  doctor                Check local workflow prerequisites",
+      "  dev:stop                  Stop local Docker and frontend ports",
+      "  prod:backend:preflight    Check production backend deploy prerequisites",
+      "  prod:backend              Render Infisical backend env and deploy backend",
+      "  prod:backend:refresh      Re-render backend env and recreate backend",
+      "  doctor                    Check local workflow prerequisites",
     ].join("\n")
   )
   process.exit(1)
 }
 
-commands[command]()
+await commands[command]()
 
-function runDev() {
-  ensureLocalEnv("apps/backend/.env", "apps/backend/.env.example")
+async function runDev() {
+  ensureDevEnvFiles()
 
   if (canUseInfisical()) {
     syncLocalBackendEnvFromInfisical()
-    startLocalBackend()
-    startBackendTunnel()
+    await startLocalBackend()
     runDevFrontendWithInfisical()
     return
   }
@@ -59,7 +69,7 @@ function runDev() {
   console.log(
     "Infisical is not configured for this shell; using local .env files."
   )
-  runDevWithoutInfisical()
+  await runDevWithoutInfisical()
 }
 
 function syncLocalBackendEnvFromInfisical() {
@@ -72,10 +82,9 @@ function syncLocalBackendEnvFromInfisical() {
   ])
 }
 
-function runDevWithoutInfisical() {
-  ensureLocalEnv("apps/backend/.env", "apps/backend/.env.example")
-  startLocalBackend()
-  startBackendTunnel()
+async function runDevWithoutInfisical() {
+  ensureDevEnvFiles()
+  await startLocalBackend()
   runDevFrontendWithoutInfisical()
 }
 
@@ -92,40 +101,101 @@ function runDevFrontend() {
 }
 
 function runDevFrontendWithInfisical() {
+  ensureDevEnvFiles()
   run("infisical", [
     "run",
     "--env=dev",
     "--path=/",
     "--",
-    "pnpm",
-    "run",
+    process.execPath,
+    "scripts/workflow.mjs",
     "dev:frontend:no-infisical",
   ])
 }
 
 function runDevFrontendWithoutInfisical() {
-  run("pnpm", [
-    "exec",
-    "turbo",
-    "dev",
-    "--filter=web",
-    "--filter=dashboard",
-    "--filter=admin",
-    "--filter=cms",
-  ])
+  ensureDevEnvFiles()
+  const pnpm = getPnpmInfo()
+  ensureFrontendDependencies(pnpm)
+
+  run(
+    pnpm.bin,
+    [
+      "exec",
+      "turbo",
+      "dev",
+      "--filter=web",
+      "--filter=dashboard",
+      "--filter=admin",
+      "--filter=cms",
+    ],
+    pnpm.env
+  )
 }
 
-function startLocalBackend() {
+async function runDevBackend() {
+  ensureDevEnvFiles()
+  await startLocalBackend()
+}
+
+async function runDevBackendRestart() {
+  ensureDevEnvFiles()
+
   run("docker", [
     "compose",
     "-f",
     "docker-compose.yml",
     "up",
     "-d",
-    "--build",
-    "backend",
     "db",
+    "backend",
   ])
+
+  run("docker", ["compose", "-f", "docker-compose.yml", "restart", "backend"])
+  await waitForBackend()
+}
+
+async function runDevBackendRebuild() {
+  ensureDevEnvFiles()
+  await startLocalBackend({ build: true, forceRecreate: true })
+}
+
+function runDevStop() {
+  run("docker", ["compose", "-f", "docker-compose.yml", "down"])
+
+  const pnpm = findPnpmInfo({ quiet: true })
+  const killPortBin = pnpm?.bin ?? "pnpm"
+  const killPortEnv = pnpm?.env ?? {}
+
+  run(
+    killPortBin,
+    ["exec", "kill-port", "3000", "3001", "3002", "3003", "3004"],
+    killPortEnv,
+    { allowFailure: true }
+  )
+}
+
+async function startLocalBackend(options = {}) {
+  const args = [
+    "compose",
+    "-f",
+    "docker-compose.yml",
+    "up",
+    "-d",
+    "db",
+    "backend",
+  ]
+
+  if (options.forceRecreate) {
+    args.splice(5, 0, "--force-recreate")
+  }
+
+  if (options.build) {
+    args.splice(5, 0, "--build")
+  }
+
+  run("docker", args)
+  await waitForBackend()
 }
 
 function runProdBackendPreflight() {
@@ -204,11 +274,27 @@ function runDoctor() {
     `Backend env: ${existsSync(join(root, "apps/backend/.env")) ? "present" : "missing; dev will copy the example"}`
   )
   console.log(
+    `CMS env: ${existsSync(join(root, "apps/cms/.env")) ? "present" : "missing; dev will copy the example"}`
+  )
+
+  if (requiredPnpmVersion) {
+    const pnpm = findPnpmInfo({ quiet: true })
+    console.log(
+      `pnpm required: ${requiredPnpmVersion}; selected: ${pnpm?.version ?? "not found"}`
+    )
+  }
+
+  console.log(
     `Backend agent config: ${existsSync(join(root, backendAgentConfig)) ? "present" : "missing; prod commands will create it from the example"}`
   )
   console.log(
     `Infisical machine identity: ${infisicalMachineIdentityFiles.every((file) => existsSync(file)) ? "present" : "missing under /etc/infisical/truerdp"}`
   )
+}
+
+function ensureDevEnvFiles() {
+  ensureLocalEnv("apps/backend/.env", "apps/backend/.env.example")
+  ensureLocalEnv("apps/cms/.env", "apps/cms/.env.example")
 }
 
 function ensureLocalEnv(target, source) {
@@ -220,6 +306,164 @@ function ensureLocalEnv(target, source) {
 
   copyFileSync(join(root, source), targetPath)
   console.log(`Created ${target} from ${source}.`)
+}
+
+function ensureFrontendDependencies(pnpm) {
+  const missingNextBins = ["web", "dashboard", "admin", "cms"].filter(
+    (app) =>
+      !existsSync(
+        join(root, "apps", app, "node_modules", "next", "dist", "bin", "next")
+      )
+  )
+
+  if (missingNextBins.length === 0) {
+    return
+  }
+
+  console.log(
+    `Repairing workspace node_modules; missing Next.js links for: ${missingNextBins.join(", ")}.`
+  )
+  run(
+    pnpm.bin,
+    [
+      "install",
+      "--offline",
+      "--frozen-lockfile",
+      "--config.confirmModulesPurge=false",
+    ],
+    pnpm.env
+  )
+}
+
+function findPnpmInfo(options = {}) {
+  const candidates = getPnpmCandidates()
+  const seen = new Set()
+
+  for (const candidate of candidates) {
+    if (!candidate || seen.has(candidate)) {
+      continue
+    }
+
+    seen.add(candidate)
+
+    const result = spawnSync(candidate, ["--version"], {
+      cwd: root,
+      encoding: "utf8",
+      shell: process.platform === "win32",
+    })
+
+    if (result.status !== 0) {
+      continue
+    }
+
+    const version = result.stdout.trim()
+
+    if (!version) {
+      continue
+    }
+
+    if (!requiredPnpmVersion || version === requiredPnpmVersion) {
+      return {
+        bin: candidate,
+        version,
+        env: buildPnpmEnv(candidate),
+      }
+    }
+
+    if (!options.quiet) {
+      console.warn(
+        `Skipping pnpm ${version} at ${candidate}; repo requires pnpm ${requiredPnpmVersion}.`
+      )
+    }
+  }
+
+  return null
+}
+
+function getPnpmInfo() {
+  const pnpm = findPnpmInfo()
+
+  if (pnpm) {
+    return pnpm
+  }
+
+  console.error(
+    [
+      `Unable to find pnpm ${requiredPnpmVersion ?? ""} on PATH.`.trim(),
+      "Run `corepack prepare pnpm@10.29.3 --activate`, then retry.",
+    ].join("\n")
+  )
+  process.exit(1)
+}
+
+function getPnpmCandidates() {
+  const candidates = []
+
+  if (process.env.npm_execpath?.toLowerCase().includes("pnpm")) {
+    candidates.push(process.env.npm_execpath)
+  }
+
+  const where = process.platform === "win32" ? "where.exe" : "which"
+  const result = spawnSync(where, ["pnpm"], {
+    cwd: root,
+    encoding: "utf8",
+    shell: process.platform === "win32",
+  })
+
+  if (result.status === 0) {
+    candidates.push(
+      ...result.stdout
+        .split(/\r?\n/)
+        .map((line) => line.trim())
+        .filter(Boolean)
+    )
+  }
+
+  candidates.push("pnpm")
+  return candidates
+}
+
+function buildPnpmEnv(bin) {
+  const env = { ...process.env }
+  const binDir =
+    bin.includes("/") || bin.includes("\\") ? dirname(bin) : undefined
+
+  if (binDir) {
+    const pathKey =
+      Object.keys(env).find((key) => key.toLowerCase() === "path") ?? "PATH"
+    env[pathKey] = [binDir, env[pathKey]].filter(Boolean).join(delimiter)
+  }
+
+  env.COREPACK_ENABLE_DOWNLOAD_PROMPT = "0"
+  return env
+}
+
+async function waitForBackend() {
+  const timeoutMs = 90_000
+  const startedAt = Date.now()
+
+  while (Date.now() - startedAt < timeoutMs) {
+    try {
+      const response = await fetch("http://localhost:3003/")
+
+      if (response.ok) {
+        console.log("Backend is ready at http://localhost:3003")
+        return
+      }
+    } catch {
+      // Keep polling until Docker finishes starting Fastify.
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 1_000))
+  }
+
+  console.error(
+    [
+      "Backend did not become ready within 90 seconds.",
+      "Inspect it with: docker compose -f docker-compose.yml logs -f backend",
+    ].join("\n")
+  )
+  process.exit(1)
 }
 
 function renderBackendEnv() {
@@ -352,42 +596,7 @@ function commandExists(bin) {
   return result.status === 0
 }
 
-function startBackendTunnel() {
-  if (process.env.TRUERDP_SKIP_TUNNEL === "true") {
-    console.log("Skipping backend tunnel because TRUERDP_SKIP_TUNNEL=true.")
-    return
-  }
-
-  if (!commandExists("ngrok")) {
-    console.log("ngrok is not available; continuing without a backend tunnel.")
-    return
-  }
-
-  const child = spawn("ngrok", ["http", "3003"], {
-    cwd: root,
-    env: process.env,
-    shell: process.platform === "win32",
-    stdio: "inherit",
-  })
-
-  const stopTunnel = () => {
-    if (!child.killed) {
-      child.kill()
-    }
-  }
-
-  process.once("exit", stopTunnel)
-  process.once("SIGINT", () => {
-    stopTunnel()
-    process.exit(130)
-  })
-  process.once("SIGTERM", () => {
-    stopTunnel()
-    process.exit(143)
-  })
-}
-
-function run(bin, args, env = {}) {
+function run(bin, args, env = {}, options = {}) {
   const result = spawnSync(bin, args, {
     cwd: root,
     env: {
@@ -398,7 +607,7 @@ function run(bin, args, env = {}) {
     stdio: "inherit",
   })
 
-  if (result.status !== 0) {
+  if (!options.allowFailure && result.status !== 0) {
     process.exit(result.status ?? 1)
   }
 }

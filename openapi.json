@@ -5439,6 +5439,89 @@
         }
       }
     },
+    "/support/uploads/images/{*}": {
+      "get": {
+        "summary": "Serve a locally stored support ticket image",
+        "tags": [
+          "Support"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "*",
+            "required": true
+          }
+        ],
+        "responses": {
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/support/uploads/images": {
+      "post": {
+        "summary": "Upload a support ticket image",
+        "tags": [
+          "Support"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "image": {
+                      "type": "object",
+                      "properties": {
+                        "url": {
+                          "type": "string"
+                        },
+                        "alt": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "url",
+                        "alt"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "image"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/support/tickets": {
       "get": {
         "summary": "List user support tickets",

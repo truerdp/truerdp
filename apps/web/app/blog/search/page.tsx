@@ -1,5 +1,6 @@
 import type { Metadata } from "next"
 import Link from "next/link"
+import { BackButton } from "@workspace/ui/components/back-button"
 import { BlogPostCard, BlogSearchForm } from "@/components/blog/blog-ui"
 import { getSiteOrigin, listBlogPosts } from "@/lib/blog"
 import { blogPaths } from "@/lib/paths"
@@ -39,9 +40,9 @@ export default async function BlogSearchPage({ searchParams }: PageProps) {
   return (
     <main className="mx-auto w-full max-w-6xl px-6 py-12">
       <header className="space-y-4">
-        <Link href={blogPaths.index} className="text-sm text-muted-foreground">
+        <BackButton render={<Link href={blogPaths.index} />} variant="outline">
           Back to blog
-        </Link>
+        </BackButton>
         <h1 className="text-4xl font-semibold tracking-tight">Search blog</h1>
         <BlogSearchForm defaultQuery={q} />
       </header>

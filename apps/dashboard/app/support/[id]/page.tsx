@@ -7,6 +7,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
 import { clientApi } from "@workspace/api/client"
 import { Badge } from "@workspace/ui/components/badge"
+import { BackButton } from "@workspace/ui/components/back-button"
 import { Button } from "@workspace/ui/components/button"
 import {
   RichTextContent,
@@ -15,6 +16,7 @@ import {
 import { cn } from "@workspace/ui/lib/utils"
 import { queryKeys } from "@/lib/query-keys"
 import { dashboardPaths } from "@/lib/paths"
+import { uploadSupportImage } from "@/lib/support-image-upload"
 import {
   formatTicketStatus,
   getTicketStatusVariant,
@@ -103,12 +105,12 @@ export default function SupportTicketPage() {
     <section className="mx-auto flex min-h-[calc(100vh-8rem)] w-full max-w-5xl flex-col gap-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
-          <Link
-            href={dashboardPaths.support}
-            className="text-sm text-muted-foreground hover:text-foreground"
+          <BackButton
+            render={<Link href={dashboardPaths.support} />}
+            variant="outline"
           >
             Back to tickets
-          </Link>
+          </BackButton>
           <div className="mt-2 flex flex-wrap items-center gap-2">
             <h1 className="text-2xl font-bold tracking-tight">
               Ticket #{data.ticket.id}
@@ -172,6 +174,8 @@ export default function SupportTicketPage() {
           onChange={setReply}
           placeholder="Write a reply..."
           editorClassName="min-h-32"
+          enableImages
+          uploadImage={uploadSupportImage}
         />
         <div className="mt-3 flex justify-end">
           <Button

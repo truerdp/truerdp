@@ -17,6 +17,11 @@ const webhookParamsSchema = z.object({
 export async function webhookRoutes(server: FastifyInstance) {
   server.post(
     "/webhooks/payments/:provider",
+    {
+      config: {
+        rawBody: true,
+      },
+    },
     async (request: GenericRouteRequest, reply: RouteReply) => {
     try {
       const { provider } = webhookParamsSchema.parse(request.params)

@@ -8,6 +8,7 @@ import { clientApi } from "@workspace/api/client"
 
 import { dashboardPaths } from "@/lib/paths"
 import { queryKeys } from "@/lib/query-keys"
+import { uploadSupportImage } from "@/lib/support-image-upload"
 import type { TicketSummary } from "@/components/support-page/types"
 import { Button } from "@workspace/ui/components/button"
 import { Field, FieldLabel } from "@workspace/ui/components/field"
@@ -78,6 +79,8 @@ export function CreateTicketForm({
             onChange={setMessage}
             placeholder="Describe the issue."
             editorClassName="min-h-32"
+            enableImages
+            uploadImage={uploadSupportImage}
           />
         </Field>
       </div>

@@ -1,6 +1,6 @@
 import Link from "next/link"
 import { HugeiconsIcon } from "@hugeicons/react"
-import { ArrowLeft02Icon, CreditCardIcon } from "@hugeicons/core-free-icons"
+import { CreditCardIcon } from "@hugeicons/core-free-icons"
 
 import { dashboardPaths } from "@/lib/paths"
 import {
@@ -8,7 +8,7 @@ import {
   AlertDescription,
   AlertTitle,
 } from "@workspace/ui/components/alert"
-import { Button } from "@workspace/ui/components/button"
+import { BackButton } from "@workspace/ui/components/back-button"
 import {
   Card,
   CardContent,
@@ -32,16 +32,9 @@ export function MissingInvoiceReference() {
           Open an invoice from the invoices list to view its full details.
         </EmptyDescription>
       </EmptyHeader>
-      <Link href={dashboardPaths.invoices}>
-        <Button variant="outline">
-          <HugeiconsIcon
-            icon={ArrowLeft02Icon}
-            strokeWidth={2}
-            data-icon="inline-start"
-          />
-          Back to invoices
-        </Button>
-      </Link>
+      <BackButton render={<Link href={dashboardPaths.invoices} />} variant="outline">
+        Back to invoices
+      </BackButton>
     </Empty>
   )
 }
@@ -55,16 +48,9 @@ export function InvoiceNotFound() {
           This invoice may belong to another account or no longer exist.
         </EmptyDescription>
       </EmptyHeader>
-      <Link href={dashboardPaths.invoices}>
-        <Button variant="outline">
-          <HugeiconsIcon
-            icon={ArrowLeft02Icon}
-            strokeWidth={2}
-            data-icon="inline-start"
-          />
-          Back to invoices
-        </Button>
-      </Link>
+      <BackButton render={<Link href={dashboardPaths.invoices} />} variant="outline">
+        Back to invoices
+      </BackButton>
     </Empty>
   )
 }

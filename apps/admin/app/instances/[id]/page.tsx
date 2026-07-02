@@ -1,10 +1,8 @@
 import Link from "next/link"
-import { HugeiconsIcon } from "@hugeicons/react"
-import { ArrowLeft02Icon } from "@hugeicons/core-free-icons"
 
 import { InstanceDetails } from "@/components/instance-details"
 import { adminPaths } from "@/lib/paths"
-import { buttonVariants } from "@workspace/ui/components/button"
+import { BackButton } from "@workspace/ui/components/back-button"
 import {
   Empty,
   EmptyDescription,
@@ -39,21 +37,12 @@ export default async function InstanceDetailPage({
 
   return (
     <section className="flex w-full flex-col gap-4">
-      <Link
-        href={adminPaths.instances}
-        className={buttonVariants({
-          variant: "ghost",
-          size: "sm",
-          className: "self-start",
-        })}
+      <BackButton
+        render={<Link href={adminPaths.instances} />}
+        className="self-start"
       >
-        <HugeiconsIcon
-          icon={ArrowLeft02Icon}
-          strokeWidth={2}
-          data-icon="inline-start"
-        />
         Back to instances
-      </Link>
+      </BackButton>
       <InstanceDetails instanceId={instanceId} />
     </section>
   )

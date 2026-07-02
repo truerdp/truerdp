@@ -8,6 +8,7 @@ import { clientApi } from "@workspace/api/client"
 
 import { adminPaths } from "@/lib/paths"
 import { queryKeys } from "@/lib/query-keys"
+import { uploadSupportImage } from "@/lib/support-image-upload"
 import { useUsers } from "@/hooks/use-users"
 import { type TicketSummary } from "@/app/support/models"
 import { Button } from "@workspace/ui/components/button"
@@ -112,6 +113,8 @@ export function CreateTicketForm() {
             onChange={setMessage}
             placeholder="Initial support note."
             editorClassName="min-h-32"
+            enableImages
+            uploadImage={uploadSupportImage}
           />
         </Field>
       </div>

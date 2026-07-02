@@ -67,8 +67,17 @@ Never skip local code inspection and jump directly to generic framework memory.
   with `infisical run` when local Infisical auth is available.
 - `pnpm run dev:frontend:no-infisical` starts only frontends from local
   shell/Next `.env` values.
-- `pnpm run dev:backend:restart` refreshes only Docker backend.
-- `pnpm run dev:stop` aggressively clears Docker + ports `3000-3003`.
+- `pnpm run dev:backend` starts only local DB+backend Docker without rebuilding.
+- `pnpm run dev:backend:restart` restarts only the Docker backend and waits for
+  `http://localhost:3003/` to become healthy. Use this for most backend
+  validation; it should not restart frontends.
+- `pnpm run dev:backend:rebuild` rebuilds/recreates the backend container. Use
+  it only after Dockerfile/dependency/lockfile changes.
+- `pnpm run dev:stop` aggressively clears Docker + ports `3000-3004`.
+- `pnpm dev` must not start ngrok automatically; use `pnpm run tunnel:backend`
+  manually in a separate terminal when a backend tunnel is needed.
+- If a shell resolves the wrong pnpm version, use `corepack pnpm <command>` or
+  activate the workspace version with `corepack prepare pnpm@10.29.3 --activate`.
 
 ## Frontend API Base URL Resolution
 

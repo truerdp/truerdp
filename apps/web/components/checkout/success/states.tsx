@@ -1,7 +1,7 @@
 import Link from "next/link"
 
 import { webPaths } from "@/lib/paths"
-import { Button } from "@workspace/ui/components/button"
+import { BackButton } from "@workspace/ui/components/back-button"
 import { Card, CardContent, CardHeader } from "@workspace/ui/components/card"
 import {
   Empty,
@@ -21,9 +21,9 @@ export function MissingTransactionReference() {
             Start checkout from a plan to generate a transaction.
           </EmptyDescription>
         </EmptyHeader>
-        <Link href={webPaths.home}>
-          <Button>Back to plans</Button>
-        </Link>
+        <BackButton render={<Link href={webPaths.home} />} variant="outline">
+          Back to plans
+        </BackButton>
       </Empty>
     </main>
   )

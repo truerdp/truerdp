@@ -10,9 +10,15 @@ const ticketStatusValues = [
   "closed",
 ] as const
 
+const AUTHENTICATED_SUPPORT_MESSAGE_MAX_LENGTH = 40000
+
 export const createTicketSchema = z.object({
   subject: z.string().trim().min(3).max(160),
-  message: z.string().trim().min(1).max(5000),
+  message: z
+    .string()
+    .trim()
+    .min(1)
+    .max(AUTHENTICATED_SUPPORT_MESSAGE_MAX_LENGTH),
 })
 
 export const adminCreateTicketSchema = createTicketSchema.extend({
@@ -20,7 +26,11 @@ export const adminCreateTicketSchema = createTicketSchema.extend({
 })
 
 export const replySchema = z.object({
-  message: z.string().trim().min(1).max(5000),
+  message: z
+    .string()
+    .trim()
+    .min(1)
+    .max(AUTHENTICATED_SUPPORT_MESSAGE_MAX_LENGTH),
 })
 
 export const ticketIdParamsSchema = z.object({

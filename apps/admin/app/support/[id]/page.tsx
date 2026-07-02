@@ -7,6 +7,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
 import { clientApi } from "@workspace/api/client"
 import { Badge } from "@workspace/ui/components/badge"
+import { BackButton } from "@workspace/ui/components/back-button"
 import { Button } from "@workspace/ui/components/button"
 import {
   RichTextContent,
@@ -15,13 +16,12 @@ import {
 import { cn } from "@workspace/ui/lib/utils"
 import { adminPaths } from "@/lib/paths"
 import { queryKeys } from "@/lib/query-keys"
+import { uploadSupportImage } from "@/lib/support-image-upload"
 import {
   formatTicketStatus,
   getTicketStatusVariant,
   type TicketStatus,
 } from "@/app/support/models"
-import { HugeiconsIcon } from "@hugeicons/react"
-import { ChevronLeft } from "@hugeicons/core-free-icons"
 
 type TicketDetail = {
   ticket: {
@@ -113,13 +113,12 @@ export default function AdminSupportTicketPage() {
     <section className="mx-auto flex min-h-[calc(100vh-8rem)] w-full max-w-5xl flex-col gap-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
-          <Link
-            href={adminPaths.support}
-            className="flex items-center gap-2 text-sm text-muted-foreground"
+          <BackButton
+            render={<Link href={adminPaths.support} />}
+            variant="outline"
           >
-            <HugeiconsIcon icon={ChevronLeft} size={24} color="currentColor" />
             Back to tickets
-          </Link>
+          </BackButton>
           <div className="mt-2 flex flex-wrap items-center gap-2">
             <h1 className="text-2xl font-bold tracking-tight">
               Ticket #{data.ticket.id}
@@ -215,6 +214,8 @@ export default function AdminSupportTicketPage() {
           onChange={setReply}
           placeholder="Reply to customer..."
           editorClassName="min-h-32"
+          enableImages
+          uploadImage={uploadSupportImage}
         />
         <div className="mt-3 flex justify-end">
           <Button

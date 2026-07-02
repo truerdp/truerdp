@@ -4,11 +4,12 @@ import Link from "next/link"
 import { useMemo } from "react"
 import { useParams } from "next/navigation"
 import { HugeiconsIcon } from "@hugeicons/react"
-import { ArrowLeft02Icon, PrinterIcon } from "@hugeicons/core-free-icons"
+import { PrinterIcon } from "@hugeicons/core-free-icons"
 
 import { useInvoices } from "@/hooks/use-invoices"
 import { dashboardPaths } from "@/lib/paths"
-import { Button, buttonVariants } from "@workspace/ui/components/button"
+import { BackButton } from "@workspace/ui/components/back-button"
+import { Button } from "@workspace/ui/components/button"
 import { InvoiceDetailsCard } from "@/components/invoice-details/invoice-details-card"
 import {
   InvoiceDetailsError,
@@ -50,17 +51,9 @@ export default function InvoiceDetailsPage() {
   return (
     <div className="space-y-4">
       <div className="flex justify-between gap-4 print:hidden">
-        <Link
-          href={dashboardPaths.invoices}
-          className={buttonVariants({ variant: "ghost", size: "sm" })}
-        >
-          <HugeiconsIcon
-            icon={ArrowLeft02Icon}
-            strokeWidth={2}
-            data-icon="inline-start"
-          />
+        <BackButton variant="outline" render={<Link href={dashboardPaths.invoices} />}>
           Back to invoices
-        </Link>
+        </BackButton>
         <Button variant="outline" size="sm" onClick={() => window.print()}>
           <HugeiconsIcon
             icon={PrinterIcon}

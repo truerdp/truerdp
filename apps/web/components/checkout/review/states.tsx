@@ -1,7 +1,6 @@
 import Link from "next/link"
 import { HugeiconsIcon } from "@hugeicons/react"
 import {
-  ArrowLeft02Icon,
   CreditCardIcon,
   Invoice03Icon,
 } from "@hugeicons/core-free-icons"
@@ -12,7 +11,7 @@ import {
   AlertDescription,
   AlertTitle,
 } from "@workspace/ui/components/alert"
-import { Button } from "@workspace/ui/components/button"
+import { BackButton } from "@workspace/ui/components/back-button"
 import { Card, CardContent, CardHeader } from "@workspace/ui/components/card"
 import {
   Empty,
@@ -32,16 +31,9 @@ export function MissingOrderReference() {
             Review requires a valid order id. Please select a plan first.
           </EmptyDescription>
         </EmptyHeader>
-        <Link href={webPaths.home}>
-          <Button>
-            <HugeiconsIcon
-              icon={ArrowLeft02Icon}
-              strokeWidth={2}
-              data-icon="inline-start"
-            />
-            Back to plans
-          </Button>
-        </Link>
+      <BackButton render={<Link href={webPaths.home} />} variant="outline">
+        Back to plans
+      </BackButton>
       </Empty>
     </main>
   )

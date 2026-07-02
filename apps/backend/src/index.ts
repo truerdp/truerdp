@@ -3,6 +3,7 @@ import Fastify from "fastify"
 import { parse as parseQueryString } from "node:querystring"
 import cookie from "@fastify/cookie"
 import cors from "@fastify/cors"
+import multipart from "@fastify/multipart"
 import swagger from "@fastify/swagger"
 import swaggerUi from "@fastify/swagger-ui"
 import { userRoutes } from "./routes/user.js"
@@ -20,6 +21,7 @@ import { paymentSettingsRoutes } from "./routes/payment-settings.js"
 import fastifyRawBody from "fastify-raw-body"
 import { startExpiryReminderScheduler } from "./services/billing/reminder-scheduler.js"
 import { createAdminAuditLog } from "./services/admin-audit.js"
+import { supportMultipartOptions } from "./routes/support/uploads.js"
 
 const server = Fastify({
   logger: true,
@@ -83,7 +85,7 @@ server.register(swaggerUi, {
 // Expose request.rawBody for webhook signature verification (run before body parsing)
 server.register(fastifyRawBody, {
   field: "rawBody",
-  global: true,
+  global: false,
   runFirst: true,
 })
 
@@ -106,6 +108,7 @@ const allowAllOrigins =
   process.env.NODE_ENV !== "production" && allowedOrigins.size === 0
 
 server.register(cookie)
+server.register(multipart, supportMultipartOptions)
 
 server.register(cors, {
   origin(origin, callback) {

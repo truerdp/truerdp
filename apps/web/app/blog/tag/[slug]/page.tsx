@@ -1,6 +1,7 @@
 import type { Metadata } from "next"
 import Link from "next/link"
 import { notFound } from "next/navigation"
+import { BackButton } from "@workspace/ui/components/back-button"
 import { BlogPostCard } from "@/components/blog/blog-ui"
 import { getSiteOrigin, listBlogPosts, listBlogTags } from "@/lib/blog"
 import { blogPaths } from "@/lib/paths"
@@ -76,9 +77,9 @@ export default async function BlogTagPage({ params }: PageProps) {
         }}
       />
       <header className="space-y-3">
-        <Link href={blogPaths.index} className="text-sm text-muted-foreground">
+        <BackButton render={<Link href={blogPaths.index} />} variant="outline">
           Back to blog
-        </Link>
+        </BackButton>
         <h1 className="text-4xl font-semibold tracking-tight">#{tag.name}</h1>
       </header>
 

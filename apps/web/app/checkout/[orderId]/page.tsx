@@ -2,11 +2,9 @@
 
 import Link from "next/link"
 import { useParams } from "next/navigation"
-import { HugeiconsIcon } from "@hugeicons/react"
-import { ArrowLeft02Icon } from "@hugeicons/core-free-icons"
 
 import { webPaths } from "@/lib/paths"
-import { Button } from "@workspace/ui/components/button"
+import { BackButton } from "@workspace/ui/components/back-button"
 import { CheckoutPaymentCard } from "@/components/checkout/order/payment-card"
 import {
   CheckoutOrderError,
@@ -42,16 +40,9 @@ export default function CheckoutOrderPage() {
   return (
     <main className="mx-auto w-full max-w-3xl px-6 py-12">
       <div className="mb-4">
-        <Link href={webPaths.checkoutReviewOrder(orderId)}>
-          <Button variant="ghost" size="sm">
-            <HugeiconsIcon
-              icon={ArrowLeft02Icon}
-              strokeWidth={2}
-              data-icon="inline-start"
-            />
-            Back to invoice review
-          </Button>
-        </Link>
+        <BackButton render={<Link href={webPaths.checkoutReviewOrder(orderId)} />}>
+          Back to invoice review
+        </BackButton>
       </div>
 
       {isLoading ? <CheckoutOrderLoading /> : null}

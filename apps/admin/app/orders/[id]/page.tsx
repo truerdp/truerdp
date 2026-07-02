@@ -2,15 +2,13 @@
 
 import Link from "next/link"
 import { useParams } from "next/navigation"
-import { HugeiconsIcon } from "@hugeicons/react"
-import { ArrowLeft02Icon } from "@hugeicons/core-free-icons"
 
 import { AdminUserLink } from "@/components/admin-user-link"
 import { formatAmount } from "@/components/invoices-page-parts"
 import { useOrder } from "@/hooks/use-orders"
 import { adminPaths } from "@/lib/paths"
+import { BackButton } from "@workspace/ui/components/back-button"
 import { Badge } from "@workspace/ui/components/badge"
-import { buttonVariants } from "@workspace/ui/components/button"
 import {
   Card,
   CardContent,
@@ -91,21 +89,12 @@ export default function AdminOrderDetailsPage() {
 
   return (
     <div className="flex w-full flex-col gap-4">
-      <Link
-        href={adminPaths.orders}
-        className={buttonVariants({
-          variant: "ghost",
-          size: "sm",
-          className: "self-start",
-        })}
+      <BackButton
+        render={<Link href={adminPaths.orders} />}
+        className="self-start"
       >
-        <HugeiconsIcon
-          icon={ArrowLeft02Icon}
-          strokeWidth={2}
-          data-icon="inline-start"
-        />
         Back to orders
-      </Link>
+      </BackButton>
 
       <Card>
         <CardHeader>

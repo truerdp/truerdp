@@ -3,13 +3,14 @@
 import { useState } from "react"
 import Link from "next/link"
 import type { Route } from "next"
-import { ArrowLeft, PencilEdit02Icon } from "@hugeicons/core-free-icons"
+import { PencilEdit02Icon } from "@hugeicons/core-free-icons"
 import { HugeiconsIcon } from "@hugeicons/react"
 
 import { usePlans, type Plan } from "@/hooks/use-plans"
 import { useTogglePlanStatus, useUpdatePlan } from "@/hooks/use-manage-plans"
 import { PlanForm, type PlanFormValues } from "@/components/plan-form"
 import { PlanDetailsView } from "@/components/plan-details/view"
+import { BackButton } from "@workspace/ui/components/back-button"
 import { Button } from "@workspace/ui/components/button"
 import { Spinner } from "@workspace/ui/components/spinner"
 
@@ -108,12 +109,9 @@ export function PlanDetails({ planId }: PlanDetailsProps) {
     return (
       <div className="flex flex-col items-center gap-4 py-12">
         <div>Plan not found</div>
-        <Link href={plansRoute}>
-          <Button variant="outline">
-            <HugeiconsIcon icon={ArrowLeft} strokeWidth={2} />
-            Back to Plans
-          </Button>
-        </Link>
+        <BackButton render={<Link href={plansRoute} />} variant="outline">
+          Back to plans
+        </BackButton>
       </div>
     )
   }

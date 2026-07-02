@@ -23,11 +23,11 @@ pnpm run prod:backend:refresh
 ```
 
 - `pnpm dev` starts local Postgres/backend in Docker and all frontend apps
-  locally (`web`, `dashboard`, `admin`, and `cms`). It also starts an ngrok
-  tunnel for the backend on port `3003` when ngrok is installed. If Infisical
-  is configured in the shell, it syncs backend secrets and injects frontend
-  secrets from Infisical; otherwise it uses local `.env` files and creates
-  `apps/backend/.env` from the example when missing.
+  locally (`web`, `dashboard`, `admin`, and `cms`). If Infisical is configured
+  in the shell, it syncs backend secrets and injects frontend secrets from
+  Infisical; otherwise it uses local `.env` files and creates local env files
+  from examples when missing. Start ngrok manually when you need an external
+  backend tunnel.
 - `pnpm run prod:backend` renders backend production secrets from Infisical and
   starts/rebuilds the production backend container.
 - `pnpm run prod:backend:refresh` re-renders backend production secrets and
@@ -159,39 +159,52 @@ pnpm dev
 That command uses Infisical when available. It renders `apps/backend/.env` for
 Docker and starts the frontend apps through `infisical run`, so the Next.js apps
 receive frontend variables from Infisical without app-level `.env` files. When
-Infisical is not available, it falls back to local `.env` files. It also starts
-`ngrok http 3003` automatically when ngrok is available. To skip the tunnel for
-one run:
+Infisical is not available, it falls back to local `.env` files. It does not
+start ngrok; run the backend tunnel manually in a separate terminal when needed:
 
 ```bash
-TRUERDP_SKIP_TUNNEL=true pnpm dev
-```
-
-PowerShell:
-
-```powershell
-$env:TRUERDP_SKIP_TUNNEL = "true"; pnpm dev
+pnpm run tunnel:backend
 ```
 
 Equivalent expanded fallback form:
 
 ```bash
-docker compose -f docker-compose.yml up -d --force-recreate backend db
+pnpm run dev:backend
 pnpm run dev:frontend:no-infisical
 ```
 
 Use `pnpm run dev:frontend` when you want only the frontend apps; it also wraps
 Turbo with Infisical when local auth is available.
 
-Avoid running raw `turbo dev` with
-`docker compose -f docker-compose.yml up -d backend` unless you intentionally
-stop one backend instance.
+The workflow pins Turbo child processes to the workspace `pnpm` version declared
+in `package.json`. If `pnpm -v` shows a different version, prefer:
+
+```bash
+corepack pnpm <command>
+```
+
+or run:
+
+```bash
+corepack prepare pnpm@10.29.3 --activate
+```
+
+Avoid running raw `turbo dev` with raw Docker commands unless you intentionally
+manage process lifetimes yourself.
 
 If you change backend routes or server-only code and want to refresh only the
-Docker backend without touching the frontends, use:
+Docker backend without touching the frontends, use the fast restart:
 
 ```bash
 pnpm run dev:backend:restart
+```
+
+That command keeps the frontend dev servers alone and waits until
+`http://localhost:3003/` is healthy again. Use the slower rebuild only after
+changing Dockerfiles, backend dependencies, or lockfiles:
+
+```bash
+pnpm run dev:backend:rebuild
 ```
 
 ### VS Code Startup

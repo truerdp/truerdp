@@ -7,9 +7,9 @@ import {
   AlertDescription,
   AlertTitle,
 } from "@workspace/ui/components/alert"
-import { Button } from "@workspace/ui/components/button"
+import { BackButton } from "@workspace/ui/components/back-button"
 import { HugeiconsIcon } from "@hugeicons/react"
-import { Alert02Icon, ArrowLeftIcon } from "@hugeicons/core-free-icons"
+import { Alert02Icon } from "@hugeicons/core-free-icons"
 
 import {
   type MarketingPlan,
@@ -127,17 +127,12 @@ export default async function PlansCategoryPage({
 
       <section className="mx-auto grid w-full max-w-6xl gap-8 px-6 pt-10 md:pt-14 lg:grid-cols-[1.05fr_0.95fr]">
         <div>
-          <Link href={webPaths.plans}>
-            <Button size="sm" variant="outline">
-              <HugeiconsIcon
-                icon={ArrowLeftIcon}
-                size={16}
-                strokeWidth={2}
-                className="mr-1"
-              />
-              Back to categories
-            </Button>
-          </Link>
+          <BackButton
+            render={<Link href={webPaths.plans} />}
+            variant="outline"
+          >
+            Back to categories
+          </BackButton>
 
           <h1
             className={`${displayFont.className} mt-5 max-w-3xl text-4xl leading-[1.04] tracking-tight text-[oklch(0.2_0.045_265)] md:text-5xl dark:text-white`}
