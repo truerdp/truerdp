@@ -100,7 +100,7 @@ cd /opt/truerdp
 
 The host Node.js version is not used by the backend container. If `pnpm` warns
 that host Node is below the repo engine, it is only a host-side warning for the
-wrapper script. The container runs Node from `node:20-alpine`.
+wrapper script. The container runs Node from `node:24-alpine`.
 
 ## 4) Root compose env
 
@@ -451,5 +451,5 @@ docker compose -f docker-compose.prod.yml ps
 curl http://127.0.0.1:3003/
 ```
 
-If host `pnpm` warns about Node `<20`, either ignore it when using Docker or
-upgrade host Node later. The production container uses Node 20.
+If host `pnpm` warns about Node `<24`, either ignore it when using Docker or
+upgrade host Node later. The production container uses Node 24.

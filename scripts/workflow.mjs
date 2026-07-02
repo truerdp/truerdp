@@ -390,7 +390,9 @@ function getPnpmInfo() {
   console.error(
     [
       `Unable to find pnpm ${requiredPnpmVersion ?? ""} on PATH.`.trim(),
-      "Run `corepack prepare pnpm@10.29.3 --activate`, then retry.",
+      requiredPnpmVersion
+        ? `Run \`corepack prepare pnpm@${requiredPnpmVersion} --activate\`, then retry.`
+        : "Run `corepack prepare pnpm@latest --activate`, then retry.",
     ].join("\n")
   )
   process.exit(1)

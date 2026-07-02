@@ -119,7 +119,7 @@ Key runtime folders:
 pnpm install
 ```
 
-2. Use Node.js `20+` and the workspace `pnpm` version from `packageManager`:
+2. Use Node.js `24+` and the workspace `pnpm` version from `packageManager`:
 
 ```bash
 node -v
@@ -186,7 +186,7 @@ corepack pnpm <command>
 or run:
 
 ```bash
-corepack prepare pnpm@10.29.3 --activate
+corepack prepare pnpm@11.7.0 --activate
 ```
 
 Avoid running raw `turbo dev` with raw Docker commands unless you intentionally

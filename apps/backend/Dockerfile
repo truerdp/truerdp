@@ -1,10 +1,10 @@
-FROM node:20-alpine
+FROM node:24-alpine
 
 WORKDIR /app
 
 # Enable pnpm
 RUN corepack enable
-RUN corepack prepare pnpm@10.29.3 --activate
+RUN corepack prepare pnpm@11.7.0 --activate
 
 # Copy entire monorepo (needed for pnpm workspace)
 COPY . .

@@ -60,7 +60,7 @@ Never skip local code inspection and jump directly to generic framework memory.
 
 ## Runtime/Dev Commands (intentional flow control)
 
-- Use `pnpm` 10.29.3 (root `packageManager`) and Node `>=20`.
+- Use `pnpm` 11.7.0 (root `packageManager`) and Node `>=24`.
 - `pnpm dev` starts DB+backend in Docker and frontends locally.
   - Do not run `pnpm dev` at the same time (backend would be double-started).
 - `pnpm run dev:frontend` starts only web/dashboard/admin/cms and wraps Turbo
@@ -77,7 +77,7 @@ Never skip local code inspection and jump directly to generic framework memory.
 - `pnpm dev` must not start ngrok automatically; use `pnpm run tunnel:backend`
   manually in a separate terminal when a backend tunnel is needed.
 - If a shell resolves the wrong pnpm version, use `corepack pnpm <command>` or
-  activate the workspace version with `corepack prepare pnpm@10.29.3 --activate`.
+  activate the workspace version with `corepack prepare pnpm@11.7.0 --activate`.
 
 ## Frontend API Base URL Resolution
 
