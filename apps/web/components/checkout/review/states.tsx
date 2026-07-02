@@ -12,6 +12,7 @@ import {
   AlertTitle,
 } from "@workspace/ui/components/alert"
 import { BackButton } from "@workspace/ui/components/back-button"
+import { Button } from "@workspace/ui/components/button"
 import { Card, CardContent, CardHeader } from "@workspace/ui/components/card"
 import {
   Empty,
@@ -31,9 +32,9 @@ export function MissingOrderReference() {
             Review requires a valid order id. Please select a plan first.
           </EmptyDescription>
         </EmptyHeader>
-      <BackButton render={<Link href={webPaths.home} />} variant="outline">
-        Back to plans
-      </BackButton>
+        <BackButton render={<Link href={webPaths.home} />} variant="outline">
+          Back to plans
+        </BackButton>
       </Empty>
     </main>
   )

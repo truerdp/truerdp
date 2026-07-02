@@ -2,6 +2,7 @@ import Link from "next/link"
 
 import { webPaths } from "@/lib/paths"
 import { BackButton } from "@workspace/ui/components/back-button"
+import { Button } from "@workspace/ui/components/button"
 import { Card, CardContent, CardHeader } from "@workspace/ui/components/card"
 import {
   Empty,
